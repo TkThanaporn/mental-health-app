@@ -1,0 +1,94 @@
+// D:\mental-health-app\server\routes\appointmentRoutes.js
+const express = require('express');
+const router = express.Router();
+const db = require('../config/db');
+const { authMiddleware, authorizeRole } = require('../middleware/auth');
+
+// @route   POST api/appointments
+// @desc    P5: Student creates a new appointment request
+router.post('/', authMiddleware, authorizeRole(['Student']), async (req, res) => {
+    const { 
+        psychologist_id, 
+        date, 
+        time, 
+        type, // Online / Onsite (1.3.2.6)
+        topic, // (1.3.2.7)
+        consultation_type, // Individual / Group (1.3.2.9)
+        group_members // (1.3.2.9.1)
+    } = req.body;
+    
+    const student_id = req.user.id;
+    const status = 'Pending'; // สถานะเริ่มต้น
+
+    // ตรวจสอบข้อมูลจำเป็น
+    if (!psychologist_id || !date || !time || !topic) {
+        return res.status(400).json({ msg: 'Please provide all required fields.' });
+    }
+
+    try {
+        // 1. บันทึกนัดหมายหลัก
+        const [result] = await db.execute(
+            'INSERT INTO Appointments (student_id, psychologist_id, appointment_date, appointment_time, type, topic, consultation_type, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+            [student_id, psychologist_id, date, time, type, topic, consultation_type, status]
+        );
+        
+        const appointmentId = result.insertId;
+
+        // 2. ถ้าเป็นแบบกลุ่ม (P5.5, 1.3.2.9.1): บันทึกรายชื่อเพื่อน
+        if (consultation_type === 'Group' && group_members && group_members.length > 0) {
+            // NOTE: ในการใช้งานจริง ควรตรวจสอบว่า group_members มีอยู่จริงในตาราง Users หรือไม่
+            const memberValues = group_members.map(email => 
+                [appointmentId, email]
+            ).flat(); // สร้าง array ของ [appointment_id, email]
+            
+            // เตรียม SQL สำหรับการ INSERT หลายแถว
+            const insertGroupSQL = `
+                INSERT INTO GroupMembers (appointment_id, member_email) 
+                VALUES ${group_members.map(() => '(?, ?)').join(', ')}
+            `;
+            
+            await db.execute(insertGroupSQL, memberValues);
+        }
+
+        // TODO: P8.1: ส่ง Notification นัดหมายเบื้องต้นไปยังนักเรียนและนักจิตวิทยา
+
+        res.status(201).json({ msg: 'Appointment request submitted successfully.', appointmentId });
+    } catch (err) {
+        console.error("APPOINTMENT CREATE ERROR:", err.message);
+        res.status(500).send('Server error during appointment creation.');
+    }
+});
+
+
+// @route   PUT api/appointments/:id/status
+// @desc    P6.2: Psychologist confirms or cancels an appointment (1.3.3.5.1, 1.3.3.5.2)
+router.put('/:id/status', authMiddleware, authorizeRole(['Psychologist']), async (req, res) => {
+    const { id } = req.params;
+    const { status } = req.body; // 'Confirmed' or 'Cancelled'
+    const psychologist_id = req.user.id;
+    
+    // ตรวจสอบสถานะ
+    if (!['Confirmed', 'Cancelled'].includes(status)) {
+        return res.status(400).json({ msg: 'Invalid status.' });
+    }
+
+    try {
+        const [result] = await db.execute(
+            'UPDATE Appointments SET status = ? WHERE appointment_id = ? AND psychologist_id = ?',
+            [status, id, psychologist_id]
+        );
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ msg: 'Appointment not found or unauthorized.' });
+        }
+        
+        // TODO: P6.5, P8.1: ส่ง Notification การยืนยัน/ยกเลิกไปยังนักเรียน
+
+        res.json({ msg: `Appointment status updated to ${status}.` });
+    } catch (err) {
+        console.error("APPOINTMENT STATUS UPDATE ERROR:", err.message);
+        res.status(500).send('Server error.');
+    }
+});
+
+module.exports = router;
