@@ -3,31 +3,36 @@ import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
-// ปรับให้รับเป็น 'component' (ไม่มี s) และ Alias เป็น 'Component' (ตัวใหญ่)
-const PrivateRoute = ({ component: Component, allowedRoles }) => {
-    const { isAuthenticated, role, loading } = useAuth(); // เพิ่ม loading ถ้ามีใน Context
+const PrivateRoute = ({ children, allowedRoles }) => {
+  const { isAuthenticated, role, loading } = useAuth();
 
-    // ป้องกันการเด้งไปหน้า Login ขณะที่กำลังเช็คสถานะ Auth
-    if (loading) return <div>Loading...</div>;
+  // ระหว่างเช็คสถานะ login
+  if (loading) {
+    return (
+      <div className="text-center mt-5">
+        <h5>Loading...</h5>
+      </div>
+    );
+  }
 
-    if (!isAuthenticated) {
-        // ไม่ได้ Login
-        return <Navigate to="/login" />;
-    }
+  // ยังไม่ login
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
 
-    // ตรวจสอบว่า allowedRoles มีค่า และ role ของผู้ใช้มีสิทธิ์หรือไม่
-    if (allowedRoles && !allowedRoles.includes(role)) {
-        // ไม่มีสิทธิ์
-        return (
-            <div className="container mt-5 text-center">
-                <h1 className="text-danger">403 Forbidden</h1>
-                <p>คุณไม่มีสิทธิ์เข้าถึงหน้านี้ (Role: {role})</p>
-            </div>
-        );
-    }
+  // login แล้ว แต่ role ไม่ตรง
+  if (allowedRoles && !allowedRoles.includes(role)) {
+    return (
+      <div className="container mt-5 text-center">
+        <h1 className="text-danger">403 Forbidden</h1>
+        <p>คุณไม่มีสิทธิ์เข้าถึงหน้านี้</p>
+        <p className="text-muted">Role ของคุณ: {role}</p>
+      </div>
+    );
+  }
 
-    // มีสิทธิ์: แสดงผลคอมโพเนนต์ที่ส่งมา
-    return <Component />;
+  // ผ่านทุกเงื่อนไข
+  return children;
 };
 
 export default PrivateRoute;
