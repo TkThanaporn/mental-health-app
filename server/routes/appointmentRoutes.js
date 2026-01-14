@@ -4,7 +4,7 @@ const router = express.Router();
 const db = require('../config/db');
 const { authMiddleware, authorizeRole } = require('../middleware/auth');
 
-// ✅ เพิ่ม: นำเข้า Service ของ Google Calendar
+// ✅ นำเข้า Service ของ Google Calendar
 const { createCalendarEvent } = require('../services/googleCalendarService');
 
 // @route   POST api/appointments
@@ -86,9 +86,8 @@ router.post('/', authMiddleware, authorizeRole(['Student']), async (req, res) =>
     }
 });
 
-
 // @route   PUT api/appointments/:id/status
-// @desc    P6.2: Psychologist confirms or cancels an appointment (1.3.3.5.1, 1.3.3.5.2)
+// @desc    P6.2: Psychologist confirms or cancels an appointment
 router.put('/:id/status', authMiddleware, authorizeRole(['Psychologist']), async (req, res) => {
     const { id } = req.params;
     const { status } = req.body; // 'Confirmed' or 'Cancelled'
@@ -117,6 +116,38 @@ router.put('/:id/status', authMiddleware, authorizeRole(['Psychologist']), async
         res.status(500).send('Server error.');
     }
 });
-    
+
+// ✅ เพิ่ม Route ใหม่: ดึงรายการนัดหมายทั้งหมดของนักจิตวิทยา (สำหรับ Dashboard)
+// @route   GET api/appointments
+router.get('/', authMiddleware, authorizeRole(['Psychologist']), async (req, res) => {
+    try {
+        const psychologist_id = req.user.id;
+
+        // Query ดึงข้อมูลนัดหมาย + ชื่อนักเรียน (Join Table)
+        const sql = `
+            SELECT 
+                a.appointment_id, 
+                a.appointment_date, 
+                a.appointment_time, 
+                a.type, 
+                a.topic, 
+                a.status,
+                u.fullname AS student_name,
+                u.email AS student_email,
+                u.phone_number
+            FROM Appointments a
+            JOIN Users u ON a.student_id = u.user_id
+            WHERE a.psychologist_id = ?
+            ORDER BY a.appointment_date DESC, a.appointment_time ASC
+        `;
+
+        const [appointments] = await db.execute(sql, [psychologist_id]);
+        res.json(appointments);
+
+    } catch (err) {
+        console.error("FETCH APPOINTMENTS ERROR:", err.message);
+        res.status(500).send('Server error.');
+    }
+});
 
 module.exports = router;
