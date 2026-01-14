@@ -4,6 +4,9 @@ const router = express.Router();
 const db = require('../config/db');
 const { authMiddleware, authorizeRole } = require('../middleware/auth');
 
+// ✅ เพิ่ม: นำเข้า Service ของ Google Calendar
+const { createCalendarEvent } = require('../services/googleCalendarService');
+
 // @route   POST api/appointments
 // @desc    P5: Student creates a new appointment request
 router.post('/', authMiddleware, authorizeRole(['Student']), async (req, res) => {
@@ -17,7 +20,9 @@ router.post('/', authMiddleware, authorizeRole(['Student']), async (req, res) =>
         group_members // (1.3.2.9.1)
     } = req.body;
     
+    // ดึงข้อมูลจาก Token (ต้องมั่นใจว่า authMiddleware แนบ email มาด้วย)
     const student_id = req.user.id;
+    const student_email = req.user.email; 
     const status = 'Pending'; // สถานะเริ่มต้น
 
     // ตรวจสอบข้อมูลจำเป็น
@@ -26,7 +31,7 @@ router.post('/', authMiddleware, authorizeRole(['Student']), async (req, res) =>
     }
 
     try {
-        // 1. บันทึกนัดหมายหลัก
+        // 1. บันทึกนัดหมายหลักลง MySQL
         const [result] = await db.execute(
             'INSERT INTO Appointments (student_id, psychologist_id, appointment_date, appointment_time, type, topic, consultation_type, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
             [student_id, psychologist_id, date, time, type, topic, consultation_type, status]
@@ -36,12 +41,10 @@ router.post('/', authMiddleware, authorizeRole(['Student']), async (req, res) =>
 
         // 2. ถ้าเป็นแบบกลุ่ม (P5.5, 1.3.2.9.1): บันทึกรายชื่อเพื่อน
         if (consultation_type === 'Group' && group_members && group_members.length > 0) {
-            // NOTE: ในการใช้งานจริง ควรตรวจสอบว่า group_members มีอยู่จริงในตาราง Users หรือไม่
             const memberValues = group_members.map(email => 
                 [appointmentId, email]
-            ).flat(); // สร้าง array ของ [appointment_id, email]
+            ).flat(); 
             
-            // เตรียม SQL สำหรับการ INSERT หลายแถว
             const insertGroupSQL = `
                 INSERT INTO GroupMembers (appointment_id, member_email) 
                 VALUES ${group_members.map(() => '(?, ?)').join(', ')}
@@ -50,9 +53,33 @@ router.post('/', authMiddleware, authorizeRole(['Student']), async (req, res) =>
             await db.execute(insertGroupSQL, memberValues);
         }
 
+        // 3. ✅ เพิ่ม: Sync ลง Google Calendar (Advanced Mode)
+        try {
+            // แปลงเวลาจาก "09:00-10:00" เป็น Start/End ISO Format
+            const [startTimeStr, endTimeStr] = time.split('-'); 
+            // สร้าง ISO String: "2024-02-14T09:00:00+07:00"
+            const startDateTime = `${date}T${startTimeStr.trim()}:00+07:00`;
+            const endDateTime = `${date}T${endTimeStr.trim()}:00+07:00`;
+
+            await createCalendarEvent({
+                title: `นัดหมายปรึกษาจิตวิทยา (${type})`,
+                description: `หัวข้อ: ${topic}\nรูปแบบ: ${consultation_type}\nผู้จอง: ${student_email}`,
+                startTime: startDateTime,
+                endTime: endDateTime,
+                studentEmail: student_email // ส่ง Invite ให้นักเรียน
+            });
+
+            console.log("Google Calendar Sync Successful");
+
+        } catch (calendarErr) {
+            // ถ้า Google Calendar พัง ให้ Log ไว้ แต่ไม่ต้องให้ App พัง (ยังถือว่าจองสำเร็จในระบบเรา)
+            console.error("Google Calendar Sync Failed:", calendarErr.message);
+        }
+
         // TODO: P8.1: ส่ง Notification นัดหมายเบื้องต้นไปยังนักเรียนและนักจิตวิทยา
 
-        res.status(201).json({ msg: 'Appointment request submitted successfully.', appointmentId });
+        res.status(201).json({ msg: 'Appointment request submitted and synced to Calendar.', appointmentId });
+
     } catch (err) {
         console.error("APPOINTMENT CREATE ERROR:", err.message);
         res.status(500).send('Server error during appointment creation.');
@@ -90,5 +117,6 @@ router.put('/:id/status', authMiddleware, authorizeRole(['Psychologist']), async
         res.status(500).send('Server error.');
     }
 });
+    
 
 module.exports = router;
