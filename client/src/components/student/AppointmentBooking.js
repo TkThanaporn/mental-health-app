@@ -1,13 +1,10 @@
 // client/src/components/student/AppointmentBooking.js
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Container, Form, Button, Card, Alert, Row, Col, Badge } from 'react-bootstrap';
+import { Container, Form, Button, Card, Alert, Row, Col } from 'react-bootstrap';
 
 const AppointmentBooking = () => {
-    // เก็บข้อมูลนักจิตวิทยา
     const [psycho, setPsycho] = useState(null); 
-    
-    // ข้อมูล Form
     const [formData, setFormData] = useState({ 
         date: '', 
         time: '', 
@@ -18,11 +15,8 @@ const AppointmentBooking = () => {
     
     const [message, setMessage] = useState(null);
     const [groupMembers, setGroupMembers] = useState(['']); 
-    
-    // ✅ เพิ่ม: State สำหรับเก็บช่วงเวลาที่ไม่ว่าง (Busy Slots)
     const [busySlots, setBusySlots] = useState([]);
 
-    // ✅ เพิ่ม: รายการเวลาที่เปิดให้บริการ (กำหนดตายตัว หรือดึงจาก Backend ก็ได้)
     const timeSlots = [
         "09:00-10:00", "10:00-11:00", "11:00-12:00",
         "13:00-14:00", "14:00-15:00", "15:00-16:00"
@@ -32,20 +26,15 @@ const AppointmentBooking = () => {
         fetchPsychologist();
     }, []);
 
-    // ✅ เพิ่ม: เมื่อวันที่เปลี่ยน ให้เช็คว่าวันนั้นมีเวลาไหนไม่ว่างบ้าง
     useEffect(() => {
         if (formData.date) {
             checkAvailability(formData.date);
         }
     }, [formData.date]);
 
-    // ฟังก์ชันจำลองการเช็คเวลาว่าง (ในระบบจริงต้องยิง API ไปถาม Backend)
     const checkAvailability = async (selectedDate) => {
-        // Reset ก่อน
         setBusySlots([]);
-
-        // ตัวอย่าง Logic (Mock): สมมติว่าถ้านักเรียนเลือกวันที่ 14 เดือนกุมภาพันธ์ เวลา 10-11 จะไม่ว่าง
-        // *ในการใช้งานจริง คุณต้องสร้าง API GET /api/appointments/busy?date=... มาใช้ตรงนี้*
+        // Mock Data: วันที่ 14 เดือน 2 เวลา 10-11 ไม่ว่าง
         if (selectedDate.includes('2024-02-14')) {
             setBusySlots(["10:00-11:00"]); 
         }
@@ -54,8 +43,9 @@ const AppointmentBooking = () => {
     const fetchPsychologist = async () => {
         try {
             const token = localStorage.getItem('token');
+            // ✅ แก้ไข Header ให้ตรงกับ Backend (x-auth-token)
             const res = await axios.get('http://localhost:5000/api/psychologists/available', {
-                headers: { Authorization: `Bearer ${token}` } // แก้ไข Header ให้ถูกต้อง
+                headers: { 'x-auth-token': token } 
             });
             setPsycho(res.data);
         } catch (err) {
@@ -67,13 +57,11 @@ const AppointmentBooking = () => {
     const handleFormChange = (e) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
-        
         if (name === 'consultation_type' && value === 'Individual') {
             setGroupMembers(['']);
         }
     };
 
-    // ฟังก์ชันจัดการรายชื่อเพื่อน (แก้ไขให้ทำงานถูกต้อง)
     const handleGroupMemberChange = (index, value) => {
         const newMembers = [...groupMembers];
         newMembers[index] = value;
@@ -84,18 +72,14 @@ const AppointmentBooking = () => {
         setGroupMembers(groupMembers.filter((_, index) => index !== indexToRemove));
     };
 
-    // ✅ ฟังก์ชันสร้างลิงก์ Google Calendar แบบ Client-side
     const handleAddToGoogleCalendar = () => {
         if (!formData.date || !formData.time) return;
-        
         const [startT, endT] = formData.time.split('-');
         const formatTime = (t) => t.trim().replace(':', '') + '00';
         const dateStr = formData.date.replace(/-/g, '');
-        
         const dates = `${dateStr}T${formatTime(startT)}/${dateStr}T${formatTime(endT)}`;
         const title = encodeURIComponent(`นัดหมายปรึกษาจิตวิทยา (${formData.type})`);
         const details = encodeURIComponent(`หัวข้อ: ${formData.topic}`);
-        
         window.open(`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${dates}&details=${details}`, '_blank');
     };
 
@@ -112,27 +96,24 @@ const AppointmentBooking = () => {
                 group_members: formData.consultation_type === 'Group' ? groupMembers.filter(m => m.trim() !== '') : []
             };
             
+            // ✅ แก้ไข Header ให้ตรงกับ Backend (x-auth-token)
             await axios.post('http://localhost:5000/api/appointments', dataToSend, { 
-                headers: { Authorization: `Bearer ${token}` } // แก้ไข Header
+                headers: { 'x-auth-token': token } 
             });
             
             setMessage({ type: 'success', text: 'ส่งคำขอนัดหมายสำเร็จและซิงค์ลงปฏิทินเรียบร้อยแล้ว!' });
-            // ไม่ต้องล้าง Form ทันที เผื่อ user อยากกด Add to Calendar ปุ่มล่าง
         } catch (err) {
             console.error("Booking Error:", err.response || err);
             setMessage({ type: 'danger', text: 'การจองนัดหมายล้มเหลว หรือเวลานี้อาจถูกจองไปแล้ว' });
         }
     };
 
-    // (ส่วนแสดงผลตารางเวลาเดิม เอาออก หรือซ่อนไว้ก็ได้ เพราะเรามีปุ่มแล้ว)
-    
     if (!psycho) return <Container className="my-5"><p>กำลังดึงข้อมูลนักจิตวิทยา...</p></Container>;
     const psychoName = psycho.fullname || 'นักจิตวิทยาหลัก';
 
     return (
         <Container className="my-5">
             <h2 className="text-primary mb-4">🗓️ จองคำปรึกษา (1.3.2.8)</h2>
-            
             {message && <Alert variant={message.type}>{message.text}</Alert>}
 
             <Row>
@@ -146,7 +127,6 @@ const AppointmentBooking = () => {
                                 เลือกวันและเวลาที่ท่านสะดวกจากปุ่มด้านขวา <br/>
                                 ระบบจะตรวจสอบเวลาว่างให้อัตโนมัติ
                             </p>
-                            {/* ปุ่ม Client-side Google Calendar */}
                             {message && message.type === 'success' && (
                                 <Button variant="outline-danger" className="w-100 mt-3" onClick={handleAddToGoogleCalendar}>
                                     📅 บันทึกลง Google Calendar ของฉัน
@@ -160,19 +140,11 @@ const AppointmentBooking = () => {
                     <Card className="shadow-sm border-0">
                         <Card.Body className="p-4">
                             <Form onSubmit={handleSubmit}>
-                                {/* 1. วันที่ */}
                                 <Form.Group className="mb-4">
                                     <Form.Label className="fw-bold">1. เลือกวันที่ต้องการปรึกษา</Form.Label>
-                                    <Form.Control 
-                                        type="date" 
-                                        name="date" 
-                                        value={formData.date} 
-                                        onChange={handleFormChange} 
-                                        required 
-                                    />
+                                    <Form.Control type="date" name="date" value={formData.date} onChange={handleFormChange} required />
                                 </Form.Group>
 
-                                {/* 2. เลือกเวลา (แบบปุ่ม Grid) */}
                                 <Form.Group className="mb-4">
                                     <Form.Label className="fw-bold">2. เลือกช่วงเวลา (Time Slots)</Form.Label>
                                     {!formData.date ? (
@@ -186,7 +158,7 @@ const AppointmentBooking = () => {
                                                     <Button
                                                         key={slot}
                                                         variant={isSelected ? "primary" : (isBusy ? "secondary" : "outline-primary")}
-                                                        disabled={isBusy} // 👈 ถ้าไม่ว่าง ปุ่มจะกดไม่ได้
+                                                        disabled={isBusy}
                                                         onClick={() => setFormData({ ...formData, time: slot })}
                                                         style={{ minWidth: '130px', opacity: isBusy ? 0.6 : 1 }}
                                                     >
@@ -202,7 +174,6 @@ const AppointmentBooking = () => {
 
                                 <hr className="my-4"/>
 
-                                {/* 3. ข้อมูลเพิ่มเติม */}
                                 <Row>
                                     <Col md={6}>
                                         <Form.Group className="mb-3">
@@ -224,18 +195,12 @@ const AppointmentBooking = () => {
                                     </Col>
                                 </Row>
 
-                                {/* รายชื่อเพื่อน (กรณีกลุ่ม) */}
                                 {formData.consultation_type === 'Group' && (
                                     <div className="bg-light p-3 rounded mb-3">
                                         <Form.Label>รายชื่อเพื่อนร่วมกลุ่ม</Form.Label>
                                         {groupMembers.map((member, index) => (
                                             <div key={index} className="d-flex mb-2 gap-2">
-                                                <Form.Control
-                                                    type="email"
-                                                    placeholder={`อีเมลเพื่อนคนที่ ${index + 1}`}
-                                                    value={member}
-                                                    onChange={(e) => handleGroupMemberChange(index, e.target.value)}
-                                                />
+                                                <Form.Control type="email" placeholder={`อีเมลเพื่อนคนที่ ${index + 1}`} value={member} onChange={(e) => handleGroupMemberChange(index, e.target.value)} />
                                                 {groupMembers.length > 1 && (
                                                     <Button variant="outline-danger" onClick={() => removeGroupMember(index)}>-</Button>
                                                 )}
@@ -245,7 +210,6 @@ const AppointmentBooking = () => {
                                     </div>
                                 )}
 
-                                {/* 4. หัวข้อ */}
                                 <Form.Group className="mb-4">
                                     <Form.Label>หัวข้อ/ปัญหาเบื้องต้น</Form.Label>
                                     <Form.Control as="textarea" rows={3} name="topic" value={formData.topic} onChange={handleFormChange} required placeholder="เช่น เครียดเรื่องเรียน, ปัญหาครอบครัว..." />
