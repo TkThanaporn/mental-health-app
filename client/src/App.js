@@ -1,12 +1,13 @@
 // client/src/App.js
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+// 1. เพิ่ม Navigate เข้ามาเพื่อใช้สำหรับการ Redirect
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 import { AuthProvider } from './context/AuthContext';
 
 // Public pages
-import WelcomePage from './components/common/WelcomePage';
+// import WelcomePage from './components/common/WelcomePage'; // 2. ปิดการใช้งานหน้า Welcome
 import Login from './components/auth/Login';
 import Register from './components/auth/Register';
 
@@ -28,7 +29,10 @@ const App = () => {
         <Routes>
 
           {/* ===== Public Routes ===== */}
-          <Route path="/" element={<WelcomePage />} />
+          
+          {/* 3. แก้ไขตรงนี้: เมื่อเข้าหน้าแรก (/) ให้กระโดดไปหน้า /login ทันที */}
+          <Route path="/" element={<Navigate to="/login" replace />} />
+          
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
 
