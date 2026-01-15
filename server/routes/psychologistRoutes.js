@@ -1,24 +1,23 @@
-// server/routes/psychologistRoutes.js
-const THE_ONE_PSYCHOLOGIST_ID = 2; // ❗ ตรวจสอบให้ตรงกับ user_id ในตาราง users
+const express = require('express');
+const router = express.Router();
+const db = require('../config/db');
 
+// GET: ดึงรายชื่อนักจิตวิทยาที่ "ว่าง" (หรือทั้งหมด)
 router.get('/available', async (req, res) => {
     try {
-        const [psycho] = await db.execute(`
-            SELECT 
-                p.psychologist_id, 
-                u.fullname,  -- ✅ ใช้ fullname ตามโครงสร้างตารางของคุณ
-                p.available_settings 
-            FROM PsychologistProfiles p 
-            JOIN Users u ON u.user_id = p.psychologist_id
-            WHERE p.psychologist_id = ?
-        `, [THE_ONE_PSYCHOLOGIST_ID]);
+        console.log("🔍 Fetching psychologists...");
         
-        if (psycho.length === 0) {
-            return res.status(404).json({ msg: 'ไม่พบโปรไฟล์นักจิตวิทยา' });
-        }
-        res.json(psycho[0]);
+        // ดึงเฉพาะคนที่เป็น Psychologist
+        const sql = `SELECT user_id, fullname, email FROM users WHERE role = 'Psychologist'`;
+        const [rows] = await db.query(sql);
+
+        console.log(`✅ Found ${rows.length} psychologists`);
+        res.json(rows);
+
     } catch (err) {
-        console.error("ERROR:", err.message);
-        res.status(500).send('Server error.');
+        console.error("❌ FETCH PSYCHOLOGISTS ERROR:", err.message);
+        res.status(500).send('Server Error');
     }
 });
+
+module.exports = router;

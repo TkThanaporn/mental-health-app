@@ -1,73 +1,170 @@
-// client/src/components/psychologist/AppointmentManager.js
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Container, Card, Button, Row, Col, Alert } from 'react-bootstrap';
+import { Container, Card, Button, Row, Col, Alert, Badge, Modal } from 'react-bootstrap';
+import { useAuth } from '../../context/AuthContext'; // ✅ เรียกใช้ useAuth เพื่อ Logout
+import { jwtDecode } from "jwt-decode"; 
+import ChatRoom from '../common/ChatRoom'; 
 
 const AppointmentManager = () => {
+    const { logout } = useAuth(); // ✅ ดึงฟังก์ชัน logout มาใช้
     const [appointments, setAppointments] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
+    
+    // State สำหรับแชท
+    const [showChat, setShowChat] = useState(false);
+    const [selectedChatAppt, setSelectedChatAppt] = useState(null);
+    const [currentUserId, setCurrentUserId] = useState(null);
+
+    // State สำหรับดูผลประเมิน
+    const [showAssessment, setShowAssessment] = useState(false);
+    const [assessmentData, setAssessmentData] = useState(null);
+    const [selectedStudentName, setSelectedStudentName] = useState("");
 
     useEffect(() => {
         fetchAppointments();
+        const token = localStorage.getItem('token');
+        if (token) {
+            try {
+                const decoded = jwtDecode(token);
+                const userObj = decoded.user || decoded;
+                setCurrentUserId(userObj.id || userObj.user_id);
+            } catch (e) { console.error("Token Error", e); }
+        }
     }, []);
 
     const fetchAppointments = async () => {
-        setLoading(true);
         try {
             const token = localStorage.getItem('token');
-            const res = await axios.get('http://localhost:5000/api/psychologists/appointments', {
-                headers: { 'x-auth-token': token }
+            const res = await axios.get('http://localhost:5000/api/appointments', {
+                headers: { 'x-auth-token': token } 
             });
             setAppointments(res.data);
             setLoading(false);
         } catch (err) {
-            console.error(err);
-            setError("Failed to fetch appointments.");
             setLoading(false);
         }
     };
 
     const handleStatusChange = async (id, status) => {
+        if (!window.confirm(`ยืนยันการเปลี่ยนสถานะ?`)) return;
         try {
             const token = localStorage.getItem('token');
-            await axios.put(`http://localhost:5000/api/appointments/${id}/status`, { status }, {
+            await axios.put(`http://localhost:5000/api/appointments/${id}/status`, { status }, { headers: { 'x-auth-token': token } });
+            fetchAppointments();
+        } catch (err) { alert(`Error updating status`); }
+    };
+
+    const openChat = (appt) => {
+        setSelectedChatAppt(appt);
+        setShowChat(true);
+    };
+
+    const openAssessment = async (studentId, studentName) => {
+        setSelectedStudentName(studentName);
+        try {
+            const token = localStorage.getItem('token');
+            const res = await axios.get(`http://localhost:5000/api/assessments/student/${studentId}`, {
                 headers: { 'x-auth-token': token }
             });
-            alert(`Appointment ${id} ${status} successfully.`);
-            fetchAppointments(); // Refresh list 
+            setAssessmentData(res.data);
+            setShowAssessment(true);
         } catch (err) {
-            setError(`Failed to update status: ${status}`);
+            alert("ไม่สามารถดึงข้อมูลผลประเมินได้");
         }
     };
 
-    if (loading) return <Container className="my-4"><p>Loading appointments...</p></Container>;
-    if (error) return <Container className="my-4"><Alert variant="danger">{error}</Alert></Container>;
+    const getStatusVariant = (status) => {
+        switch (status) {
+            case 'Confirmed': return 'success';
+            case 'Cancelled': return 'danger';
+            case 'Pending': return 'warning';
+            default: return 'secondary';
+        }
+    };
+
+    if (loading) return <p className="text-center mt-4">กำลังโหลด...</p>;
 
     return (
         <Container className="my-4">
-            <h2>จัดการนัดหมาย (1.3.3.5)</h2>
-            {appointments.length === 0 && <p>No pending appointments.</p>}
-            {/* ... (Render appointment cards) ... */}
+            <div className="d-flex justify-content-between align-items-center mb-4">
+                <h2 className="text-primary">📅 จัดการนัดหมาย & แชท</h2>
+                <div>
+                    {/* ✅ เพิ่มปุ่มแก้ไขโปรไฟล์ สำหรับนักจิตวิทยา */}
+                    <Button variant="outline-primary" href="/profile" className="me-2">
+                        👤 แก้ไขโปรไฟล์
+                    </Button>
+                    <Button variant="danger" onClick={logout}>ออกจากระบบ</Button>
+                </div>
+            </div>
+            
             <Row>
                 {appointments.map(app => (
                     <Col md={6} lg={4} key={app.appointment_id} className="mb-4">
-                        <Card>
+                        <Card className="h-100 shadow-sm border-0">
+                            <Card.Header className="d-flex justify-content-between align-items-center bg-white">
+                                <strong>{new Date(app.appointment_date).toLocaleDateString('th-TH')}</strong>
+                                <Badge bg="info" text="dark">{app.appointment_time}</Badge>
+                            </Card.Header>
                             <Card.Body>
-                                <h5>{app.topic}</h5>
-                                <p><strong>Student:</strong> {app.student_name} ({app.education_level})</p>
-                                <p><strong>Status:</strong> {app.status}</p>
-                                {app.status === 'Pending' && (
-                                    <>
-                                        <Button variant="success" size="sm" onClick={() => handleStatusChange(app.appointment_id, 'Confirmed')}>ยืนยัน</Button>
-                                        <Button variant="danger" size="sm" className="ms-2" onClick={() => handleStatusChange(app.appointment_id, 'Cancelled')}>ยกเลิก</Button>
-                                    </>
-                                )}
+                                <Card.Title className="text-primary">{app.topic}</Card.Title>
+                                <p className="mb-1 text-muted">👤 นักเรียน: {app.student_name}</p>
+                                <div className="mt-3">
+                                    <Badge bg={getStatusVariant(app.status)} className="me-2">{app.status}</Badge>
+                                    
+                                    <Button variant="outline-info" size="sm" onClick={() => openAssessment(app.student_id, app.student_name)}>
+                                        📄 ผลประเมิน
+                                    </Button>
+                                </div>
+                                
+                                <hr/>
+
+                                <div className="d-flex justify-content-between">
+                                    {app.status === 'Pending' && (
+                                        <div>
+                                            <Button variant="outline-success" size="sm" className="me-1" onClick={() => handleStatusChange(app.appointment_id, 'Confirmed')}>รับ</Button>
+                                            <Button variant="outline-danger" size="sm" onClick={() => handleStatusChange(app.appointment_id, 'Cancelled')}>ยกเลิก</Button>
+                                        </div>
+                                    )}
+                                    <Button variant="primary" size="sm" onClick={() => openChat(app)}>💬 แชท</Button>
+                                </div>
                             </Card.Body>
                         </Card>
                     </Col>
                 ))}
             </Row>
+
+            <Modal show={showChat} onHide={() => setShowChat(false)} size="lg" centered>
+                <Modal.Header closeButton><Modal.Title>แชทกับ: {selectedChatAppt?.student_name}</Modal.Title></Modal.Header>
+                <Modal.Body className="p-0">
+                    {selectedChatAppt && currentUserId && (
+                        <ChatRoom appointmentId={selectedChatAppt.appointment_id} currentUserId={currentUserId} userName="นักจิตวิทยา" />
+                    )}
+                </Modal.Body>
+            </Modal>
+
+            <Modal show={showAssessment} onHide={() => setShowAssessment(false)} centered>
+                <Modal.Header closeButton>
+                    <Modal.Title>ผลประเมิน: {selectedStudentName}</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    {assessmentData && assessmentData.score !== undefined ? (
+                        <div className="text-center">
+                            <h4>คะแนน PHQ-9</h4>
+                            <h1 className="display-4 fw-bold text-primary">{assessmentData.score}</h1>
+                            <Alert variant={
+                                assessmentData.score < 7 ? 'success' : 
+                                assessmentData.score < 13 ? 'info' : 
+                                assessmentData.score < 19 ? 'warning' : 'danger'
+                            }>
+                                {assessmentData.stress_level}
+                            </Alert>
+                            <small className="text-muted">ทำเมื่อ: {new Date(assessmentData.created_at).toLocaleString('th-TH')}</small>
+                        </div>
+                    ) : (
+                        <Alert variant="secondary" className="text-center">นักเรียนคนนี้ยังไม่เคยทำแบบประเมิน</Alert>
+                    )}
+                </Modal.Body>
+            </Modal>
         </Container>
     );
 };

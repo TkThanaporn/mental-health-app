@@ -1,93 +1,135 @@
-// D:\mental-health-app\server\routes\appointmentRoutes.js
 const express = require('express');
 const router = express.Router();
-const db = require('../config/db');
+const db = require('../config/db'); 
 const { authMiddleware, authorizeRole } = require('../middleware/auth');
 
-// @route   POST api/appointments
-// @desc    P5: Student creates a new appointment request
-router.post('/', authMiddleware, authorizeRole(['Student']), async (req, res) => {
-    const { 
-        psychologist_id, 
-        date, 
-        time, 
-        type, // Online / Onsite (1.3.2.6)
-        topic, // (1.3.2.7)
-        consultation_type, // Individual / Group (1.3.2.9)
-        group_members // (1.3.2.9.1)
-    } = req.body;
-    
-    const student_id = req.user.id;
-    const status = 'Pending'; // สถานะเริ่มต้น
-
-    // ตรวจสอบข้อมูลจำเป็น
-    if (!psychologist_id || !date || !time || !topic) {
-        return res.status(400).json({ msg: 'Please provide all required fields.' });
-    }
-
+// ==========================================
+// 1. GET: ดึงรายการนัดหมาย (สำหรับนักจิตวิทยา)
+// ==========================================
+router.get('/', authMiddleware, authorizeRole(['Psychologist']), async (req, res) => {
     try {
-        // 1. บันทึกนัดหมายหลัก
-        const [result] = await db.execute(
-            'INSERT INTO Appointments (student_id, psychologist_id, appointment_date, appointment_time, type, topic, consultation_type, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-            [student_id, psychologist_id, date, time, type, topic, consultation_type, status]
-        );
-        
-        const appointmentId = result.insertId;
-
-        // 2. ถ้าเป็นแบบกลุ่ม (P5.5, 1.3.2.9.1): บันทึกรายชื่อเพื่อน
-        if (consultation_type === 'Group' && group_members && group_members.length > 0) {
-            // NOTE: ในการใช้งานจริง ควรตรวจสอบว่า group_members มีอยู่จริงในตาราง Users หรือไม่
-            const memberValues = group_members.map(email => 
-                [appointmentId, email]
-            ).flat(); // สร้าง array ของ [appointment_id, email]
-            
-            // เตรียม SQL สำหรับการ INSERT หลายแถว
-            const insertGroupSQL = `
-                INSERT INTO GroupMembers (appointment_id, member_email) 
-                VALUES ${group_members.map(() => '(?, ?)').join(', ')}
-            `;
-            
-            await db.execute(insertGroupSQL, memberValues);
-        }
-
-        // TODO: P8.1: ส่ง Notification นัดหมายเบื้องต้นไปยังนักเรียนและนักจิตวิทยา
-
-        res.status(201).json({ msg: 'Appointment request submitted successfully.', appointmentId });
+        const psychologist_id = req.user.id; 
+        const sql = `
+            SELECT 
+                a.appointment_id, 
+                a.student_id,  -- ✅ เพิ่มบรรทัดนี้: เพื่อให้นักจิตฯ กดดูผลประเมินได้
+                a.appointment_date, 
+                a.appointment_time, 
+                a.type, 
+                a.topic, 
+                a.status,
+                u.fullname AS student_name,
+                u.email AS student_email
+            FROM appointments a
+            JOIN users u ON a.student_id = u.user_id
+            WHERE a.psychologist_id = ?
+            ORDER BY a.appointment_date DESC, a.appointment_time ASC
+        `;
+        const [appointments] = await db.query(sql, [psychologist_id]);
+        res.json(appointments);
     } catch (err) {
-        console.error("APPOINTMENT CREATE ERROR:", err.message);
-        res.status(500).send('Server error during appointment creation.');
+        console.error("❌ FETCH ERROR:", err);
+        res.status(500).json({ message: 'Server error', error: err.message });
     }
 });
 
-
-// @route   PUT api/appointments/:id/status
-// @desc    P6.2: Psychologist confirms or cancels an appointment (1.3.3.5.1, 1.3.3.5.2)
+// ==========================================
+// 2. PUT: อัปเดตสถานะนัดหมาย (รับนัด/ปฏิเสธ)
+// ==========================================
 router.put('/:id/status', authMiddleware, authorizeRole(['Psychologist']), async (req, res) => {
-    const { id } = req.params;
-    const { status } = req.body; // 'Confirmed' or 'Cancelled'
-    const psychologist_id = req.user.id;
-    
-    // ตรวจสอบสถานะ
-    if (!['Confirmed', 'Cancelled'].includes(status)) {
-        return res.status(400).json({ msg: 'Invalid status.' });
-    }
-
     try {
-        const [result] = await db.execute(
-            'UPDATE Appointments SET status = ? WHERE appointment_id = ? AND psychologist_id = ?',
-            [status, id, psychologist_id]
-        );
+        const { status } = req.body; 
+        const appointment_id = req.params.id;
+        console.log(`🔄 Updating Appointment ID: ${appointment_id} to status: ${status}`);
 
-        if (result.affectedRows === 0) {
-            return res.status(404).json({ msg: 'Appointment not found or unauthorized.' });
-        }
-        
-        // TODO: P6.5, P8.1: ส่ง Notification การยืนยัน/ยกเลิกไปยังนักเรียน
+        const sql = `UPDATE appointments SET status = ? WHERE appointment_id = ?`;
+        await db.execute(sql, [status, appointment_id]);
 
-        res.json({ msg: `Appointment status updated to ${status}.` });
+        console.log("✅ Status updated successfully.");
+        res.json({ msg: 'Status updated' });
     } catch (err) {
-        console.error("APPOINTMENT STATUS UPDATE ERROR:", err.message);
-        res.status(500).send('Server error.');
+        console.error("❌ UPDATE STATUS ERROR:", err.message);
+        res.status(500).send('Server error');
+    }
+});
+
+// ==========================================
+// 3. POST: จองนัดหมาย (สำหรับนักเรียน)
+// ==========================================
+router.post('/', authMiddleware, authorizeRole(['Student']), async (req, res) => {
+    try {
+        const student_id = req.user.id;
+        const { psychologist_id, date, time, type, topic, consultation_type, group_members } = req.body;
+
+        // 🛡️ [เพิ่มใหม่] ตรวจสอบว่าทำแบบประเมินหรือยัง?
+        // เช็คในตาราง assessments ว่ามี student_id นี้ไหม
+        const sqlCheck = `SELECT assessment_id FROM assessments WHERE student_id = ? LIMIT 1`;
+        const [assessments] = await db.query(sqlCheck, [student_id]);
+
+        if (assessments.length === 0) {
+            // ถ้ายังไม่ทำ -> ส่ง Error 403 กลับไป (Frontend จะได้รับรู้)
+            return res.status(403).json({ msg: 'กรุณาทำแบบประเมินความเครียดก่อนทำการจองนัดหมาย' });
+        }
+
+        console.log(`📝 New Booking Request from Student ID: ${student_id}`);
+
+        const sqlAppt = `
+            INSERT INTO appointments 
+            (student_id, psychologist_id, appointment_date, appointment_time, type, topic, consultation_type, status) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, 'Pending')
+        `;
+        
+        const [result] = await db.execute(sqlAppt, [
+            student_id, psychologist_id, date, time, type, topic, consultation_type
+        ]);
+
+        const appointment_id = result.insertId;
+
+        if (consultation_type === 'Group' && group_members && group_members.length > 0) {
+            console.log("👥 Adding group members...");
+            const sqlGroup = `INSERT INTO groupmembers (appointment_id, member_email) VALUES ?`;
+            const groupValues = group_members.map(email => [appointment_id, email]);
+            await db.query(sqlGroup, [groupValues]);
+        }
+
+        console.log("✅ Booking saved successfully.");
+        res.json({ msg: 'Appointment booked successfully', appointment_id });
+
+    } catch (err) {
+        console.error("❌ BOOKING ERROR:", err.message);
+        res.status(500).send('Server error: ' + err.message);
+    }
+});
+
+// ==========================================
+// 4. GET: ดึงประวัตินัดหมาย (สำหรับนักเรียนดูเอง)
+// ==========================================
+router.get('/student-history', authMiddleware, authorizeRole(['Student']), async (req, res) => {
+    try {
+        const student_id = req.user.id;
+        console.log(`🔍 Fetching history for Student ID: ${student_id}`);
+
+        const sql = `
+            SELECT 
+                a.appointment_id, 
+                a.appointment_date, 
+                a.appointment_time, 
+                a.type, 
+                a.topic, 
+                a.status,
+                u.fullname AS psychologist_name
+            FROM appointments a
+            JOIN users u ON a.psychologist_id = u.user_id
+            WHERE a.student_id = ?
+            ORDER BY a.appointment_date DESC
+        `;
+
+        const [appointments] = await db.query(sql, [student_id]);
+        res.json(appointments);
+
+    } catch (err) {
+        console.error("❌ FETCH HISTORY ERROR:", err.message);
+        res.status(500).send('Server error');
     }
 });
 
