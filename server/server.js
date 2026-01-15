@@ -25,6 +25,7 @@ app.use('/api/chat', require('./routes/chatRoutes'));
 app.use('/api/assessments', require('./routes/assessmentRoutes'));
 app.use('/api/psychologists', require('./routes/psychologistRoutes'));
 app.use('/api/profile', require('./routes/profileRoutes')); 
+app.use('/api/schedule', require('./routes/scheduleRoutes'));
 
 // ==========================================
 // 2. สร้าง HTTP Server และเชื่อม Socket.io

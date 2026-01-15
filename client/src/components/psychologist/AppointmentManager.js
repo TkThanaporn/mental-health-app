@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Container, Card, Button, Row, Col, Alert, Badge, Modal } from 'react-bootstrap';
-import { useAuth } from '../../context/AuthContext'; // ✅ เรียกใช้ useAuth เพื่อ Logout
+import { useAuth } from '../../context/AuthContext';
 import { jwtDecode } from "jwt-decode"; 
 import ChatRoom from '../common/ChatRoom'; 
 
 const AppointmentManager = () => {
-    const { logout } = useAuth(); // ✅ ดึงฟังก์ชัน logout มาใช้
+    const { logout } = useAuth();
     const [appointments, setAppointments] = useState([]);
     const [loading, setLoading] = useState(true);
     
@@ -86,13 +86,21 @@ const AppointmentManager = () => {
 
     return (
         <Container className="my-4">
+            {/* ✅ ส่วนหัว: รวมปุ่มทั้งหมดไว้ที่นี่ */}
             <div className="d-flex justify-content-between align-items-center mb-4">
                 <h2 className="text-primary">📅 จัดการนัดหมาย & แชท</h2>
                 <div>
-                    {/* ✅ เพิ่มปุ่มแก้ไขโปรไฟล์ สำหรับนักจิตวิทยา */}
+                    {/* ปุ่มจัดการตารางเวลา */}
+                    <Button variant="warning" href="/psychologist/schedule" className="me-2 text-dark">
+                        📅 จัดการตารางเวลา
+                    </Button>
+                    
+                    {/* ปุ่มแก้ไขโปรไฟล์ */}
                     <Button variant="outline-primary" href="/profile" className="me-2">
                         👤 แก้ไขโปรไฟล์
                     </Button>
+                    
+                    {/* ปุ่มออกจากระบบ */}
                     <Button variant="danger" onClick={logout}>ออกจากระบบ</Button>
                 </div>
             </div>

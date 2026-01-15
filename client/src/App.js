@@ -15,12 +15,13 @@ import PrivateRoute from './components/routing/PrivateRoute';
 import AdminDashboard from './components/admin/AdminDashboard';
 import PsychologistDashboard from './components/psychologist/PsychologistDashboard';
 import StudentDashboard from './components/student/StudentDashboard';
-import AssessmentForm from './components/student/AssessmentForm'; // แก้ชื่อ component ให้ตรงกับไฟล์จริง (AssessmentPHQ9 หรือ AssessmentForm)
+import AssessmentForm from './components/student/AssessmentForm'; 
 import AppointmentBooking from './components/student/AppointmentBooking';
 import AppointmentManager from './components/psychologist/AppointmentManager';
-
-// ✅ 1. เพิ่ม Import Profile เข้ามา
 import Profile from './components/common/Profile';
+
+// ✅ 1. Import หน้าจัดการตารางเวลาเข้ามา
+import ScheduleManager from './components/psychologist/ScheduleManager';
 
 const App = () => {
   return (
@@ -33,11 +34,10 @@ const App = () => {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
 
-          {/* ===== ✅ Shared Routes (ใช้ร่วมกันได้ทุก Role) ===== */}
+          {/* ===== Shared Routes (ใช้ร่วมกัน) ===== */}
           <Route
             path="/profile"
             element={
-              // อนุญาตให้เข้าได้ทั้ง Student, Psychologist และ Admin
               <PrivateRoute allowedRoles={['Student', 'Psychologist', 'Admin']}>
                 <Profile />
               </PrivateRoute>
@@ -58,8 +58,7 @@ const App = () => {
             path="/student/assessment"
             element={
               <PrivateRoute allowedRoles={['Student']}>
-                {/* ตรวจสอบชื่อ Component ให้ตรงกับไฟล์ที่คุณสร้าง (AssessmentPHQ9) */}
-                <AssessmentForm /> 
+                <AssessmentForm />
               </PrivateRoute>
             }
           />
@@ -77,19 +76,27 @@ const App = () => {
           <Route
             path="/psychologist/dashboard"
             element={
-              // ใช้ Dashboard ตัวเดียวกับ AppointmentManager หรือแยกกันตามดีไซน์
               <PrivateRoute allowedRoles={['Psychologist']}>
-                <AppointmentManager /> 
+                <AppointmentManager />
               </PrivateRoute>
             }
           />
           
-          {/* ถ้ามี path นี้ซ้ำกับ dashboard ข้างบน ให้เลือกใช้อันใดอันหนึ่งครับ */}
           <Route
             path="/psychologist/appointments"
             element={
               <PrivateRoute allowedRoles={['Psychologist']}>
                 <AppointmentManager />
+              </PrivateRoute>
+            }
+          />
+
+          {/* ✅ 2. เพิ่ม Route สำหรับหน้าจัดการตารางเวลา */}
+          <Route
+            path="/psychologist/schedule"
+            element={
+              <PrivateRoute allowedRoles={['Psychologist']}>
+                <ScheduleManager />
               </PrivateRoute>
             }
           />
