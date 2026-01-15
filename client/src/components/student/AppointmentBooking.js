@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Container, Form, Button, Card, Alert, Row, Col } from 'react-bootstrap';
-import { useNavigate } from 'react-router-dom'; // ✅ 1. เพิ่ม import useNavigate
+import { Container, Form, Button, Card, Alert, Row, Col, Image, Badge } from 'react-bootstrap'; // ✅ เพิ่ม Image, Badge
+import { useNavigate } from 'react-router-dom';
 
 const AppointmentBooking = () => {
-    const navigate = useNavigate(); // ✅ 2. เรียกใช้ hook navigate
+    const navigate = useNavigate();
     const [psycho, setPsycho] = useState(null); 
     const [formData, setFormData] = useState({ 
         date: '', 
@@ -23,19 +23,16 @@ const AppointmentBooking = () => {
         "13:00-14:00", "14:00-15:00", "15:00-16:00"
     ];
 
-    // ✅ 3. เพิ่ม useEffect เพื่อเช็คว่าทำแบบประเมินหรือยัง (ล็อก 2 ชั้น)
     useEffect(() => {
         const checkPrerequisite = async () => {
             try {
                 const token = localStorage.getItem('token');
-                // เรียกเช็คประวัติการประเมินล่าสุด
                 const res = await axios.get('http://localhost:5000/api/assessments/latest', {
                     headers: { 'x-auth-token': token }
                 });
 
-                // ถ้าไม่มีข้อมูลผลประเมิน -> แจ้งเตือนและดีดไปหน้าประเมิน
                 if (!res.data) {
-                    alert("⚠️ คุณจำเป็นต้องทำแบบประเมินสุขภาพจิตก่อนจึงสามารถจองคิวได้");
+                    alert("⚠️ คุณจำเป็นต้องทำแบบประเมินสุขภาพจิตก่อนจองคิวครับ");
                     navigate('/student/assessment'); 
                 }
             } catch (err) {
@@ -58,7 +55,6 @@ const AppointmentBooking = () => {
 
     const checkAvailability = async (selectedDate) => {
         setBusySlots([]);
-        // Mock Data: วันที่ 14 เดือน 2 เวลา 10-11 ไม่ว่าง
         if (selectedDate.includes('2024-02-14')) {
             setBusySlots(["10:00-11:00"]); 
         }
@@ -70,9 +66,8 @@ const AppointmentBooking = () => {
             const res = await axios.get('http://localhost:5000/api/psychologists/available', {
                 headers: { 'x-auth-token': token } 
             });
-            // ถ้าได้ array มา ให้หยิบคนแรก (หรือทำ dropdown เลือกหมอในอนาคต)
             if (Array.isArray(res.data) && res.data.length > 0) {
-                setPsycho(res.data[0]); // หยิบคนแรกมาเป็น Default
+                setPsycho(res.data[0]); 
             }
         } catch (err) {
             console.error("Error fetching psychologist:", err);
@@ -118,7 +113,7 @@ const AppointmentBooking = () => {
             const token = localStorage.getItem('token');
             const dataToSend = {
                 ...formData,
-                psychologist_id: psycho.user_id, // ✅ แก้ไขตรงนี้ให้ใช้ user_id ตาม Database
+                psychologist_id: psycho.user_id, 
                 group_members: formData.consultation_type === 'Group' ? groupMembers.filter(m => m.trim() !== '') : []
             };
             
@@ -127,12 +122,10 @@ const AppointmentBooking = () => {
             });
             
             setMessage({ type: 'success', text: 'ส่งคำขอนัดหมายสำเร็จและซิงค์ลงปฏิทินเรียบร้อยแล้ว!' });
-            // อาจจะเพิ่ม navigate ไปหน้า Dashboard หลังจองเสร็จด้วยก็ได้
             setTimeout(() => navigate('/student/dashboard'), 2000);
 
         } catch (err) {
             console.error("Booking Error:", err.response || err);
-            // ดักจับ Error จาก Backend (กรณี 403 ไม่ได้ทำแบบประเมิน)
             if (err.response && err.response.status === 403) {
                  alert(err.response.data.msg);
                  navigate('/student/assessment');
@@ -143,7 +136,10 @@ const AppointmentBooking = () => {
     };
 
     if (!psycho) return <Container className="my-5"><p>กำลังดึงข้อมูลนักจิตวิทยา...</p></Container>;
+    
+    // ✅ เตรียมข้อมูลรูปภาพและชื่อ
     const psychoName = psycho.fullname || 'นักจิตวิทยาหลัก';
+    const psychoImage = psycho.profile_image || "https://placehold.co/150?text=Psycho"; // ใช้รูป Placeholder ถ้าไม่มีรูปจริง
 
     return (
         <Container className="my-5">
@@ -153,17 +149,41 @@ const AppointmentBooking = () => {
             <Row>
                 <Col md={4} className="mb-4">
                     <Card className="shadow-sm border-0 h-100 bg-light">
-                        <Card.Body>
-                            <h5 className="text-muted">ข้อมูลผู้ให้คำปรึกษา</h5>
+                        <Card.Body className="text-center"> {/* จัดกลางให้สวยงาม */}
+                            <h5 className="text-muted mb-3">ข้อมูลผู้ให้คำปรึกษา</h5>
+                            
+                            {/* ✅ เพิ่มส่วนแสดงรูปภาพโปรไฟล์ */}
+                            <Image 
+                                src={psychoImage} 
+                                roundedCircle 
+                                className="mb-3 shadow-sm"
+                                style={{ width: '120px', height: '120px', objectFit: 'cover', border: '3px solid white' }} 
+                            />
+
                             <h3>{psychoName}</h3>
+                            <Badge bg="info" text="dark" className="mb-3">นักจิตวิทยาประจำศูนย์</Badge>
+
+                            {/* ✅ แสดง Bio (ถ้ามี) */}
+                            {psycho.bio && (
+                                <Alert variant="secondary" className="text-start mt-2">
+                                    <small>"{psycho.bio}"</small>
+                                </Alert>
+                            )}
+
+                            {/* ✅ แสดงเบอร์ติดต่อ (ถ้ามี) */}
+                            {psycho.phone && (
+                                <p className="text-muted small mt-2">📞 ติดต่อ: {psycho.phone}</p>
+                            )}
+
                             <hr />
-                            <p className="small text-muted">
+                            <p className="small text-muted text-start">
                                 เลือกวันและเวลาที่ท่านสะดวกจากปุ่มด้านขวา <br/>
                                 ระบบจะตรวจสอบเวลาว่างให้อัตโนมัติ
                             </p>
+                            
                             {message && message.type === 'success' && (
                                 <Button variant="outline-danger" className="w-100 mt-3" onClick={handleAddToGoogleCalendar}>
-                                    📅 บันทึกลง Google Calendar ของฉัน
+                                    📅 บันทึกลง Google Calendar
                                 </Button>
                             )}
                         </Card.Body>

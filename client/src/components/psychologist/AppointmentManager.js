@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Container, Card, Button, Row, Col, Alert, Badge, Modal } from 'react-bootstrap';
+import { useAuth } from '../../context/AuthContext'; // ✅ เรียกใช้ useAuth เพื่อ Logout
 import { jwtDecode } from "jwt-decode"; 
 import ChatRoom from '../common/ChatRoom'; 
 
 const AppointmentManager = () => {
+    const { logout } = useAuth(); // ✅ ดึงฟังก์ชัน logout มาใช้
     const [appointments, setAppointments] = useState([]);
     const [loading, setLoading] = useState(true);
     
@@ -13,7 +15,7 @@ const AppointmentManager = () => {
     const [selectedChatAppt, setSelectedChatAppt] = useState(null);
     const [currentUserId, setCurrentUserId] = useState(null);
 
-    // ✅ State สำหรับดูผลประเมิน (เพิ่มใหม่)
+    // State สำหรับดูผลประเมิน
     const [showAssessment, setShowAssessment] = useState(false);
     const [assessmentData, setAssessmentData] = useState(null);
     const [selectedStudentName, setSelectedStudentName] = useState("");
@@ -52,13 +54,11 @@ const AppointmentManager = () => {
         } catch (err) { alert(`Error updating status`); }
     };
 
-    // เปิดแชท
     const openChat = (appt) => {
         setSelectedChatAppt(appt);
         setShowChat(true);
     };
 
-    // ✅ ฟังก์ชันเปิดดูผลประเมิน (เพิ่มใหม่)
     const openAssessment = async (studentId, studentName) => {
         setSelectedStudentName(studentName);
         try {
@@ -86,7 +86,16 @@ const AppointmentManager = () => {
 
     return (
         <Container className="my-4">
-            <h2 className="mb-4 text-primary">📅 จัดการนัดหมาย & แชท</h2>
+            <div className="d-flex justify-content-between align-items-center mb-4">
+                <h2 className="text-primary">📅 จัดการนัดหมาย & แชท</h2>
+                <div>
+                    {/* ✅ เพิ่มปุ่มแก้ไขโปรไฟล์ สำหรับนักจิตวิทยา */}
+                    <Button variant="outline-primary" href="/profile" className="me-2">
+                        👤 แก้ไขโปรไฟล์
+                    </Button>
+                    <Button variant="danger" onClick={logout}>ออกจากระบบ</Button>
+                </div>
+            </div>
             
             <Row>
                 {appointments.map(app => (
@@ -102,8 +111,7 @@ const AppointmentManager = () => {
                                 <div className="mt-3">
                                     <Badge bg={getStatusVariant(app.status)} className="me-2">{app.status}</Badge>
                                     
-                                    {/* ✅ ปุ่มดูผลประเมิน */}
-                                    <Button variant="outline-info" size="sm" onClick={() => openAssessment(app.student_id || app.student_email, app.student_name)}> {/* แก้ไขตรงนี้ ต้องมั่นใจว่าใน SQL join user_id มาเป็น student_id */}
+                                    <Button variant="outline-info" size="sm" onClick={() => openAssessment(app.student_id, app.student_name)}>
                                         📄 ผลประเมิน
                                     </Button>
                                 </div>
@@ -125,7 +133,6 @@ const AppointmentManager = () => {
                 ))}
             </Row>
 
-            {/* Modal Chat */}
             <Modal show={showChat} onHide={() => setShowChat(false)} size="lg" centered>
                 <Modal.Header closeButton><Modal.Title>แชทกับ: {selectedChatAppt?.student_name}</Modal.Title></Modal.Header>
                 <Modal.Body className="p-0">
@@ -135,7 +142,6 @@ const AppointmentManager = () => {
                 </Modal.Body>
             </Modal>
 
-            {/* ✅ Modal แสดงผลประเมิน */}
             <Modal show={showAssessment} onHide={() => setShowAssessment(false)} centered>
                 <Modal.Header closeButton>
                     <Modal.Title>ผลประเมิน: {selectedStudentName}</Modal.Title>

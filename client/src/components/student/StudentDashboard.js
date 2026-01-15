@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { Container, Button, Card, Row, Col, Badge, Modal, Alert } from 'react-bootstrap';
 import axios from 'axios';
-import { jwtDecode } from "jwt-decode"; // ต้องใช้เพื่อดึง ID ที่แน่นอน
+import { jwtDecode } from "jwt-decode";
 import ChatRoom from '../common/ChatRoom'; 
 
 const StudentDashboard = () => {
@@ -19,7 +19,6 @@ const StudentDashboard = () => {
     useEffect(() => {
         fetchMyHistory();
         
-        // ดึง ID นักศึกษาจาก Token (เพื่อให้ชัวร์ที่สุด)
         const token = localStorage.getItem('token');
         if (token) {
             try {
@@ -32,7 +31,6 @@ const StudentDashboard = () => {
         }
     }, []);
 
-    // ฟังก์ชันดึงประวัตินัดหมายของตัวเอง
     const fetchMyHistory = async () => {
         try {
             const token = localStorage.getItem('token');
@@ -47,7 +45,6 @@ const StudentDashboard = () => {
         }
     };
 
-    // เปิดหน้าต่างแชท
     const openChat = (appt) => {
         setSelectedChatAppt(appt);
         setShowChat(true);
@@ -69,7 +66,13 @@ const StudentDashboard = () => {
                     <h1>👋 ยินดีต้อนรับนักศึกษา</h1>
                     <p className="text-muted">นี่คือศูนย์รวมบริการสุขภาพจิตของคุณ</p>
                 </div>
-                <Button variant="danger" onClick={logout}>ออกจากระบบ</Button>
+                <div>
+                    {/* ✅ เพิ่มปุ่มแก้ไขโปรไฟล์ ตรงนี้ครับ */}
+                    <Button variant="outline-primary" href="/profile" className="me-2">
+                        👤 แก้ไขโปรไฟล์
+                    </Button>
+                    <Button variant="danger" onClick={logout}>ออกจากระบบ</Button>
+                </div>
             </div>
             
             <hr />
@@ -133,7 +136,6 @@ const StudentDashboard = () => {
                 </Row>
             )}
 
-            {/* Modal สำหรับแชท */}
             <Modal show={showChat} onHide={() => setShowChat(false)} size="lg" centered>
                 <Modal.Header closeButton>
                     <Modal.Title>คุยกับ: {selectedChatAppt?.psychologist_name}</Modal.Title>

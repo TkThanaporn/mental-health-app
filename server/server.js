@@ -4,6 +4,7 @@ const http = require('http');
 const { Server } = require('socket.io'); 
 require('dotenv').config();
 const db = require('./config/db');
+const path = require('path'); // ✅ 1. เพิ่มบรรทัดนี้
 
 // สร้าง Express App
 const app = express();
@@ -11,6 +12,9 @@ const app = express();
 // Middleware
 app.use(cors());
 app.use(express.json()); 
+
+// ✅ 2. เพิ่มบรรทัดนี้ (เพื่อให้เรียกดูรูปผ่าน http://localhost:5000/uploads/xxx.jpg ได้)
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // ==========================================
 // 1. ตั้งค่า Routes (เส้นทาง API) - รวมทุกระบบ
@@ -20,6 +24,7 @@ app.use('/api/appointments', require('./routes/appointmentRoutes'));
 app.use('/api/chat', require('./routes/chatRoutes')); 
 app.use('/api/assessments', require('./routes/assessmentRoutes'));
 app.use('/api/psychologists', require('./routes/psychologistRoutes'));
+app.use('/api/profile', require('./routes/profileRoutes')); 
 
 // ==========================================
 // 2. สร้าง HTTP Server และเชื่อม Socket.io
@@ -44,10 +49,7 @@ io.on('connection', (socket) => {
     });
 
     socket.on('send_message', async (data) => {
-        // ส่งให้ทุกคนในห้อง
         io.to(data.appointmentId).emit('receive_message', data);
-
-        // บันทึกลงฐานข้อมูล
         try {
             const sql = `
                 INSERT INTO chat_messages (appointment_id, sender_id, message_text) 
