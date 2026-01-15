@@ -6,9 +6,12 @@ import { useNavigate } from 'react-router-dom';
 const AppointmentBooking = () => {
     const navigate = useNavigate();
     const [psycho, setPsycho] = useState(null);
-    const [availableSlots, setAvailableSlots] = useState([]); // เก็บเวลาว่างทั้งหมดจาก DB
-    const [dailySlots, setDailySlots] = useState([]); // เก็บเวลาว่างของวันที่เลือก
+    const [availableSlots, setAvailableSlots] = useState([]); 
+    const [dailySlots, setDailySlots] = useState([]); 
     
+    // ✅ เพิ่ม state สำหรับเก็บ schedule_id
+    const [selectedScheduleId, setSelectedScheduleId] = useState(null);
+
     const [formData, setFormData] = useState({ 
         date: '', 
         time: '', 
@@ -40,38 +43,34 @@ const AppointmentBooking = () => {
         checkPrerequisite();
     }, [navigate]);
 
-    // 2. ดึงข้อมูลนักจิตวิทยา และ ตารางงาน
+    // 2. ดึงข้อมูลนักจิตวิทยา
     useEffect(() => {
         fetchPsychologistAndSchedule();
     }, []);
 
-    // 3. เมื่อวันที่เปลี่ยน -> กรองหาเวลาว่างของวันนั้น
+    // 3. กรองหาเวลาว่างเมื่อเลือกวัน
     useEffect(() => {
         if (formData.date && availableSlots.length > 0) {
-            // แปลงวันที่ที่เลือก เป็นรูปแบบที่ตรงกับ DB (หรือเปรียบเทียบ string)
             const slotsForDate = availableSlots.filter(slot => {
-                // slot.date มาจาก DB อาจเป็น format ISO เช่น 2024-02-14T00:00:00.000Z
                 const slotDateStr = new Date(slot.date).toISOString().split('T')[0];
                 return slotDateStr === formData.date;
             });
             setDailySlots(slotsForDate);
-            setFormData(prev => ({ ...prev, time: '' })); // รีเซ็ตเวลาที่เลือก
+            setFormData(prev => ({ ...prev, time: '' })); 
+            setSelectedScheduleId(null); // รีเซ็ต ID เมื่อเปลี่ยนวัน
         }
     }, [formData.date, availableSlots]);
 
     const fetchPsychologistAndSchedule = async () => {
         try {
             const token = localStorage.getItem('token');
-            // 2.1 ดึงข้อมูลนักจิตวิทยา
             const resPsycho = await axios.get('http://localhost:5000/api/psychologists/available', {
                 headers: { 'x-auth-token': token } 
             });
 
             if (Array.isArray(resPsycho.data) && resPsycho.data.length > 0) {
-                const selectedPsycho = resPsycho.data[0]; // ดึงคนแรก (หรือคนที่เลือก)
+                const selectedPsycho = resPsycho.data[0];
                 setPsycho(selectedPsycho);
-
-                // 2.2 ดึงตารางเวลาของนักจิตคนนี้
                 const resSchedule = await axios.get(`http://localhost:5000/api/schedule/psychologist/${selectedPsycho.user_id}`);
                 setAvailableSlots(resSchedule.data);
             }
@@ -99,36 +98,34 @@ const AppointmentBooking = () => {
         setGroupMembers(groupMembers.filter((_, index) => index !== indexToRemove));
     };
 
-    // ✅ ฟังก์ชันสร้างลิงก์ Google Calendar
     const handleAddToGoogleCalendar = () => {
         if (!formData.date || !formData.time) return;
-        
-        // แปลงเวลา "09:00-10:00" เป็นรูปแบบ Google Calendar (YYYYMMDDTHHmmSS)
         const [startT, endT] = formData.time.split('-');
-        const cleanDate = formData.date.replace(/-/g, ''); // 20240214
-        
+        const cleanDate = formData.date.replace(/-/g, '');
         const startTime = `${cleanDate}T${startT.trim().replace(':', '')}00`;
         const endTime = `${cleanDate}T${endT.trim().replace(':', '')}00`;
-        
         const title = encodeURIComponent(`นัดหมายปรึกษาจิตวิทยา (${formData.type})`);
-        const details = encodeURIComponent(`หัวข้อ: ${formData.topic}\nกับนักจิตวิทยา: ${psycho.fullname}\nช่องทาง: ${formData.type}`);
-        const location = encodeURIComponent(formData.type === 'Online' ? 'Online Meeting' : 'ห้องให้คำปรึกษา คณะ...');
-
+        const details = encodeURIComponent(`หัวข้อ: ${formData.topic}\nกับนักจิตวิทยา: ${psycho.fullname}`);
+        const location = encodeURIComponent(formData.type === 'Online' ? 'Online Meeting' : 'ห้องให้คำปรึกษา');
         const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${startTime}/${endTime}&details=${details}&location=${location}`;
-        
         window.open(calendarUrl, '_blank');
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!psycho) return setMessage({ type: 'danger', text: 'ไม่พบนักจิตวิทยา' });
-        if (!formData.time) return setMessage({ type: 'danger', text: 'กรุณาเลือกเวลา' });
+        if (!selectedScheduleId) return setMessage({ type: 'danger', text: 'กรุณาเลือกเวลา' }); // เช็คจาก ID แทน
 
         try {
             const token = localStorage.getItem('token');
+            
+            // ✅ สร้าง object dataToSend ให้ตรงกับที่ Backend ต้องการเป๊ะๆ
             const dataToSend = {
-                ...formData,
-                psychologist_id: psycho.user_id, 
+                schedule_id: selectedScheduleId, // สำคัญมาก! ต้องมี
+                psychologist_id: psycho.user_id,
+                note: formData.topic,            // เปลี่ยน topic เป็น note ตาม Backend
+                type: formData.type,
+                consultation_type: formData.consultation_type,
                 group_members: formData.consultation_type === 'Group' ? groupMembers.filter(m => m.trim() !== '') : []
             };
             
@@ -137,13 +134,10 @@ const AppointmentBooking = () => {
             });
             
             setMessage({ type: 'success', text: 'จองสำเร็จ!' });
-            
-            // ✅ ไม่ Redirect ทันที เพื่อให้ผู้ใช้กดปุ่ม Google Calendar ได้ก่อน
-            // setTimeout(() => navigate('/student/dashboard'), 5000); 
 
         } catch (err) {
             console.error("Booking Error:", err);
-            setMessage({ type: 'danger', text: 'การจองล้มเหลว' });
+            setMessage({ type: 'danger', text: err.response?.data?.msg || 'การจองล้มเหลว' });
         }
     };
 
@@ -156,12 +150,10 @@ const AppointmentBooking = () => {
         <Container className="my-5">
             <h2 className="text-primary mb-4">🗓️ จองคำปรึกษา (Real-time)</h2>
             
-            {/* ✅ ส่วนแสดงผลสำเร็จ + ปุ่ม Google Calendar */}
             {message && message.type === 'success' && (
                 <Alert variant="success" className="text-center">
                     <h4>✅ บันทึกนัดหมายเรียบร้อยแล้ว!</h4>
                     <p>อย่าลืมบันทึกลงปฏิทินของคุณเพื่อกันลืมนะครับ</p>
-                    
                     <div className="d-flex justify-content-center gap-2 mt-3">
                         <Button variant="warning" size="lg" onClick={handleAddToGoogleCalendar}>
                             📅 เพิ่มลง Google Calendar
@@ -173,22 +165,15 @@ const AppointmentBooking = () => {
                 </Alert>
             )}
 
-            {/* ถ้าจองสำเร็จแล้ว ซ่อนฟอร์ม เพื่อให้โฟกัสที่ปุ่ม Calendar */}
             {(!message || message.type !== 'success') && (
                 <>
                     {message && <Alert variant={message.type}>{message.text}</Alert>}
-                    
                     <Row>
                         <Col md={4} className="mb-4">
                             <Card className="shadow-sm border-0 h-100 bg-light">
                                 <Card.Body className="text-center">
                                     <h5 className="text-muted mb-3">ข้อมูลผู้ให้คำปรึกษา</h5>
-                                    <Image 
-                                        src={psychoImage} 
-                                        roundedCircle 
-                                        className="mb-3 shadow-sm"
-                                        style={{ width: '120px', height: '120px', objectFit: 'cover', border: '3px solid white' }} 
-                                    />
+                                    <Image src={psychoImage} roundedCircle className="mb-3 shadow-sm" style={{ width: '120px', height: '120px', objectFit: 'cover', border: '3px solid white' }} />
                                     <h3>{psychoName}</h3>
                                     <Badge bg="info" text="dark" className="mb-3">นักจิตวิทยาประจำศูนย์</Badge>
                                     {psycho.bio && <Alert variant="secondary" className="text-start mt-2"><small>"{psycho.bio}"</small></Alert>}
@@ -210,14 +195,17 @@ const AppointmentBooking = () => {
                                             {!formData.date ? (
                                                 <Alert variant="secondary">กรุณาเลือกวันที่ก่อน เพื่อดูตารางว่าง</Alert>
                                             ) : dailySlots.length === 0 ? (
-                                                <Alert variant="warning">❌ ไม่พบตารางว่างในวันนี้ (กรุณาเลือกวันอื่น)</Alert>
+                                                <Alert variant="warning">❌ ไม่พบตารางว่างในวันนี้</Alert>
                                             ) : (
                                                 <div className="d-flex flex-wrap gap-2">
                                                     {dailySlots.map((slot) => (
                                                         <Button
                                                             key={slot.schedule_id}
-                                                            variant={formData.time === slot.time_slot ? "primary" : "outline-primary"}
-                                                            onClick={() => setFormData({ ...formData, time: slot.time_slot })}
+                                                            variant={selectedScheduleId === slot.schedule_id ? "primary" : "outline-primary"}
+                                                            onClick={() => {
+                                                                setFormData({ ...formData, time: slot.time_slot });
+                                                                setSelectedScheduleId(slot.schedule_id); // ✅ เก็บ ID เมื่อกดเลือก
+                                                            }}
                                                         >
                                                             {slot.time_slot}
                                                         </Button>

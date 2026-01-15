@@ -33,12 +33,14 @@ const AppointmentManager = () => {
     const fetchAppointments = async () => {
         try {
             const token = localStorage.getItem('token');
-            const res = await axios.get('http://localhost:5000/api/appointments', {
+            // ✅✅ แก้ไข URL ตรงนี้ให้ถูกต้องแล้วครับ ✅✅
+            const res = await axios.get('http://localhost:5000/api/appointments/psychologist-appointments', {
                 headers: { 'x-auth-token': token } 
             });
             setAppointments(res.data);
             setLoading(false);
         } catch (err) {
+            console.error(err);
             setLoading(false);
         }
     };
@@ -47,7 +49,7 @@ const AppointmentManager = () => {
         if (!window.confirm(`ยืนยันการเปลี่ยนสถานะเป็น ${status}?`)) return;
         try {
             const token = localStorage.getItem('token');
-            await axios.put(`http://localhost:5000/api/appointments/${id}/status`, { status }, { headers: { 'x-auth-token': token } });
+            await axios.put(`http://localhost:5000/api/appointments/status/${id}`, { status }, { headers: { 'x-auth-token': token } });
             fetchAppointments(); 
         } catch (err) { alert(`Error updating status`); }
     };
@@ -70,6 +72,7 @@ const AppointmentManager = () => {
     };
 
     const openChat = (appt) => { setSelectedChatAppt(appt); setShowChat(true); };
+    
     const openAssessment = async (studentId, studentName) => {
         setSelectedStudentName(studentName);
         try {
@@ -79,6 +82,7 @@ const AppointmentManager = () => {
             setShowAssessment(true);
         } catch (err) { alert("ไม่สามารถดึงข้อมูลผลประเมินได้"); }
     };
+    
     const getStatusVariant = (status) => {
         switch (status) { case 'Confirmed': return 'success'; case 'Cancelled': return 'danger'; case 'Pending': return 'warning'; default: return 'secondary'; }
     };
@@ -116,7 +120,7 @@ const AppointmentManager = () => {
                                         <Button variant="outline-info" size="sm" onClick={() => openAssessment(app.student_id, app.student_name)}>📄 ผลประเมิน</Button>
                                     </div>
                                     
-                                    {/* ✅ ปุ่ม Google Calendar (แสดงตลอดเวลา) */}
+                                    {/* ✅ ปุ่ม Google Calendar */}
                                     <Button 
                                         variant="warning" 
                                         size="sm" 

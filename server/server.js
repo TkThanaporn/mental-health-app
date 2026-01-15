@@ -14,13 +14,13 @@ const app = express();
 // ==========================================
 
 app.use(cors({
-  origin: ["http://localhost:3000", "http://localhost:3001"],
+  origin: ["http://localhost:3000", "http://localhost:3001"], // รองรับทั้ง React Port 3000 และ 3001 (เผื่อไว้)
   credentials: true
 }));
 
 app.use(express.json()); 
 
-// ตั้งค่าให้เข้าถึงโฟลเดอร์รูปภาพได้
+// ตั้งค่าให้เข้าถึงโฟลเดอร์รูปภาพได้ (สำหรับโปรไฟล์)
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // ==========================================
@@ -36,6 +36,9 @@ app.use('/api/profile', require('./routes/profileRoutes'));
 // ✅ แก้ไขบรรทัดนี้: เปลี่ยนจาก newsRoutes เป็น news (เพื่อให้ตรงกับชื่อไฟล์ news.js)
 app.use('/api/news', require('./routes/news'));
 
+// ✅ เพิ่มบรรทัดนี้: เพื่อแก้ปัญหา Error 404 (Not Found) ในหน้าตารางเวลา
+app.use('/api/schedule', require('./routes/scheduleRoutes')); 
+
 // ==========================================
 // 3. สร้าง HTTP Server และเชื่อม Socket.io
 // ==========================================
@@ -43,7 +46,7 @@ const server = http.createServer(app);
 
 const io = require("socket.io")(server, {
   cors: {
-    origin: ["http://localhost:3000", "http://localhost:3001"], // อนุญาตทั้งคู่
+    origin: ["http://localhost:3000", "http://localhost:3001"],
     methods: ["GET", "POST"],
     credentials: true
   }
@@ -55,13 +58,15 @@ const io = require("socket.io")(server, {
 io.on('connection', (socket) => {
     console.log(`⚡ User connected: ${socket.id}`);
 
+    // เมื่อ User เข้าห้องแชทตาม Appointment ID
     socket.on('join_room', (appointmentId) => {
         socket.join(appointmentId);
         console.log(`📁 User joined room: ${appointmentId}`);
     });
 
+    // เมื่อมีการส่งข้อความ
     socket.on('send_message', async (data) => {
-        // ส่งข้อความหาทุกคนในห้องนัดหมายนั้นๆ
+        // ส่งข้อความหาทุกคนในห้องนัดหมายนั้นๆ (Real-time)
         io.to(data.appointmentId).emit('receive_message', data);
         
         // บันทึกลง Database
