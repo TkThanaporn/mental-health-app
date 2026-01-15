@@ -10,12 +10,10 @@ const AppointmentManager = () => {
     const [appointments, setAppointments] = useState([]);
     const [loading, setLoading] = useState(true);
     
-    // State สำหรับแชท
+    // State Chat & Assessment
     const [showChat, setShowChat] = useState(false);
     const [selectedChatAppt, setSelectedChatAppt] = useState(null);
     const [currentUserId, setCurrentUserId] = useState(null);
-
-    // State สำหรับดูผลประเมิน
     const [showAssessment, setShowAssessment] = useState(false);
     const [assessmentData, setAssessmentData] = useState(null);
     const [selectedStudentName, setSelectedStudentName] = useState("");
@@ -46,101 +44,110 @@ const AppointmentManager = () => {
     };
 
     const handleStatusChange = async (id, status) => {
-        if (!window.confirm(`ยืนยันการเปลี่ยนสถานะ?`)) return;
+        if (!window.confirm(`ยืนยันการเปลี่ยนสถานะเป็น ${status}?`)) return;
         try {
             const token = localStorage.getItem('token');
             await axios.put(`http://localhost:5000/api/appointments/${id}/status`, { status }, { headers: { 'x-auth-token': token } });
-            fetchAppointments();
+            fetchAppointments(); 
         } catch (err) { alert(`Error updating status`); }
     };
 
-    const openChat = (appt) => {
-        setSelectedChatAppt(appt);
-        setShowChat(true);
+    // ✅ ฟังก์ชันสร้างลิงก์ Google Calendar
+    const openGoogleCalendar = (app) => {
+        if (!app.appointment_time || !app.appointment_date) return alert("ข้อมูลวันเวลาไม่ครบถ้วน");
+
+        const [startT, endT] = app.appointment_time.split('-'); 
+        const dateStr = new Date(app.appointment_date).toISOString().split('T')[0].replace(/-/g, ''); 
+        
+        const startTime = `${dateStr}T${startT.trim().replace(':', '')}00`;
+        const endTime = `${dateStr}T${endT.trim().replace(':', '')}00`;
+        
+        const title = encodeURIComponent(`นัดหมายให้คำปรึกษา: ${app.student_name}`);
+        const details = encodeURIComponent(`หัวข้อ: ${app.topic}\nประเภท: ${app.type}\nนักเรียน: ${app.student_name}`);
+        
+        const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${startTime}/${endTime}&details=${details}`;
+        window.open(url, '_blank');
     };
 
+    const openChat = (appt) => { setSelectedChatAppt(appt); setShowChat(true); };
     const openAssessment = async (studentId, studentName) => {
         setSelectedStudentName(studentName);
         try {
             const token = localStorage.getItem('token');
-            const res = await axios.get(`http://localhost:5000/api/assessments/student/${studentId}`, {
-                headers: { 'x-auth-token': token }
-            });
+            const res = await axios.get(`http://localhost:5000/api/assessments/student/${studentId}`, { headers: { 'x-auth-token': token } });
             setAssessmentData(res.data);
             setShowAssessment(true);
-        } catch (err) {
-            alert("ไม่สามารถดึงข้อมูลผลประเมินได้");
-        }
+        } catch (err) { alert("ไม่สามารถดึงข้อมูลผลประเมินได้"); }
     };
-
     const getStatusVariant = (status) => {
-        switch (status) {
-            case 'Confirmed': return 'success';
-            case 'Cancelled': return 'danger';
-            case 'Pending': return 'warning';
-            default: return 'secondary';
-        }
+        switch (status) { case 'Confirmed': return 'success'; case 'Cancelled': return 'danger'; case 'Pending': return 'warning'; default: return 'secondary'; }
     };
 
     if (loading) return <p className="text-center mt-4">กำลังโหลด...</p>;
 
     return (
         <Container className="my-4">
-            {/* ✅ ส่วนหัว: รวมปุ่มทั้งหมดไว้ที่นี่ */}
             <div className="d-flex justify-content-between align-items-center mb-4">
                 <h2 className="text-primary">📅 จัดการนัดหมาย & แชท</h2>
                 <div>
-                    {/* ปุ่มจัดการตารางเวลา */}
-                    <Button variant="warning" href="/psychologist/schedule" className="me-2 text-dark">
-                        📅 จัดการตารางเวลา
-                    </Button>
-                    
-                    {/* ปุ่มแก้ไขโปรไฟล์ */}
-                    <Button variant="outline-primary" href="/profile" className="me-2">
-                        👤 แก้ไขโปรไฟล์
-                    </Button>
-                    
-                    {/* ปุ่มออกจากระบบ */}
+                    <Button variant="warning" href="/psychologist/schedule" className="me-2 text-dark">📅 จัดการตารางเวลา</Button>
+                    <Button variant="outline-primary" href="/profile" className="me-2">👤 แก้ไขโปรไฟล์</Button>
                     <Button variant="danger" onClick={logout}>ออกจากระบบ</Button>
                 </div>
             </div>
             
-            <Row>
-                {appointments.map(app => (
-                    <Col md={6} lg={4} key={app.appointment_id} className="mb-4">
-                        <Card className="h-100 shadow-sm border-0">
-                            <Card.Header className="d-flex justify-content-between align-items-center bg-white">
-                                <strong>{new Date(app.appointment_date).toLocaleDateString('th-TH')}</strong>
-                                <Badge bg="info" text="dark">{app.appointment_time}</Badge>
-                            </Card.Header>
-                            <Card.Body>
-                                <Card.Title className="text-primary">{app.topic}</Card.Title>
-                                <p className="mb-1 text-muted">👤 นักเรียน: {app.student_name}</p>
-                                <div className="mt-3">
-                                    <Badge bg={getStatusVariant(app.status)} className="me-2">{app.status}</Badge>
+            {appointments.length === 0 ? (
+                <Alert variant="info">ยังไม่มีรายการนัดหมายเข้ามา</Alert>
+            ) : (
+                <Row>
+                    {appointments.map(app => (
+                        <Col md={6} lg={4} key={app.appointment_id} className="mb-4">
+                            <Card className="h-100 shadow-sm border-0">
+                                <Card.Header className="d-flex justify-content-between align-items-center bg-white">
+                                    <strong>{new Date(app.appointment_date).toLocaleDateString('th-TH')}</strong>
+                                    <Badge bg="info" text="dark">{app.appointment_time}</Badge>
+                                </Card.Header>
+                                <Card.Body>
+                                    <Card.Title className="text-primary">{app.topic}</Card.Title>
+                                    <p className="mb-1 text-muted">👤 นักเรียน: {app.student_name}</p>
                                     
-                                    <Button variant="outline-info" size="sm" onClick={() => openAssessment(app.student_id, app.student_name)}>
-                                        📄 ผลประเมิน
+                                    <div className="mt-2 mb-3">
+                                        <Badge bg={getStatusVariant(app.status)} className="me-2">{app.status}</Badge>
+                                        <Button variant="outline-info" size="sm" onClick={() => openAssessment(app.student_id, app.student_name)}>📄 ผลประเมิน</Button>
+                                    </div>
+                                    
+                                    {/* ✅ ปุ่ม Google Calendar (แสดงตลอดเวลา) */}
+                                    <Button 
+                                        variant="warning" 
+                                        size="sm" 
+                                        className="w-100 mb-3 text-dark fw-bold"
+                                        onClick={() => openGoogleCalendar(app)}
+                                    >
+                                        📅 เพิ่มลง Google Calendar
                                     </Button>
-                                </div>
-                                
-                                <hr/>
 
-                                <div className="d-flex justify-content-between">
-                                    {app.status === 'Pending' && (
-                                        <div>
-                                            <Button variant="outline-success" size="sm" className="me-1" onClick={() => handleStatusChange(app.appointment_id, 'Confirmed')}>รับ</Button>
-                                            <Button variant="outline-danger" size="sm" onClick={() => handleStatusChange(app.appointment_id, 'Cancelled')}>ยกเลิก</Button>
-                                        </div>
-                                    )}
-                                    <Button variant="primary" size="sm" onClick={() => openChat(app)}>💬 แชท</Button>
-                                </div>
-                            </Card.Body>
-                        </Card>
-                    </Col>
-                ))}
-            </Row>
+                                    <hr/>
 
+                                    <div className="d-flex justify-content-between gap-1">
+                                        {app.status === 'Pending' && (
+                                            <>
+                                                <Button variant="outline-success" size="sm" onClick={() => handleStatusChange(app.appointment_id, 'Confirmed')}>รับ</Button>
+                                                <Button variant="outline-danger" size="sm" onClick={() => handleStatusChange(app.appointment_id, 'Cancelled')}>ปฏิเสธ</Button>
+                                            </>
+                                        )}
+                                        {app.status === 'Confirmed' && (
+                                             <Button variant="outline-danger" size="sm" onClick={() => handleStatusChange(app.appointment_id, 'Cancelled')}>ยกเลิกนัด</Button>
+                                        )}
+                                        <Button variant="primary" size="sm" onClick={() => openChat(app)} className="ms-auto">💬 แชท</Button>
+                                    </div>
+                                </Card.Body>
+                            </Card>
+                        </Col>
+                    ))}
+                </Row>
+            )}
+
+            {/* Modals */}
             <Modal show={showChat} onHide={() => setShowChat(false)} size="lg" centered>
                 <Modal.Header closeButton><Modal.Title>แชทกับ: {selectedChatAppt?.student_name}</Modal.Title></Modal.Header>
                 <Modal.Body className="p-0">
@@ -149,28 +156,15 @@ const AppointmentManager = () => {
                     )}
                 </Modal.Body>
             </Modal>
-
             <Modal show={showAssessment} onHide={() => setShowAssessment(false)} centered>
-                <Modal.Header closeButton>
-                    <Modal.Title>ผลประเมิน: {selectedStudentName}</Modal.Title>
-                </Modal.Header>
+                <Modal.Header closeButton><Modal.Title>ผลประเมิน: {selectedStudentName}</Modal.Title></Modal.Header>
                 <Modal.Body>
-                    {assessmentData && assessmentData.score !== undefined ? (
+                    {assessmentData ? (
                         <div className="text-center">
-                            <h4>คะแนน PHQ-9</h4>
-                            <h1 className="display-4 fw-bold text-primary">{assessmentData.score}</h1>
-                            <Alert variant={
-                                assessmentData.score < 7 ? 'success' : 
-                                assessmentData.score < 13 ? 'info' : 
-                                assessmentData.score < 19 ? 'warning' : 'danger'
-                            }>
-                                {assessmentData.stress_level}
-                            </Alert>
-                            <small className="text-muted">ทำเมื่อ: {new Date(assessmentData.created_at).toLocaleString('th-TH')}</small>
+                            <h1>{assessmentData.score}</h1>
+                            <Alert variant="info">{assessmentData.stress_level}</Alert>
                         </div>
-                    ) : (
-                        <Alert variant="secondary" className="text-center">นักเรียนคนนี้ยังไม่เคยทำแบบประเมิน</Alert>
-                    )}
+                    ) : <p className="text-center">ไม่มีข้อมูล</p>}
                 </Modal.Body>
             </Modal>
         </Container>

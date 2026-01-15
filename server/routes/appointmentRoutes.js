@@ -1,135 +1,151 @@
 const express = require('express');
 const router = express.Router();
-const db = require('../config/db'); 
-const { authMiddleware, authorizeRole } = require('../middleware/auth');
+const db = require('../config/db');
+const { authMiddleware } = require('../middleware/auth');
 
 // ==========================================
-// 1. GET: ดึงรายการนัดหมาย (สำหรับนักจิตวิทยา)
+// 1. POST: จองนัดหมาย (ตัดเวลาในตารางด้วย)
 // ==========================================
-router.get('/', authMiddleware, authorizeRole(['Psychologist']), async (req, res) => {
-    try {
-        const psychologist_id = req.user.id; 
-        const sql = `
-            SELECT 
-                a.appointment_id, 
-                a.student_id,  -- ✅ เพิ่มบรรทัดนี้: เพื่อให้นักจิตฯ กดดูผลประเมินได้
-                a.appointment_date, 
-                a.appointment_time, 
-                a.type, 
-                a.topic, 
-                a.status,
-                u.fullname AS student_name,
-                u.email AS student_email
-            FROM appointments a
-            JOIN users u ON a.student_id = u.user_id
-            WHERE a.psychologist_id = ?
-            ORDER BY a.appointment_date DESC, a.appointment_time ASC
-        `;
-        const [appointments] = await db.query(sql, [psychologist_id]);
-        res.json(appointments);
-    } catch (err) {
-        console.error("❌ FETCH ERROR:", err);
-        res.status(500).json({ message: 'Server error', error: err.message });
-    }
-});
-
-// ==========================================
-// 2. PUT: อัปเดตสถานะนัดหมาย (รับนัด/ปฏิเสธ)
-// ==========================================
-router.put('/:id/status', authMiddleware, authorizeRole(['Psychologist']), async (req, res) => {
-    try {
-        const { status } = req.body; 
-        const appointment_id = req.params.id;
-        console.log(`🔄 Updating Appointment ID: ${appointment_id} to status: ${status}`);
-
-        const sql = `UPDATE appointments SET status = ? WHERE appointment_id = ?`;
-        await db.execute(sql, [status, appointment_id]);
-
-        console.log("✅ Status updated successfully.");
-        res.json({ msg: 'Status updated' });
-    } catch (err) {
-        console.error("❌ UPDATE STATUS ERROR:", err.message);
-        res.status(500).send('Server error');
-    }
-});
-
-// ==========================================
-// 3. POST: จองนัดหมาย (สำหรับนักเรียน)
-// ==========================================
-router.post('/', authMiddleware, authorizeRole(['Student']), async (req, res) => {
+router.post('/', authMiddleware, async (req, res) => {
     try {
         const student_id = req.user.id;
         const { psychologist_id, date, time, type, topic, consultation_type, group_members } = req.body;
 
-        // 🛡️ [เพิ่มใหม่] ตรวจสอบว่าทำแบบประเมินหรือยัง?
-        // เช็คในตาราง assessments ว่ามี student_id นี้ไหม
-        const sqlCheck = `SELECT assessment_id FROM assessments WHERE student_id = ? LIMIT 1`;
-        const [assessments] = await db.query(sqlCheck, [student_id]);
-
-        if (assessments.length === 0) {
-            // ถ้ายังไม่ทำ -> ส่ง Error 403 กลับไป (Frontend จะได้รับรู้)
-            return res.status(403).json({ msg: 'กรุณาทำแบบประเมินความเครียดก่อนทำการจองนัดหมาย' });
-        }
-
-        console.log(`📝 New Booking Request from Student ID: ${student_id}`);
-
-        const sqlAppt = `
-            INSERT INTO appointments 
-            (student_id, psychologist_id, appointment_date, appointment_time, type, topic, consultation_type, status) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, 'Pending')
+        // 1. ตรวจสอบว่าเวลานี้ยังว่างอยู่ไหม (กันจองชนกันวินาทีสุดท้าย)
+        const checkSql = `
+            SELECT is_available FROM schedules 
+            WHERE psychologist_id = ? AND date = ? AND time_slot = ? AND is_available = 1
         `;
-        
-        const [result] = await db.execute(sqlAppt, [
-            student_id, psychologist_id, date, time, type, topic, consultation_type
-        ]);
+        const [slots] = await db.query(checkSql, [psychologist_id, date, time]);
 
-        const appointment_id = result.insertId;
-
-        if (consultation_type === 'Group' && group_members && group_members.length > 0) {
-            console.log("👥 Adding group members...");
-            const sqlGroup = `INSERT INTO groupmembers (appointment_id, member_email) VALUES ?`;
-            const groupValues = group_members.map(email => [appointment_id, email]);
-            await db.query(sqlGroup, [groupValues]);
+        if (slots.length === 0) {
+            return res.status(400).json({ msg: '❌ เวลานี้ถูกจองไปแล้ว หรือไม่ได้เปิดให้บริการ' });
         }
 
-        console.log("✅ Booking saved successfully.");
-        res.json({ msg: 'Appointment booked successfully', appointment_id });
+        // 2. บันทึกการนัดหมายลงตาราง appointments
+        const sql = `
+            INSERT INTO appointments (student_id, psychologist_id, appointment_date, appointment_time, type, topic, consultation_type, group_members) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `;
+        // แปลง group_members array เป็น string (ถ้ามี)
+        const membersString = JSON.stringify(group_members || []);
+        
+        await db.execute(sql, [student_id, psychologist_id, date, time, type, topic, consultation_type, membersString]);
+
+        // 3. ✅ ตัดเวลาในตาราง schedules (เปลี่ยนเป็น ไม่ว่าง)
+        const updateScheduleSql = `
+            UPDATE schedules 
+            SET is_available = 0 
+            WHERE psychologist_id = ? AND date = ? AND time_slot = ?
+        `;
+        await db.execute(updateScheduleSql, [psychologist_id, date, time]);
+
+        res.status(201).json({ msg: 'Appointment booked successfully' });
 
     } catch (err) {
         console.error("❌ BOOKING ERROR:", err.message);
-        res.status(500).send('Server error: ' + err.message);
+        res.status(500).send('Server Error');
     }
 });
 
 // ==========================================
-// 4. GET: ดึงประวัตินัดหมาย (สำหรับนักเรียนดูเอง)
+// 2. GET: ดึงรายการนัดหมาย (ตาม Role)
 // ==========================================
-router.get('/student-history', authMiddleware, authorizeRole(['Student']), async (req, res) => {
+router.get('/', authMiddleware, async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const role = req.user.role;
+        let sql = '';
+
+        if (role === 'Student') {
+            sql = `
+                SELECT a.*, u.fullname AS psychologist_name 
+                FROM appointments a
+                JOIN users u ON a.psychologist_id = u.user_id
+                WHERE a.student_id = ?
+                ORDER BY a.appointment_date DESC, a.appointment_time ASC
+            `;
+        } else if (role === 'Psychologist') {
+            sql = `
+                SELECT a.*, u.fullname AS student_name, u.profile_image AS student_image
+                FROM appointments a
+                JOIN users u ON a.student_id = u.user_id
+                WHERE a.psychologist_id = ?
+                ORDER BY a.appointment_date DESC, a.appointment_time ASC
+            `;
+        } else {
+            // Admin ดูได้หมด
+            sql = `
+                SELECT a.*, s.fullname AS student_name, p.fullname AS psychologist_name
+                FROM appointments a
+                JOIN users s ON a.student_id = s.user_id
+                JOIN users p ON a.psychologist_id = p.user_id
+                ORDER BY a.appointment_date DESC
+            `;
+            return res.json((await db.query(sql))[0]);
+        }
+
+        const [rows] = await db.query(sql, [userId]);
+        res.json(rows);
+
+    } catch (err) {
+        console.error("❌ FETCH APPOINTMENTS ERROR:", err.message);
+        res.status(500).send('Server Error');
+    }
+});
+
+// ==========================================
+// 3. PUT: อัปเดตสถานะนัดหมาย (รับ/ยกเลิก)
+// ==========================================
+router.put('/:id/status', authMiddleware, async (req, res) => {
+    try {
+        const { status } = req.body;
+        const appointmentId = req.params.id;
+
+        // อัปเดตสถานะ
+        await db.execute('UPDATE appointments SET status = ? WHERE appointment_id = ?', [status, appointmentId]);
+
+        // 🔥 ถ้า "ยกเลิก" (Cancelled) ต้องคืนเวลาให้ว่างเหมือนเดิม
+        if (status === 'Cancelled') {
+            // ดึงข้อมูลนัดหมายเพื่อเอาวันเวลา
+            const [appt] = await db.query('SELECT psychologist_id, appointment_date, appointment_time FROM appointments WHERE appointment_id = ?', [appointmentId]);
+            if (appt.length > 0) {
+                const { psychologist_id, appointment_date, appointment_time } = appt[0];
+                
+                // คืนค่า is_available = 1
+                const dateStr = new Date(appointment_date).toISOString().split('T')[0];
+                await db.execute(`
+                    UPDATE schedules SET is_available = 1 
+                    WHERE psychologist_id = ? AND date = ? AND time_slot = ?
+                `, [psychologist_id, dateStr, appointment_time]);
+            }
+        }
+
+        res.json({ msg: 'Status updated' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Server Error');
+    }
+});
+
+// ==========================================
+// 4. GET: ดึงประวัตินัดหมายของนักเรียน (เฉพาะ Student Dashboard)
+// ==========================================
+router.get('/student-history', authMiddleware, async (req, res) => {
     try {
         const student_id = req.user.id;
-        console.log(`🔍 Fetching history for Student ID: ${student_id}`);
-
         const sql = `
-            SELECT 
-                a.appointment_id, 
-                a.appointment_date, 
-                a.appointment_time, 
-                a.type, 
-                a.topic, 
-                a.status,
-                u.fullname AS psychologist_name
+            SELECT a.*, u.fullname AS psychologist_name 
             FROM appointments a
             JOIN users u ON a.psychologist_id = u.user_id
             WHERE a.student_id = ?
             ORDER BY a.appointment_date DESC
         `;
-
-        const [appointments] = await db.query(sql, [student_id]);
-        res.json(appointments);
-
+        const [rows] = await db.query(sql, [student_id]);
+        res.json(rows);
     } catch (err) {
-        console.error("❌ FETCH HISTORY ERROR:", err.message);
-        res.status(500).send('Server error');
+        console.error(err);
+        res.status(500).send('Server Error');
     }
 });
 

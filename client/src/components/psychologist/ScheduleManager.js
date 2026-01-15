@@ -1,6 +1,7 @@
+/* global google */
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Container, Card, Form, Button, Row, Col, Alert, Badge } from 'react-bootstrap';
+import { Container, Card, Form, Button, Row, Col, Alert, Badge, Spinner } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 
 const ScheduleManager = () => {
@@ -9,6 +10,10 @@ const ScheduleManager = () => {
     const [selectedSlots, setSelectedSlots] = useState([]);
     const [mySlots, setMySlots] = useState([]);
     const [message, setMessage] = useState(null);
+    const [syncing, setSyncing] = useState(false);
+
+    // ✅ Client ID ของคุณ (ใส่ให้เรียบร้อยแล้ว)
+    const GOOGLE_CLIENT_ID = "236473618158-1epvinqshfo3r2p9tgk7uhc6df7hjigo.apps.googleusercontent.com"; 
 
     const availableTimeSlots = [
         "09:00-10:00", "10:00-11:00", "11:00-12:00",
@@ -45,20 +50,16 @@ const ScheduleManager = () => {
         if (!selectedDate || selectedSlots.length === 0) {
             return setMessage({ type: 'warning', text: 'กรุณาเลือกวันที่และอย่างน้อย 1 ช่วงเวลา' });
         }
-
         try {
             const token = localStorage.getItem('token');
             await axios.post('http://localhost:5000/api/schedule', 
                 { date: selectedDate, time_slots: selectedSlots }, 
                 { headers: { 'x-auth-token': token } }
             );
-
             setMessage({ type: 'success', text: '✅ บันทึกตารางงานเรียบร้อยแล้ว!' });
             setSelectedSlots([]); 
             fetchMySlots(); 
-            
             setTimeout(() => setMessage(null), 3000);
-
         } catch (err) {
             console.error(err);
             setMessage({ type: 'danger', text: 'เกิดข้อผิดพลาดในการบันทึก' });
@@ -78,22 +79,81 @@ const ScheduleManager = () => {
         }
     };
 
+    // ==========================================
+    // 🚀 ระบบ Sync Google Calendar (API)
+    // ==========================================
+    const handleGoogleSync = () => {
+        if (mySlots.length === 0) return alert("ไม่มีข้อมูลตารางเวลาให้ซิงค์");
+
+        // เรียก Popup ขอ Login Google
+        const tokenClient = google.accounts.oauth2.initTokenClient({
+            client_id: GOOGLE_CLIENT_ID,
+            scope: 'https://www.googleapis.com/auth/calendar.events',
+            callback: async (tokenResponse) => {
+                if (tokenResponse && tokenResponse.access_token) {
+                    await pushEventsToGoogle(tokenResponse.access_token);
+                }
+            },
+        });
+        tokenClient.requestAccessToken();
+    };
+
+    const pushEventsToGoogle = async (accessToken) => {
+        setSyncing(true);
+        let successCount = 0;
+        try {
+            for (const slot of mySlots) {
+                const [startT, endT] = slot.time_slot.split('-');
+                const dateStr = new Date(slot.date).toISOString().split('T')[0]; 
+                
+                const event = {
+                    'summary': '🟢 เปิดคิวว่าง (Mental Health App)',
+                    'description': 'ช่วงเวลาที่คุณเปิดให้บริการให้คำปรึกษาในระบบ',
+                    'start': {
+                        'dateTime': `${dateStr}T${startT.trim()}:00`,
+                        'timeZone': 'Asia/Bangkok',
+                    },
+                    'end': {
+                        'dateTime': `${dateStr}T${endT.trim()}:00`,
+                        'timeZone': 'Asia/Bangkok',
+                    },
+                    'colorId': '10' // สีเขียว
+                };
+
+                await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(event),
+                });
+                successCount++;
+            }
+            alert(`✅ ซิงค์สำเร็จ! เพิ่ม ${successCount} รายการลงปฏิทินเรียบร้อย`);
+        } catch (error) {
+            console.error("Google Sync Error:", error);
+            alert("เกิดข้อผิดพลาดในการซิงค์ (ตรวจสอบ Console)");
+        } finally {
+            setSyncing(false);
+        }
+    };
+
     return (
         <Container className="my-5">
             <div className="d-flex justify-content-between align-items-center mb-4">
-                <h2 className="text-primary">📅 จัดการตารางเวลา (Set Availability)</h2>
+                <h2 className="text-primary">📅 จัดการตารางเวลา</h2>
                 <Button variant="outline-secondary" onClick={() => navigate('/psychologist/dashboard')}>
                     ⬅️ กลับหน้าหลัก
                 </Button>
             </div>
 
             <Row>
-                <Col md={5}>
+                <Col md={4}>
                     <Card className="shadow-sm border-0 mb-4">
                         <Card.Header className="bg-success text-white">เพิ่มเวลาว่างใหม่</Card.Header>
                         <Card.Body>
                             {message && <Alert variant={message.type}>{message.text}</Alert>}
-                            
                             <Form onSubmit={handleSubmit}>
                                 <Form.Group className="mb-3">
                                     <Form.Label className="fw-bold">เลือกวันที่</Form.Label>
@@ -105,7 +165,6 @@ const ScheduleManager = () => {
                                         required 
                                     />
                                 </Form.Group>
-
                                 <Form.Label className="fw-bold">เลือกช่วงเวลาที่ว่าง</Form.Label>
                                 <div className="d-flex flex-wrap gap-2 mb-4">
                                     {availableTimeSlots.map(slot => (
@@ -119,7 +178,6 @@ const ScheduleManager = () => {
                                         </Button>
                                     ))}
                                 </div>
-
                                 <Button type="submit" variant="success" className="w-100">
                                     💾 บันทึกเวลาว่าง
                                 </Button>
@@ -128,21 +186,36 @@ const ScheduleManager = () => {
                     </Card>
                 </Col>
 
-                <Col md={7}>
+                <Col md={8}>
                     <Card className="shadow-sm border-0">
-                        <Card.Header className="bg-primary text-white">เวลาว่างปัจจุบันของคุณ</Card.Header>
+                        <Card.Header className="bg-primary text-white d-flex justify-content-between align-items-center">
+                            <span>เวลาว่างปัจจุบันของคุณ</span>
+                            <Button 
+                                variant="light" 
+                                size="sm" 
+                                className="fw-bold text-primary"
+                                onClick={handleGoogleSync}
+                                disabled={syncing}
+                            >
+                                {syncing ? (
+                                    <><Spinner animation="border" size="sm" /> กำลังซิงค์...</>
+                                ) : (
+                                    <>🔄 Sync ทั้งหมดเข้า Google Calendar</>
+                                )}
+                            </Button>
+                        </Card.Header>
                         <Card.Body>
                             {mySlots.length === 0 ? (
                                 <p className="text-muted text-center py-4">ยังไม่มีตารางเวลาว่าง</p>
                             ) : (
                                 <div className="table-responsive">
-                                    <table className="table table-hover">
+                                    <table className="table table-hover align-middle">
                                         <thead>
                                             <tr>
                                                 <th>วันที่</th>
                                                 <th>เวลา</th>
                                                 <th>สถานะ</th>
-                                                <th>จัดการ</th>
+                                                <th className="text-end">จัดการ</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -151,7 +224,7 @@ const ScheduleManager = () => {
                                                     <td>{new Date(slot.date).toLocaleDateString('th-TH')}</td>
                                                     <td className="fw-bold text-primary">{slot.time_slot}</td>
                                                     <td><Badge bg="success">ว่าง</Badge></td>
-                                                    <td>
+                                                    <td className="text-end">
                                                         <Button 
                                                             variant="outline-danger" 
                                                             size="sm" 
