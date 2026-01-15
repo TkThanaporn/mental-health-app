@@ -1,0 +1,93 @@
+/* src/components/psychologist/ScheduleManager.css */
+
+.schedule-pcshs-container {
+    background-color: #f8fafc;
+    min-height: 100vh;
+    padding-bottom: 3rem;
+}
+
+/* --- การ์ดสไตล์โมเดิร์น --- */
+.pcshs-card-premium {
+    border: none !important;
+    border-radius: 24px !important;
+    background: #ffffff !important;
+    box-shadow: 0 10px 30px rgba(0, 33, 71, 0.05) !important;
+    transition: all 0.3s ease;
+}
+
+.pcshs-card-premium:hover {
+    box-shadow: 0 15px 35px rgba(0, 33, 71, 0.08) !important;
+}
+
+/* --- ระบบเลือกช่วงเวลา (Grid System) --- */
+.slot-selector-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 12px;
+}
+
+.slot-chip {
+    border: 2px solid #e2e8f0 !important;
+    background: transparent !important;
+    color: #64748b !important;
+    font-weight: 600 !important;
+    border-radius: 14px !important;
+    padding: 12px 5px !important;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.slot-chip:hover {
+    border-color: #F26522 !important;
+    color: #F26522 !important;
+    background: rgba(242, 101, 34, 0.05) !important;
+}
+
+.slot-chip.active {
+    background: #002147 !important;
+    border-color: #002147 !important;
+    color: #ffffff !important;
+    box-shadow: 0 5px 15px rgba(0, 33, 71, 0.2) !important;
+    transform: scale(1.03);
+}
+
+/* --- ตารางแสดงผล --- */
+.pcshs-table-header {
+    background: #002147 !important;
+    color: #ffffff !important;
+    border: none !important;
+    border-radius: 12px 12px 0 0;
+}
+
+.pcshs-row {
+    transition: background 0.2s;
+}
+
+.pcshs-row:hover {
+    background-color: #f1f5f9 !important;
+}
+
+.status-badge-available {
+    background-color: #ecfdf5;
+    color: #059669;
+    font-weight: 700;
+    padding: 6px 14px;
+    border-radius: 50rem;
+    font-size: 0.75rem;
+    border: 1px solid #10b98133;
+}
+
+/* --- ปุ่ม Sync Google --- */
+.btn-google-sync-premium {
+    background: white !important;
+    border: 1px solid #dee2e6 !important;
+    border-radius: 50rem !important;
+    font-weight: 700 !important;
+    transition: all 0.3s ease !important;
+}
+
+.btn-google-sync-premium:hover {
+    background: #fff5f5 !important;
+    border-color: #ea4335 !important;
+    color: #ea4335 !important;
+    box-shadow: 0 4px 10px rgba(234, 67, 53, 0.1) !important;
+}

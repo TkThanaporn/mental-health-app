@@ -1,12 +1,12 @@
 /* global google */
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Card, Form, Button, Row, Col, Alert, Spinner, Table } from 'react-bootstrap';
-import { FaCalendarPlus, FaGoogle, FaTrash, FaClock, FaCheckCircle, FaArrowLeft } from 'react-icons/fa';
+import { Card, Form, Button, Row, Col, Alert, Spinner, Table, Badge } from 'react-bootstrap';
+import { FaCalendarPlus, FaGoogle, FaTrash, FaClock, FaCheckCircle, FaArrowLeft, FaHistory } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 
-// Import CSS
-import './Psychologist.css';
+// Import CSS ใหม่
+import './ScheduleManager.css';
 
 const ScheduleManager = () => {
     const navigate = useNavigate();
@@ -28,21 +28,17 @@ const ScheduleManager = () => {
         fetchMySlots();
     }, []);
 
-    // ✅✅✅ แก้ไขจุดนี้ครับ ✅✅✅
     const fetchMySlots = async () => {
         try {
             const token = localStorage.getItem('token');
-            // เปลี่ยนจาก /api/appointments/... เป็น /api/schedule
             const res = await axios.get('http://localhost:5000/api/schedule', {
                 headers: { 'x-auth-token': token }
             });
             setMySlots(res.data);
         } catch (err) {
             console.error("Error fetching slots:", err);
-            // ถ้า Backend ยังไม่ได้ทำ route นี้ อาจจะ 404
         }
     };
-    // ----------------------------
 
     const toggleSlot = (slot) => {
         if (selectedSlots.includes(slot)) {
@@ -55,7 +51,7 @@ const ScheduleManager = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!selectedDate || selectedSlots.length === 0) {
-            return setMessage({ type: 'warning', text: 'กรุณาเลือกวันที่และอย่างน้อย 1 ช่วงเวลา' });
+            return setMessage({ type: 'warning', text: 'กรุณาเลือกวันที่และช่วงเวลา' });
         }
         try {
             const token = localStorage.getItem('token');
@@ -63,18 +59,17 @@ const ScheduleManager = () => {
                 { date: selectedDate, time_slots: selectedSlots }, 
                 { headers: { 'x-auth-token': token } }
             );
-            setMessage({ type: 'success', text: 'บันทึกตารางงานเรียบร้อยแล้ว!' });
+            setMessage({ type: 'success', text: 'บันทึกตารางงานสำเร็จ!' });
             setSelectedSlots([]); 
             fetchMySlots(); 
             setTimeout(() => setMessage(null), 3000);
         } catch (err) {
-            console.error(err);
-            setMessage({ type: 'danger', text: 'เกิดข้อผิดพลาดในการบันทึก' });
+            setMessage({ type: 'danger', text: 'บันทึกไม่สำเร็จ' });
         }
     };
 
     const handleDelete = async (id) => {
-        if(!window.confirm('คุณต้องการลบเวลานี้ออกใช่หรือไม่?')) return;
+        if(!window.confirm('ลบเวลานี้ออกใช่หรือไม่?')) return;
         try {
             const token = localStorage.getItem('token');
             await axios.delete(`http://localhost:5000/api/schedule/${id}`, {
@@ -86,119 +81,60 @@ const ScheduleManager = () => {
         }
     };
 
-    const handleGoogleSync = () => {
-        if (mySlots.length === 0) return alert("ไม่มีข้อมูลตารางเวลาให้ซิงค์");
-        const tokenClient = google.accounts.oauth2.initTokenClient({
-            client_id: GOOGLE_CLIENT_ID,
-            scope: 'https://www.googleapis.com/auth/calendar.events',
-            callback: async (tokenResponse) => {
-                if (tokenResponse && tokenResponse.access_token) {
-                    await pushEventsToGoogle(tokenResponse.access_token);
-                }
-            },
-        });
-        tokenClient.requestAccessToken({ prompt: 'consent' }); 
-    };
-
-    const pushEventsToGoogle = async (accessToken) => {
-        setSyncing(true);
-        let successCount = 0;
-        try {
-            for (const slot of mySlots) {
-                const [startT, endT] = slot.time_slot.split('-');
-                const dateStr = new Date(slot.date).toISOString().split('T')[0]; 
-                
-                const event = {
-                    'summary': '🟢 เปิดคิวว่าง (Mental Health App)',
-                    'description': 'ช่วงเวลาที่คุณเปิดให้บริการให้คำปรึกษาในระบบ',
-                    'start': { 'dateTime': `${dateStr}T${startT.trim()}:00`, 'timeZone': 'Asia/Bangkok' },
-                    'end': { 'dateTime': `${dateStr}T${endT.trim()}:00`, 'timeZone': 'Asia/Bangkok' },
-                    'colorId': '10' 
-                };
-
-                await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events', {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${accessToken}`,
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(event),
-                });
-                successCount++;
-            }
-            alert(`✅ ซิงค์สำเร็จ! เพิ่ม ${successCount} รายการลงปฏิทินเรียบร้อย`);
-        } catch (error) {
-            console.error("Google Sync Error:", error);
-            alert("เกิดข้อผิดพลาดในการซิงค์");
-        } finally {
-            setSyncing(false);
-        }
-    };
-
-    // ฟังก์ชันช่วยจัดรูปแบบวันที่ให้ปลอดภัย (กัน Error Invalid Date)
-    const formatDate = (dateString) => {
+    // จัดรูปแบบวันที่ภาษาไทยแบบเต็ม
+    const formatDateFull = (dateString) => {
         if (!dateString) return "-";
         const date = new Date(dateString);
-        if (isNaN(date.getTime())) return "วันที่ไม่ถูกต้อง"; // กันเหนียว
         return date.toLocaleDateString('th-TH', { 
-            weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' 
+            weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' 
         });
     };
 
     return (
-        <div className="fade-in-up">
-            <div className="d-flex justify-content-between align-items-center mb-4">
+        <div className="schedule-pcshs-container fade-in-up">
+            {/* Header Area */}
+            <div className="d-flex justify-content-between align-items-center mb-5 mt-2">
                 <div>
-                    <h4 className="fw-bold mb-1 pcshs-header-text">
-                        <FaCalendarPlus className="me-2" /> จัดการตารางเวลาว่าง
-                    </h4>
-                    <p className="text-muted small mb-0">เพิ่มช่วงเวลาที่คุณสะดวกเพื่อให้คำปรึกษา</p>
+                    <h2 className="fw-bold mb-1" style={{ color: '#002147' }}>จัดการตารางปฏิบัติงาน</h2>
+                    <p className="text-muted mb-0">กำหนดช่วงเวลาให้คำปรึกษาสำหรับนักเรียน PCSHS</p>
                 </div>
-                
-                <Button variant="light" className="btn-pcshs-outline" onClick={() => navigate('/psychologist/dashboard')}>
-                    <FaArrowLeft className="me-2" /> กลับหน้าหลัก
+                <Button variant="light" className="rounded-pill px-4 border shadow-sm fw-bold" onClick={() => navigate('/psychologist/dashboard')}>
+                    <FaArrowLeft className="me-2" /> กลับไปหน้าหลัก
                 </Button>
             </div>
 
             <Row className="g-4">
+                {/* ส่วนที่ 1: ฟอร์มเพิ่มเวลา */}
                 <Col lg={4}>
-                    <Card className="pcshs-card h-100">
+                    <Card className="pcshs-card-premium h-100">
                         <Card.Body className="p-4">
-                            <h5 className="fw-bold mb-4 text-dark d-flex align-items-center">
-                                <FaCalendarPlus className="me-2 text-primary" /> เพิ่มเวลาว่างใหม่
+                            <h5 className="fw-bold mb-4 d-flex align-items-center" style={{ color: '#F26522' }}>
+                                <FaCalendarPlus className="me-2" /> ตั้งค่าเวลาว่างใหม่
                             </h5>
                             
-                            {message && (
-                                <Alert variant={message.type} className="rounded-3 py-2 small">
-                                    {message.type === 'success' && <FaCheckCircle className="me-2" />}
-                                    {message.text}
-                                </Alert>
-                            )}
+                            {message && <Alert variant={message.type} className="rounded-3 small py-2">{message.text}</Alert>}
 
                             <Form onSubmit={handleSubmit}>
                                 <Form.Group className="mb-4">
-                                    <Form.Label className="fw-semibold text-muted small">เลือกวันที่</Form.Label>
+                                    <Form.Label className="fw-bold text-muted small">เลือกวันที่ปฏิบัติงาน</Form.Label>
                                     <Form.Control 
                                         type="date" 
                                         value={selectedDate} 
                                         onChange={(e) => setSelectedDate(e.target.value)} 
                                         min={new Date().toISOString().split('T')[0]} 
-                                        required 
-                                        className="py-2 bg-light border-0 fw-bold rounded-3"
+                                        className="py-3 bg-light border-0 fw-bold rounded-4"
                                     />
                                 </Form.Group>
 
                                 <Form.Group className="mb-4">
-                                    <Form.Label className="fw-semibold text-muted small mb-3">เลือกช่วงเวลา</Form.Label>
-                                    <div className="d-flex flex-wrap gap-2">
+                                    <Form.Label className="fw-bold text-muted small mb-3">ช่วงเวลา (เลือกได้หลายช่วง)</Form.Label>
+                                    <div className="slot-selector-grid">
                                         {availableTimeSlots.map(slot => (
                                             <Button 
                                                 key={slot}
-                                                variant={selectedSlots.includes(slot) ? "primary" : "outline-light text-dark border"}
-                                                size="sm"
-                                                className={`px-3 py-2 rounded-pill ${selectedSlots.includes(slot) ? 'shadow-sm btn-pcshs-blue' : ''}`}
+                                                variant="none"
+                                                className={`slot-chip shadow-none ${selectedSlots.includes(slot) ? 'active' : ''}`}
                                                 onClick={() => toggleSlot(slot)}
-                                                style={{ fontSize: '0.85rem' }}
                                             >
                                                 {slot}
                                             </Button>
@@ -206,75 +142,65 @@ const ScheduleManager = () => {
                                     </div>
                                 </Form.Group>
 
-                                <Button type="submit" className="w-100 py-2 btn-pcshs-orange fw-bold">
-                                    บันทึกช่วงเวลา
+                                <Button type="submit" className="w-100 py-3 btn-pcshs-orange fw-bold rounded-pill shadow-sm mt-2">
+                                    ยืนยันการเปิดตาราง
                                 </Button>
                             </Form>
                         </Card.Body>
                     </Card>
                 </Col>
 
+                {/* ส่วนที่ 2: ตารางแสดงรายการ */}
                 <Col lg={8}>
-                    <Card className="pcshs-card h-100">
-                        <Card.Header className="bg-white border-0 py-3 px-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
-                            <h5 className="fw-bold mb-0 text-dark d-flex align-items-center">
-                                <FaClock className="me-2 text-warning" /> ตารางเวลาปัจจุบันของคุณ
+                    <Card className="pcshs-card-premium h-100 overflow-hidden">
+                        <Card.Header className="bg-white border-0 py-4 px-4 d-flex justify-content-between align-items-center">
+                            <h5 className="fw-bold mb-0" style={{ color: '#002147' }}>
+                                <FaClock className="me-2 text-warning" /> รายการที่เปิดให้บริการ
                             </h5>
-                            
-                            <Button 
-                                variant="outline-dark" 
-                                size="sm" 
-                                className="rounded-pill px-3 d-flex align-items-center"
-                                onClick={handleGoogleSync}
-                                disabled={syncing}
-                            >
-                                {syncing ? (
-                                    <><Spinner animation="border" size="sm" className="me-2" /> กำลังซิงค์...</>
-                                ) : (
-                                    <><FaGoogle className="me-2 text-danger" /> Sync Google Calendar</>
-                                )}
+                            <Button className="btn-google-sync-premium px-4 py-2 small shadow-sm d-flex align-items-center">
+                                <FaGoogle className="me-2 text-danger" /> Sync Google Calendar
                             </Button>
                         </Card.Header>
 
                         <Card.Body className="p-0">
                             {mySlots.length === 0 ? (
                                 <div className="text-center py-5">
-                                    <div className="mb-3 text-muted opacity-25" style={{ fontSize: '3rem' }}>📅</div>
-                                    <p className="text-muted">ยังไม่มีตารางเวลาที่เปิดว่างไว้</p>
+                                    <FaHistory size={50} className="text-muted opacity-25 mb-3" />
+                                    <p className="text-muted fw-bold">ไม่พบข้อมูลตารางเวลา</p>
+                                    <small className="text-muted">คุณสามารถเริ่มเปิดตารางได้จากเมนูทางซ้ายมือ</small>
                                 </div>
                             ) : (
                                 <div className="table-responsive">
-                                    <Table hover className="mb-0 align-middle">
-                                        <thead className="bg-light text-muted small text-uppercase">
+                                    <Table hover className="mb-0">
+                                        <thead className="pcshs-table-header small text-uppercase">
                                             <tr>
-                                                <th className="ps-4 py-3 border-0">วันที่</th>
-                                                <th className="py-3 border-0">ช่วงเวลา</th>
-                                                <th className="py-3 border-0 text-center">สถานะ</th>
-                                                <th className="pe-4 py-3 border-0 text-end">จัดการ</th>
+                                                <th className="ps-4 py-3">วันที่ปฏิบัติงาน</th>
+                                                <th className="py-3">ช่วงเวลา</th>
+                                                <th className="py-3 text-center">สถานะ</th>
+                                                <th className="pe-4 py-3 text-end">ลบ</th>
                                             </tr>
                                         </thead>
-                                        <tbody>
+                                        <tbody style={{ borderTop: 'none' }}>
                                             {mySlots.map((slot) => (
-                                                <tr key={slot.schedule_id} className="border-bottom-0">
-                                                    <td className="ps-4 py-3 fw-semibold text-dark">
-                                                        {formatDate(slot.date)}
+                                                <tr key={slot.schedule_id} className="pcshs-row">
+                                                    <td className="ps-4 py-4 fw-bold text-dark">
+                                                        {formatDateFull(slot.date)}
                                                     </td>
-                                                    <td className="py-3 text-primary fw-bold font-monospace">
-                                                        {slot.time_slot || "-"}
+                                                    <td className="py-4">
+                                                        <Badge bg="light" text="primary" className="p-2 border fw-bold font-monospace" style={{ fontSize: '0.9rem' }}>
+                                                            {slot.time_slot}
+                                                        </Badge>
                                                     </td>
-                                                    <td className="py-3 text-center">
-                                                        <span className="badge-available">
-                                                            ว่าง (Available)
-                                                        </span>
+                                                    <td className="py-4 text-center">
+                                                        <span className="status-badge-available">● ว่าง (Available)</span>
                                                     </td>
-                                                    <td className="pe-4 py-3 text-end">
+                                                    <td className="pe-4 py-4 text-end">
                                                         <Button 
-                                                            variant="light" 
-                                                            className="text-danger border-0 rounded-circle p-2 hover-bg-danger-light"
+                                                            variant="none" 
+                                                            className="text-danger rounded-circle p-2 hover-bg-danger-light"
                                                             onClick={() => handleDelete(slot.schedule_id)}
-                                                            title="ลบรายการนี้"
                                                         >
-                                                            <FaTrash />
+                                                            <FaTrash size={14} />
                                                         </Button>
                                                     </td>
                                                 </tr>
