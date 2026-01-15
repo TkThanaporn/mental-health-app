@@ -7,13 +7,14 @@ import {
     FaUserEdit, FaClock, FaSearch, FaBars, FaUserCircle 
 } from 'react-icons/fa';
 
-// ✅ 1. นำเข้า CSS ที่เราสร้างแยกไว้ (เพื่อให้ธีมเหมือนกันทุกหน้า)
+// ✅ 1. นำเข้า CSS
 import './Psychologist.css';
 
 // ✅ 2. นำเข้า Component หน้าจัดการต่างๆ
 import AppointmentManager from './AppointmentManager'; 
-import ScheduleManager from './ScheduleManager'; // <<< นำเข้าหน้าจัดตารางเวลา
-
+import ScheduleManager from './ScheduleManager'; 
+import AllAppointmentList from './AllAppointmentList'; // <<< ✅ นำเข้าไฟล์หน้ารายการทั้งหมดรทย
+import ProfileEditor from './ProfileEditor';
 // นำเข้ารูปโลโก้
 import pcshsLogo from '../../assets/pcshs_logo.png'; 
 
@@ -43,7 +44,7 @@ const PsychologistDashboard = () => {
     const goToSchedule = () => handleMenuClick('schedule');
     const goToEditProfile = () => handleMenuClick('profile');
 
-    // 🎨 Theme สี PCSHS (เก็บไว้ใช้ใน Inline Style บางจุด)
+    // 🎨 Theme สี PCSHS
     const theme = {
         primaryBlue: '#002147',
         lightBlue: '#f4f7fa',
@@ -51,7 +52,7 @@ const PsychologistDashboard = () => {
         textGold: '#FFD700'
     };
 
-    // --- ส่วนเนื้อหา Sidebar (เมนูซ้าย) ---
+    // --- ส่วนเนื้อหา Sidebar ---
     const SidebarContent = () => (
         <div className="d-flex flex-column h-100 text-white" style={{ background: theme.primaryBlue }}>
             <div className="mb-4 mt-3 px-3">
@@ -109,7 +110,6 @@ const PsychologistDashboard = () => {
         switch (activeTab) {
             case 'dashboard':
                 return (
-                    // หน้า Dashboard (Banner ต้อนรับ)
                     <Card className="pcshs-card mb-4 text-white" style={{ background: `linear-gradient(135deg, ${theme.primaryBlue} 0%, #1B3F8B 100%)` }}>
                         <Card.Body className="p-4 p-md-5 position-relative">
                             <Row className="align-items-center">
@@ -135,7 +135,6 @@ const PsychologistDashboard = () => {
 
             case 'appointments':
                 return (
-                    // หน้าจัดการนัดหมาย
                     <div className="pcshs-card p-3 p-md-4">
                         <div className="mb-4">
                             <h4 className="fw-bold mb-0 pcshs-header-text">
@@ -150,22 +149,21 @@ const PsychologistDashboard = () => {
                 );
 
             case 'schedule':
-                // ✅ 3. แสดงหน้า ScheduleManager ตรงนี้แทนข้อความ "กำลังพัฒนา"
                 return <ScheduleManager />;
 
-            case 'profile':
-                return <div className="p-5 text-center text-muted"><h4>👤 หน้าแก้ไขข้อมูลส่วนตัว (กำลังพัฒนา)</h4></div>;
-            
             case 'all-list':
-                return <div className="p-5 text-center text-muted"><h4>📋 รายการนัดหมายทั้งหมด (กำลังพัฒนา)</h4></div>;
+                // ✅ 3. เรียกใช้ Component AllAppointmentList ตรงนี้
+                return <AllAppointmentList />;
 
+            case 'profile':
+                return <ProfileEditor />
             default:
                 return <div className="p-5 text-center text-muted"><h4>หน้ายังไม่พร้อมใช้งาน</h4></div>;
         }
     };
 
     return (
-        <div className="d-flex dashboard-bg"> {/* ใช้ Class จาก CSS */}
+        <div className="d-flex dashboard-bg">
              <style>
                 {`
                     .dashboard-content { margin-left: 0; transition: margin-left 0.3s; }
@@ -182,19 +180,16 @@ const PsychologistDashboard = () => {
                 `}
             </style>
 
-            {/* Sidebar Desktop */}
             <div className="sidebar-desktop flex-column text-white shadow" style={{ width: '280px', height: '100vh', position: 'fixed', left: 0, top: 0, zIndex: 1000, background: theme.primaryBlue }}>
                 <SidebarContent />
             </div>
 
-            {/* Sidebar Mobile */}
             <Offcanvas show={showMobileMenu} onHide={handleCloseMobileMenu} className="bg-dark text-white" style={{ width: '280px', border: 'none', background: theme.primaryBlue }}>
                 <Offcanvas.Body className="p-0" style={{ background: theme.primaryBlue }}>
                     <SidebarContent />
                 </Offcanvas.Body>
             </Offcanvas>
 
-            {/* Main Content */}
             <div className="dashboard-content flex-grow-1 w-100">
                 <Navbar bg="white" className="shadow-sm px-3 py-3 justify-content-between sticky-top">
                      <div className="d-flex align-items-center">
@@ -221,7 +216,6 @@ const PsychologistDashboard = () => {
                 </Navbar>
 
                 <Container fluid className="p-3 p-md-4">
-                    {/* Render Content */}
                     {renderContent()}
                 </Container>
             </div>

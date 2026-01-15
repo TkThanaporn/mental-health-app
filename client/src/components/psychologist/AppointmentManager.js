@@ -130,12 +130,8 @@ const AppointmentManager = () => {
     return (
         <Container className="my-4">
             <div className="d-flex justify-content-between align-items-center mb-4">
-                <h2 className="text-primary">📅 จัดการนัดหมาย & แชท</h2>
-                <div>
-                    <Button variant="warning" href="/psychologist/schedule" className="me-2 text-dark">📅 จัดการตารางเวลา</Button>
-                    <Button variant="outline-primary" href="/profile" className="me-2">👤 แก้ไขโปรไฟล์</Button>
-                    <Button variant="danger" onClick={logout}>ออกจากระบบ</Button>
-                </div>
+                <h1 className="text-primary">📅 จัดการนัดหมาย & แชท</h1>
+                
             </div>
             
             {appointments.length === 0 ? (

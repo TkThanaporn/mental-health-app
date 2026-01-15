@@ -3,6 +3,34 @@ const router = express.Router();
 const db = require('../config/db'); // Import Pool
 const { authMiddleware } = require('../middleware/auth');
 
+
+
+// ✅ ย้ายมาไว้ด้านบนสุดของไฟล์ (ก่อน Route ที่มี /:id)
+router.get('/psychologist-history', authMiddleware, async (req, res) => {
+    try {
+        const psychologist_id = req.user.id || req.user.user_id; 
+        const sql = `
+            SELECT 
+                a.appointment_id, 
+                a.appointment_date AS date, 
+                a.appointment_time AS time_slot, 
+                a.status, 
+                a.topic,
+                u.fullname AS student_name,
+                u.email AS student_email,
+                u.phone AS student_phone
+            FROM appointments a
+            JOIN users u ON a.student_id = u.user_id
+            WHERE a.psychologist_id = ?
+            ORDER BY a.appointment_date DESC, a.appointment_time ASC
+        `;
+        const [rows] = await db.query(sql, [psychologist_id]);
+        res.json(rows);
+    } catch (err) {
+        console.error("❌ FETCH HISTORY ERROR:", err.message);
+        res.status(500).send('Server Error');
+    }
+});
 // ==========================================
 // 📌 POST: จองนัดหมาย (สำหรับนักเรียน)
 // ==========================================
@@ -186,6 +214,7 @@ router.post('/complete/:id', authMiddleware, async (req, res) => {
         if (connection) connection.release();
     }
 });
+
 
 module.exports = router;
 
