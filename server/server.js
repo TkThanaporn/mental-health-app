@@ -32,7 +32,9 @@ app.use('/api/chat', require('./routes/chatRoutes'));
 app.use('/api/assessments', require('./routes/assessmentRoutes'));
 app.use('/api/psychologists', require('./routes/psychologistRoutes'));
 app.use('/api/profile', require('./routes/profileRoutes'));
-app.use('/api/news', require('./routes/newsRoutes'));
+
+// ✅ แก้ไขบรรทัดนี้: เปลี่ยนจาก newsRoutes เป็น news (เพื่อให้ตรงกับชื่อไฟล์ news.js)
+app.use('/api/news', require('./routes/news'));
 
 // ==========================================
 // 3. สร้าง HTTP Server และเชื่อม Socket.io
@@ -68,8 +70,10 @@ io.on('connection', (socket) => {
                 INSERT INTO chat_messages (appointment_id, sender_id, message_text) 
                 VALUES (?, ?, ?)
             `;
-            // ใช้ db.execute หรือ db.query ตามที่คุณตั้งค่าไว้ในไฟล์ config/db.js
-            await db.execute(sql, [data.appointmentId, data.senderId, data.content]);
+            // เช็คว่า data.content ไม่เป็นค่าว่าง
+            if (data.content) {
+                 await db.execute(sql, [data.appointmentId, data.senderId, data.content]);
+            }
         } catch (err) {
             console.error("❌ Save Message Error:", err.message);
         }
@@ -86,5 +90,5 @@ io.on('connection', (socket) => {
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
     console.log(`🚀 Server running on port ${PORT}`);
-    console.log(`💬 Socket.io & API Routes are ready for http://localhost:3001`);
+    console.log(`💬 Socket.io & API Routes are ready`);
 });
