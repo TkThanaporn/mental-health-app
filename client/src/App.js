@@ -27,6 +27,9 @@ import AppointmentBooking from './components/student/AppointmentBooking';
 // ✅ เพิ่ม Import Profile เข้ามา
 import Profile from './components/common/Profile';
 
+// ✅ 1. Import หน้าจัดการตารางเวลาเข้ามา
+import ScheduleManager from './components/psychologist/ScheduleManager';
+
 const App = () => {
   return (
     <Router>
