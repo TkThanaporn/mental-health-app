@@ -34,8 +34,8 @@ const StudentDashboard = () => {
     const fetchMyHistory = async () => {
         try {
             const token = localStorage.getItem('token');
-            const res = await axios.get('http://localhost:5000/api/appointments/student-history', {
-                headers: { 'x-auth-token': token }
+            const res = await axios.get('http://localhost:5000/api/appointments/my-appointments', {
+                    headers: { 'x-auth-token': token }
             });
             setAppointments(res.data);
             setLoading(false);

@@ -28,7 +28,7 @@ const ScheduleManager = () => {
     const fetchMySlots = async () => {
         try {
             const token = localStorage.getItem('token');
-            const res = await axios.get('http://localhost:5000/api/schedule/my-slots', {
+            const res = await axios.get('http://localhost:5000/api/appointments/psychologist-appointments', {
                 headers: { 'x-auth-token': token }
             });
             setMySlots(res.data);
@@ -95,7 +95,9 @@ const ScheduleManager = () => {
                 }
             },
         });
-        tokenClient.requestAccessToken();
+
+        // 👇 แก้ตรงนี้ครับ! ใส่ { prompt: 'consent' } ลงไป
+        tokenClient.requestAccessToken({ prompt: 'consent' }); 
     };
 
     const pushEventsToGoogle = async (accessToken) => {

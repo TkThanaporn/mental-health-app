@@ -24,6 +24,7 @@ import StudentDashboard from './components/student/StudentDashboard';
 import AssessmentForm from './components/student/AssessmentForm'; 
 import AppointmentBooking from './components/student/AppointmentBooking';
 
+
 // ✅ เพิ่ม Import Profile เข้ามา
 import Profile from './components/common/Profile';
 
@@ -40,6 +41,8 @@ const App = () => {
           <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          {/* เพิ่มบรรทัดนี้ลงไปครับ 👇 */}
+          <Route path="/psychologist/schedule" element={<ScheduleManager />} />   
 
           {/* ===== Shared Routes (ใช้ร่วมกันได้ทุก Role) ===== */}
           <Route
