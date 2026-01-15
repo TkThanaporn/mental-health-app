@@ -12,6 +12,7 @@ router.get('/', authMiddleware, authorizeRole(['Psychologist']), async (req, res
         const sql = `
             SELECT 
                 a.appointment_id, 
+                a.student_id,  -- ✅ เพิ่มบรรทัดนี้: เพื่อให้นักจิตฯ กดดูผลประเมินได้
                 a.appointment_date, 
                 a.appointment_time, 
                 a.type, 
@@ -60,6 +61,16 @@ router.post('/', authMiddleware, authorizeRole(['Student']), async (req, res) =>
         const student_id = req.user.id;
         const { psychologist_id, date, time, type, topic, consultation_type, group_members } = req.body;
 
+        // 🛡️ [เพิ่มใหม่] ตรวจสอบว่าทำแบบประเมินหรือยัง?
+        // เช็คในตาราง assessments ว่ามี student_id นี้ไหม
+        const sqlCheck = `SELECT assessment_id FROM assessments WHERE student_id = ? LIMIT 1`;
+        const [assessments] = await db.query(sqlCheck, [student_id]);
+
+        if (assessments.length === 0) {
+            // ถ้ายังไม่ทำ -> ส่ง Error 403 กลับไป (Frontend จะได้รับรู้)
+            return res.status(403).json({ msg: 'กรุณาทำแบบประเมินความเครียดก่อนทำการจองนัดหมาย' });
+        }
+
         console.log(`📝 New Booking Request from Student ID: ${student_id}`);
 
         const sqlAppt = `
@@ -83,6 +94,7 @@ router.post('/', authMiddleware, authorizeRole(['Student']), async (req, res) =>
 
         console.log("✅ Booking saved successfully.");
         res.json({ msg: 'Appointment booked successfully', appointment_id });
+
     } catch (err) {
         console.error("❌ BOOKING ERROR:", err.message);
         res.status(500).send('Server error: ' + err.message);
@@ -90,7 +102,7 @@ router.post('/', authMiddleware, authorizeRole(['Student']), async (req, res) =>
 });
 
 // ==========================================
-// ✅ 4. GET: ดึงประวัตินัดหมาย (สำหรับนักเรียนดูเอง)
+// 4. GET: ดึงประวัตินัดหมาย (สำหรับนักเรียนดูเอง)
 // ==========================================
 router.get('/student-history', authMiddleware, authorizeRole(['Student']), async (req, res) => {
     try {

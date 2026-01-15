@@ -13,13 +13,13 @@ app.use(cors());
 app.use(express.json()); 
 
 // ==========================================
-// 1. ตั้งค่า Routes (เส้นทาง API)
+// 1. ตั้งค่า Routes (เส้นทาง API) - รวมทุกระบบ
 // ==========================================
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/appointments', require('./routes/appointmentRoutes'));
-
-// ✅ เพิ่มบรรทัดนี้ครับ (ระบบแชทถึงจะทำงานได้)
 app.use('/api/chat', require('./routes/chatRoutes')); 
+app.use('/api/assessments', require('./routes/assessmentRoutes'));
+app.use('/api/psychologists', require('./routes/psychologistRoutes'));
 
 // ==========================================
 // 2. สร้าง HTTP Server และเชื่อม Socket.io
@@ -39,20 +39,15 @@ const io = new Server(server, {
 io.on('connection', (socket) => {
     console.log(`⚡ User connected: ${socket.id}`);
 
-    // เข้าห้องแชท
     socket.on('join_room', (appointmentId) => {
         socket.join(appointmentId);
-        console.log(`👤 User joined room: ${appointmentId}`);
     });
 
-    // รับ-ส่งข้อความ
     socket.on('send_message', async (data) => {
-        console.log("📩 Received Message:", data);
-
-        // 1. ส่งให้ทุกคนในห้อง (Real-time)
+        // ส่งให้ทุกคนในห้อง
         io.to(data.appointmentId).emit('receive_message', data);
 
-        // 2. บันทึกลงฐานข้อมูล
+        // บันทึกลงฐานข้อมูล
         try {
             const sql = `
                 INSERT INTO chat_messages (appointment_id, sender_id, message_text) 

@@ -1,9 +1,10 @@
-// client/src/components/student/AppointmentBooking.js
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Container, Form, Button, Card, Alert, Row, Col } from 'react-bootstrap';
+import { useNavigate } from 'react-router-dom'; // ✅ 1. เพิ่ม import useNavigate
 
 const AppointmentBooking = () => {
+    const navigate = useNavigate(); // ✅ 2. เรียกใช้ hook navigate
     const [psycho, setPsycho] = useState(null); 
     const [formData, setFormData] = useState({ 
         date: '', 
@@ -21,6 +22,29 @@ const AppointmentBooking = () => {
         "09:00-10:00", "10:00-11:00", "11:00-12:00",
         "13:00-14:00", "14:00-15:00", "15:00-16:00"
     ];
+
+    // ✅ 3. เพิ่ม useEffect เพื่อเช็คว่าทำแบบประเมินหรือยัง (ล็อก 2 ชั้น)
+    useEffect(() => {
+        const checkPrerequisite = async () => {
+            try {
+                const token = localStorage.getItem('token');
+                // เรียกเช็คประวัติการประเมินล่าสุด
+                const res = await axios.get('http://localhost:5000/api/assessments/latest', {
+                    headers: { 'x-auth-token': token }
+                });
+
+                // ถ้าไม่มีข้อมูลผลประเมิน -> แจ้งเตือนและดีดไปหน้าประเมิน
+                if (!res.data) {
+                    alert("⚠️ คุณจำเป็นต้องทำแบบประเมินสุขภาพจิตก่อนจึงสามารถจองคิวได้");
+                    navigate('/student/assessment'); 
+                }
+            } catch (err) {
+                console.error("Error checking assessment:", err);
+            }
+        };
+
+        checkPrerequisite();
+    }, [navigate]);
 
     useEffect(() => {
         fetchPsychologist();
@@ -43,11 +67,13 @@ const AppointmentBooking = () => {
     const fetchPsychologist = async () => {
         try {
             const token = localStorage.getItem('token');
-            // ✅ แก้ไข Header ให้ตรงกับ Backend (x-auth-token)
             const res = await axios.get('http://localhost:5000/api/psychologists/available', {
                 headers: { 'x-auth-token': token } 
             });
-            setPsycho(res.data);
+            // ถ้าได้ array มา ให้หยิบคนแรก (หรือทำ dropdown เลือกหมอในอนาคต)
+            if (Array.isArray(res.data) && res.data.length > 0) {
+                setPsycho(res.data[0]); // หยิบคนแรกมาเป็น Default
+            }
         } catch (err) {
             console.error("Error fetching psychologist:", err);
             setMessage({ type: 'danger', text: 'ไม่สามารถดึงข้อมูลตารางเวลาของนักจิตวิทยาได้' });
@@ -92,19 +118,27 @@ const AppointmentBooking = () => {
             const token = localStorage.getItem('token');
             const dataToSend = {
                 ...formData,
-                psychologist_id: psycho.psychologist_id, 
+                psychologist_id: psycho.user_id, // ✅ แก้ไขตรงนี้ให้ใช้ user_id ตาม Database
                 group_members: formData.consultation_type === 'Group' ? groupMembers.filter(m => m.trim() !== '') : []
             };
             
-            // ✅ แก้ไข Header ให้ตรงกับ Backend (x-auth-token)
             await axios.post('http://localhost:5000/api/appointments', dataToSend, { 
                 headers: { 'x-auth-token': token } 
             });
             
             setMessage({ type: 'success', text: 'ส่งคำขอนัดหมายสำเร็จและซิงค์ลงปฏิทินเรียบร้อยแล้ว!' });
+            // อาจจะเพิ่ม navigate ไปหน้า Dashboard หลังจองเสร็จด้วยก็ได้
+            setTimeout(() => navigate('/student/dashboard'), 2000);
+
         } catch (err) {
             console.error("Booking Error:", err.response || err);
-            setMessage({ type: 'danger', text: 'การจองนัดหมายล้มเหลว หรือเวลานี้อาจถูกจองไปแล้ว' });
+            // ดักจับ Error จาก Backend (กรณี 403 ไม่ได้ทำแบบประเมิน)
+            if (err.response && err.response.status === 403) {
+                 alert(err.response.data.msg);
+                 navigate('/student/assessment');
+            } else {
+                setMessage({ type: 'danger', text: 'การจองนัดหมายล้มเหลว หรือเวลานี้อาจถูกจองไปแล้ว' });
+            }
         }
     };
 
@@ -113,7 +147,7 @@ const AppointmentBooking = () => {
 
     return (
         <Container className="my-5">
-            <h2 className="text-primary mb-4">🗓️ จองคำปรึกษา (1.3.2.8)</h2>
+            <h2 className="text-primary mb-4">🗓️ จองคำปรึกษา</h2>
             {message && <Alert variant={message.type}>{message.text}</Alert>}
 
             <Row>
