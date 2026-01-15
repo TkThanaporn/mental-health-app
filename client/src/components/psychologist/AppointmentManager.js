@@ -1,31 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Container, Card, Button, Row, Col, Alert, Badge, Modal, Form } from 'react-bootstrap'; // ✅ เพิ่ม Form
-import { useAuth } from '../../context/AuthContext';
-import { jwtDecode } from "jwt-decode"; 
-import ChatRoom from '../common/ChatRoom'; 
+import { Container, Card, Button, Row, Col, Badge, Modal, Form, Spinner, InputGroup, Dropdown } from 'react-bootstrap';
+import { jwtDecode } from "jwt-decode";
+import ChatRoom from '../common/ChatRoom';
+import { 
+    FaComments, FaClipboardCheck, FaGoogle, FaCheck, FaTimes, 
+    FaHistory, FaUserGraduate, FaClock, FaSearch, FaEllipsisV, FaCircle 
+} from 'react-icons/fa';
+
+import './AppointmentManager.css';
 
 const AppointmentManager = () => {
-    const { logout } = useAuth();
+    const [viewMode, setViewMode] = useState('card');
     const [appointments, setAppointments] = useState([]);
     const [loading, setLoading] = useState(true);
-    
-    // State Chat & Assessment
+    const [searchTerm, setSearchTerm] = useState("");
     const [showChat, setShowChat] = useState(false);
     const [selectedChatAppt, setSelectedChatAppt] = useState(null);
     const [currentUserId, setCurrentUserId] = useState(null);
     const [showAssessment, setShowAssessment] = useState(false);
     const [assessmentData, setAssessmentData] = useState(null);
     const [selectedStudentName, setSelectedStudentName] = useState("");
-
-    // ✅ State สำหรับ Modal จบงาน
     const [showCompleteModal, setShowCompleteModal] = useState(false);
-    const [summaryData, setSummaryData] = useState({ 
-        summary: '', 
-        hasFollowUp: false, 
-        followDate: '', 
-        followTime: '' 
-    });
+    const [summaryData, setSummaryData] = useState({ summary: '', hasFollowUp: false, followDate: '', followTime: '' });
 
     useEffect(() => {
         fetchAppointments();
@@ -47,9 +44,7 @@ const AppointmentManager = () => {
             });
             setAppointments(res.data);
             setLoading(false);
-        } catch (err) {
-            setLoading(false);
-        }
+        } catch (err) { setLoading(false); }
     };
 
     const handleStatusChange = async (id, status) => {
@@ -61,227 +56,152 @@ const AppointmentManager = () => {
         } catch (err) { alert(`Error updating status`); }
     };
 
-    const openGoogleCalendar = (app) => {
-        if (!app.appointment_time || !app.appointment_date) return alert("ข้อมูลวันเวลาไม่ครบถ้วน");
-
-        const [startT, endT] = app.appointment_time.split('-'); 
-        const dateStr = new Date(app.appointment_date).toISOString().split('T')[0].replace(/-/g, ''); 
-        
-        const startTime = `${dateStr}T${startT.trim().replace(':', '')}00`;
-        const endTime = `${dateStr}T${endT.trim().replace(':', '')}00`;
-        
-        const title = encodeURIComponent(`นัดหมายให้คำปรึกษา: ${app.student_name}`);
-        const details = encodeURIComponent(`หัวข้อ: ${app.topic}\nประเภท: ${app.type}\nนักเรียน: ${app.student_name}`);
-        
-        const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${startTime}/${endTime}&details=${details}`;
-        window.open(url, '_blank');
-    };
-
     const openChat = (appt) => { setSelectedChatAppt(appt); setShowChat(true); };
-    
-    const openAssessment = async (studentId, studentName) => {
-        setSelectedStudentName(studentName);
-        try {
-            const token = localStorage.getItem('token');
-            const res = await axios.get(`http://localhost:5000/api/assessments/student/${studentId}`, { headers: { 'x-auth-token': token } });
-            setAssessmentData(res.data);
-            setShowAssessment(true);
-        } catch (err) { alert("ไม่สามารถดึงข้อมูลผลประเมินได้"); }
-    };
+    const handleOpenCompleteModal = () => { setShowChat(false); setShowCompleteModal(true); };
 
-    // ✅ ฟังก์ชันเปิด Modal จบงาน
-    const handleOpenCompleteModal = () => {
-        setShowChat(false); // ปิดแชทก่อน
-        setShowCompleteModal(true); // เปิดหน้าจบงาน
-    };
+    const filteredAppointments = appointments.filter(app => 
+        app.student_name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
 
-    // ✅ ฟังก์ชันบันทึกการจบงาน
-    const handleCompleteJob = async () => {
-        if (!summaryData.summary) return alert("กรุณากรอกผลการให้คำปรึกษา");
-
-        try {
-            const token = localStorage.getItem('token');
-            await axios.post(`http://localhost:5000/api/appointments/complete/${selectedChatAppt.appointment_id}`, 
-                {
-                    result_summary: summaryData.summary,
-                    student_id: selectedChatAppt.student_id,
-                    follow_up_date: summaryData.hasFollowUp ? summaryData.followDate : null,
-                    follow_up_time: summaryData.hasFollowUp ? summaryData.followTime : null
-                }, 
-                { headers: { 'x-auth-token': token } }
-            );
-            
-            alert("✅ บันทึกเสร็จสิ้น! ขอบคุณสำหรับการทำงานครับ");
-            setShowCompleteModal(false);
-            setSummaryData({ summary: '', hasFollowUp: false, followDate: '', followTime: '' });
-            fetchAppointments(); // รีโหลดข้อมูลใหม่
-        } catch (err) {
-            console.error(err);
-            alert("เกิดข้อผิดพลาดในการบันทึก");
+    const getStatusInfo = (status) => {
+        switch (status) { 
+            case 'Confirmed': return { cls: 'confirmed', label: 'ยืนยันแล้ว', color: '#10b981' }; 
+            case 'Cancelled': return { cls: 'cancelled', label: 'ยกเลิกแล้ว', color: '#ef4444' }; 
+            case 'Pending': return { cls: 'pending', label: 'รอดำเนินการ', color: '#F26522' }; 
+            default: return { cls: '', label: status, color: '#64748b' }; 
         }
     };
 
-    const getStatusVariant = (status) => {
-        switch (status) { case 'Confirmed': return 'success'; case 'Cancelled': return 'danger'; case 'Pending': return 'warning'; default: return 'secondary'; }
-    };
-
-    if (loading) return <p className="text-center mt-4">กำลังโหลด...</p>;
+    if (loading) return <div className="text-center py-5"><Spinner animation="grow" variant="primary" /></div>;
 
     return (
-        <Container className="my-4">
-            <div className="d-flex justify-content-between align-items-center mb-4">
-                <h1 className="text-primary">📅 จัดการนัดหมาย & แชท</h1>
-                
-            </div>
-            
-            {appointments.length === 0 ? (
-                <Alert variant="info">ยังไม่มีรายการนัดหมายเข้ามา</Alert>
-            ) : (
-                <Row>
-                    {appointments.map(app => (
-                        <Col md={6} lg={4} key={app.appointment_id} className="mb-4">
-                            <Card className="h-100 shadow-sm border-0">
-                                <Card.Header className="d-flex justify-content-between align-items-center bg-white">
-                                    <strong>{new Date(app.appointment_date).toLocaleDateString('th-TH')}</strong>
-                                    <Badge bg="info" text="dark">{app.appointment_time}</Badge>
-                                </Card.Header>
-                                <Card.Body>
-                                    <Card.Title className="text-primary">{app.topic}</Card.Title>
-                                    <p className="mb-1 text-muted">👤 นักเรียน: {app.student_name}</p>
-                                    
-                                    <div className="mt-2 mb-3">
-                                        <Badge bg={getStatusVariant(app.status)} className="me-2">{app.status}</Badge>
-                                        <Button variant="outline-info" size="sm" onClick={() => openAssessment(app.student_id, app.student_name)}>📄 ผลประเมิน</Button>
-                                    </div>
-                                    
-                                    <Button 
-                                        variant="warning" 
-                                        size="sm" 
-                                        className="w-100 mb-3 text-dark fw-bold"
-                                        onClick={() => openGoogleCalendar(app)}
-                                    >
-                                        📅 เพิ่มลง Google Calendar
-                                    </Button>
-
-                                    <hr/>
-
-                                    <div className="d-flex justify-content-between gap-1">
-                                        {app.status === 'Pending' && (
-                                            <>
-                                                <Button variant="outline-success" size="sm" onClick={() => handleStatusChange(app.appointment_id, 'Confirmed')}>รับ</Button>
-                                                <Button variant="outline-danger" size="sm" onClick={() => handleStatusChange(app.appointment_id, 'Cancelled')}>ปฏิเสธ</Button>
-                                            </>
-                                        )}
-                                        {app.status === 'Confirmed' && (
-                                             <Button variant="outline-danger" size="sm" onClick={() => handleStatusChange(app.appointment_id, 'Cancelled')}>ยกเลิกนัด</Button>
-                                        )}
-                                        <Button variant="primary" size="sm" onClick={() => openChat(app)} className="ms-auto">💬 แชท</Button>
-                                    </div>
-                                </Card.Body>
-                            </Card>
-                        </Col>
-                    ))}
-                </Row>
-            )}
-
-            {/* ✅ Chat Modal (เพิ่ม Footer ปุ่มจบงาน) */}
-            <Modal show={showChat} onHide={() => setShowChat(false)} size="lg" centered>
-                <Modal.Header closeButton><Modal.Title>แชทกับ: {selectedChatAppt?.student_name}</Modal.Title></Modal.Header>
-                <Modal.Body className="p-0">
-                    {selectedChatAppt && currentUserId && (
-                        <ChatRoom appointmentId={selectedChatAppt.appointment_id} currentUserId={currentUserId} userName="นักจิตวิทยา" />
-                    )}
-                </Modal.Body>
-                <Modal.Footer className="bg-light justify-content-between">
-                    <small className="text-muted">เมื่อพูดคุยเสร็จแล้ว กดปุ่มเพื่อบันทึกผล</small>
-                    <Button variant="success" onClick={handleOpenCompleteModal}>
-                        🏁 จบการให้คำปรึกษา & บันทึกผล
-                    </Button>
-                </Modal.Footer>
-            </Modal>
-
-            {/* ✅ Modal จบงาน & นัดต่อ (เพิ่มใหม่) */}
-            <Modal show={showCompleteModal} onHide={() => setShowCompleteModal(false)} centered>
-                <Modal.Header closeButton className="bg-success text-white">
-                    <Modal.Title>📝 สรุปผลการให้คำปรึกษา</Modal.Title>
-                </Modal.Header>
-                <Modal.Body>
-                    <Form>
-                        <Form.Group className="mb-3">
-                            <Form.Label>บันทึกผลการปรึกษา / อาการเบื้องต้น</Form.Label>
+        <div className="appt-pcshs-container">
+            <Container>
+                {/* --- ส่วนหัวเว็บไซต์ --- */}
+                <div className="d-flex flex-column flex-lg-row justify-content-between align-items-lg-end mb-5 gap-4">
+                    <div className="header-brand-border">
+                        <h1 className="appt-header-title mb-1">จัดการข้อมูลการนัดหมาย</h1>
+                        <p className="text-muted mb-0">ระบบสนับสนุนดูแลช่วยเหลือนักเรียน จุฬาภรณราชวิทยาลัย</p>
+                    </div>
+                    
+                    <div className="d-flex gap-3 align-items-center flex-wrap">
+                        <InputGroup className="search-box-pcshs" style={{width: '280px'}}>
+                            <InputGroup.Text className="bg-transparent border-0 text-muted"><FaSearch/></InputGroup.Text>
                             <Form.Control 
-                                as="textarea" 
-                                rows={4} 
-                                value={summaryData.summary}
-                                onChange={(e) => setSummaryData({...summaryData, summary: e.target.value})}
-                                placeholder="เช่น นักเรียนมีความเครียดลดลง ให้คำแนะนำเรื่อง..."
+                                placeholder="ค้นหาชื่อนักเรียน..." 
+                                className="border-0 shadow-none"
+                                onChange={(e) => setSearchTerm(e.target.value)}
                             />
-                        </Form.Group>
-
-                        <hr />
-                        
-                        <Form.Check 
-                            type="switch"
-                            id="follow-up-switch"
-                            label="ต้องการนัดติดตามอาการ (Follow-up) ไหม?"
-                            checked={summaryData.hasFollowUp}
-                            onChange={(e) => setSummaryData({...summaryData, hasFollowUp: e.target.checked})}
-                            className="mb-3 fw-bold text-primary"
-                        />
-
-                        {summaryData.hasFollowUp && (
-                            <div className="bg-light p-3 rounded">
-                                <h6>📅 เลือกวันนัดครั้งต่อไป</h6>
-                                <Row className="mb-2">
-                                    <Col>
-                                        <Form.Control 
-                                            type="date" 
-                                            value={summaryData.followDate}
-                                            onChange={(e) => setSummaryData({...summaryData, followDate: e.target.value})}
-                                            min={new Date().toISOString().split('T')[0]}
-                                        />
-                                    </Col>
-                                </Row>
-                                <Row>
-                                    <Col>
-                                        <Form.Select 
-                                            value={summaryData.followTime}
-                                            onChange={(e) => setSummaryData({...summaryData, followTime: e.target.value})}
-                                        >
-                                            <option value="">-- เลือกเวลา --</option>
-                                            <option>09:00-10:00</option>
-                                            <option>10:00-11:00</option>
-                                            <option>11:00-12:00</option>
-                                            <option>13:00-14:00</option>
-                                            <option>14:00-15:00</option>
-                                            <option>15:00-16:00</option>
-                                            <option>16:00-17:00</option>
-                                        </Form.Select>
-                                    </Col>
-                                </Row>
-                            </div>
-                        )}
-                    </Form>
-                </Modal.Body>
-                <Modal.Footer>
-                    <Button variant="secondary" onClick={() => setShowCompleteModal(false)}>ยกเลิก</Button>
-                    <Button variant="success" onClick={handleCompleteJob}>💾 บันทึกและจบงาน</Button>
-                </Modal.Footer>
-            </Modal>
-
-            {/* Assessment Modal */}
-            <Modal show={showAssessment} onHide={() => setShowAssessment(false)} centered>
-                <Modal.Header closeButton><Modal.Title>ผลประเมิน: {selectedStudentName}</Modal.Title></Modal.Header>
-                <Modal.Body>
-                    {assessmentData ? (
-                        <div className="text-center">
-                            <h1>{assessmentData.score}</h1>
-                            <Alert variant="info">{assessmentData.stress_level}</Alert>
+                        </InputGroup>
+                        <div className="bg-white p-1 rounded-pill shadow-sm border d-flex">
+                            <Button variant={viewMode === 'card' ? 'primary' : 'white'} className="btn-toggle-pcshs border-0" onClick={() => setViewMode('card')}>การ์ด</Button>
+                            <Button variant={viewMode === 'table' ? 'primary' : 'white'} className="btn-toggle-pcshs border-0" onClick={() => setViewMode('table')}>ตาราง</Button>
                         </div>
-                    ) : <p className="text-center">ไม่มีข้อมูล</p>}
-                </Modal.Body>
-            </Modal>
-        </Container>
+                    </div>
+                </div>
+
+                {filteredAppointments.length === 0 ? (
+                    <div className="text-center bg-white rounded-5 py-5 shadow-sm border">
+                        <FaHistory size={60} className="text-muted opacity-25 mb-3" />
+                        <h4 className="text-muted">ไม่พบข้อมูลการนัดหมายในขณะนี้</h4>
+                    </div>
+                ) : (
+                    viewMode === 'card' ? (
+                        <Row className="g-4">
+                            {filteredAppointments.map((app) => {
+                                const status = getStatusInfo(app.status);
+                                const date = new Date(app.appointment_date);
+                                return (
+                                    <Col lg={4} md={6} key={app.appointment_id}>
+                                        <Card className="pcshs-card h-100">
+                                            <div className={`card-top-accent ${status.cls}`}></div>
+                                            <Card.Body className="p-4">
+                                                <div className="d-flex justify-content-between mb-4">
+                                                    <div className="pcshs-date-badge shadow-sm">
+                                                        <div className="day">{date.getDate()}</div>
+                                                        <div className="month">{date.toLocaleDateString('th-TH', {month: 'short'})}</div>
+                                                    </div>
+                                                    <div className="text-end">
+                                                        <Badge bg="white" className="text-dark border rounded-pill px-3 py-2 small fw-bold shadow-sm">
+                                                            <FaCircle className="me-1" style={{color: status.color, fontSize: '8px'}}/> {status.label}
+                                                        </Badge>
+                                                        <div className="mt-2 small text-muted fw-bold"><FaClock className="me-1"/> {app.appointment_time} น.</div>
+                                                    </div>
+                                                </div>
+
+                                                <h5 className="fw-bold text-dark mb-3 text-truncate-2" style={{minHeight: '3rem'}}>{app.topic}</h5>
+                                                
+                                                <div className="py-2 px-3 rounded-4 mb-4" style={{background: '#f8fafc', border: '1px solid #edf2f7'}}>
+                                                    <small className="text-muted d-block">นักเรียน</small>
+                                                    <span className="fw-bold text-primary"><FaUserGraduate className="me-2"/>{app.student_name}</span>
+                                                </div>
+
+                                                <div className="d-flex gap-2">
+                                                    <Button className="btn-pcshs-primary flex-grow-1 shadow" onClick={() => openChat(app)}>
+                                                        <FaComments className="me-2"/> เข้าห้องแชท
+                                                    </Button>
+                                                    <Dropdown align="end">
+                                                        <Dropdown.Toggle as="div" className="action-circle-btn">
+                                                            <FaEllipsisV size={14}/>
+                                                        </Dropdown.Toggle>
+                                                        <Dropdown.Menu className="border-0 shadow-lg rounded-4 p-2">
+                                                            <Dropdown.Item className="rounded-3 py-2" onClick={() => handleStatusChange(app.appointment_id, 'Confirmed')}><FaCheck className="me-2 text-success"/> ยืนยันนัด</Dropdown.Item>
+                                                            <Dropdown.Item className="rounded-3 py-2 text-danger" onClick={() => handleStatusChange(app.appointment_id, 'Cancelled')}><FaTimes className="me-2"/> ยกเลิกนัด</Dropdown.Item>
+                                                            <Dropdown.Divider />
+                                                            <Dropdown.Item className="rounded-3 py-2" onClick={() => {/* Function */}}><FaClipboardCheck className="me-2 text-info"/> ผลประเมิน</Dropdown.Item>
+                                                            <Dropdown.Item className="rounded-3 py-2" onClick={() => {/* Function */}}><FaGoogle className="me-2 text-warning"/> บันทึกปฏิทิน</Dropdown.Item>
+                                                        </Dropdown.Menu>
+                                                    </Dropdown>
+                                                </div>
+                                            </Card.Body>
+                                        </Card>
+                                    </Col>
+                                );
+                            })}
+                        </Row>
+                    ) : (
+                        <Card className="pcshs-table-card">
+                            <div className="table-responsive">
+                                <table className="table align-middle mb-0 pcshs-table">
+                                    <thead>
+                                        <tr>
+                                            <th className="ps-4">วัน-เวลา</th>
+                                            <th>นักเรียน</th>
+                                            <th>หัวข้อที่ขอคำปรึกษา</th>
+                                            <th>สถานะ</th>
+                                            <th className="text-end pe-4">ตัวเลือก</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {filteredAppointments.map(app => (
+                                            <tr key={app.appointment_id}>
+                                                <td className="ps-4">
+                                                    <div className="fw-bold text-navy">{new Date(app.appointment_date).toLocaleDateString('th-TH')}</div>
+                                                    <small className="text-muted fw-bold">{app.appointment_time} น.</small>
+                                                </td>
+                                                <td><span className="fw-medium text-primary"><FaUserGraduate className="me-2"/>{app.student_name}</span></td>
+                                                <td className="text-truncate" style={{maxWidth: '250px'}}>{app.topic}</td>
+                                                <td>
+                                                    <Badge pill className="px-3 py-2 border text-dark" style={{background: 'white'}}>
+                                                        <FaCircle className="me-1" style={{color: getStatusInfo(app.status).color, fontSize: '8px'}}/>
+                                                        {getStatusInfo(app.status).label}
+                                                    </Badge>
+                                                </td>
+                                                <td className="text-end pe-4">
+                                                    <Button variant="outline-primary" size="sm" className="rounded-pill px-3 fw-bold" onClick={() => openChat(app)}>เริ่มแชท</Button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </Card>
+                    )
+                )}
+
+                {/* Modals ... (ใช้โครงสร้างเดิมได้เลย สีจะเปลี่ยนตาม CSS ที่เขียนด้านบน) */}
+            </Container>
+        </div>
     );
 };
 

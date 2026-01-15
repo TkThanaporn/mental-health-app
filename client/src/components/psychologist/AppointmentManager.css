@@ -1,0 +1,139 @@
+/* src/components/psychologist/AppointmentManager.css */
+@import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap');
+
+:root {
+    --pcshs-navy: #002147;
+    --pcshs-orange: #F26522;
+    --pcshs-light-blue: #e6ecf2;
+    --pcshs-white: #ffffff;
+}
+
+.appt-pcshs-container {
+    background: linear-gradient(135deg, #f0f4f8 0%, #e6ecf2 100%);
+    min-height: 100vh;
+    padding: 2.5rem 0;
+    font-family: 'Sarabun', sans-serif;
+}
+
+/* --- Header Section --- */
+.header-brand-border {
+    border-left: 5px solid var(--pcshs-orange);
+    padding-left: 15px;
+}
+
+.appt-header-title {
+    color: var(--pcshs-navy);
+    font-weight: 800;
+    letter-spacing: -0.5px;
+}
+
+/* --- Search & Toggle --- */
+.search-box-pcshs {
+    border-radius: 12px;
+    border: 2px solid var(--pcshs-light-blue);
+    background: var(--pcshs-white);
+    transition: all 0.3s ease;
+}
+
+.search-box-pcshs:focus-within {
+    border-color: var(--pcshs-navy);
+    box-shadow: 0 0 0 4px rgba(0, 33, 71, 0.1);
+}
+
+.btn-toggle-pcshs {
+    border-radius: 10px;
+    font-weight: 600;
+    padding: 8px 20px;
+}
+
+/* --- Card Design (Science High School Look) --- */
+.pcshs-card {
+    border: none !important;
+    border-radius: 20px !important;
+    background: var(--pcshs-white);
+    box-shadow: 0 10px 25px rgba(0, 33, 71, 0.05) !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+}
+
+.pcshs-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 20px 40px rgba(0, 33, 71, 0.12) !important;
+}
+
+/* แถบสีด้านบนการ์ด */
+.card-top-accent {
+    height: 5px;
+    width: 100%;
+    background: var(--pcshs-navy);
+}
+
+.card-top-accent.pending { background: var(--pcshs-orange); }
+.card-top-accent.confirmed { background: #10b981; }
+
+/* วันที่แบบปฏิทินจุฬาภรณ์ */
+.pcshs-date-badge {
+    background: var(--pcshs-navy);
+    color: white;
+    padding: 10px;
+    border-radius: 12px;
+    text-align: center;
+    min-width: 65px;
+}
+
+.pcshs-date-badge .day { font-size: 1.4rem; font-weight: 700; line-height: 1; }
+.pcshs-date-badge .month { font-size: 0.75rem; text-transform: uppercase; opacity: 0.9; }
+
+/* --- Buttons --- */
+.btn-pcshs-primary {
+    background-color: var(--pcshs-navy) !important;
+    border: none !important;
+    border-radius: 12px !important;
+    font-weight: 600 !important;
+    padding: 10px 20px !important;
+    transition: all 0.3s ease !important;
+}
+
+.btn-pcshs-primary:hover {
+    background-color: var(--pcshs-orange) !important;
+    box-shadow: 0 8px 15px rgba(242, 101, 34, 0.3) !important;
+}
+
+.action-circle-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f8fafc;
+    color: var(--pcshs-navy);
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 1px solid #e2e8f0;
+}
+
+.action-circle-btn:hover {
+    background: var(--pcshs-navy);
+    color: white;
+}
+
+/* --- Table Styles --- */
+.pcshs-table-card {
+    border-radius: 20px !important;
+    border: none !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04) !important;
+}
+
+.pcshs-table thead th {
+    background-color: var(--pcshs-navy);
+    color: white;
+    font-weight: 500;
+    padding: 15px;
+    border: none;
+}
+
+.pcshs-table tbody td {
+    padding: 18px 15px;
+    border-bottom: 1px solid #f1f5f9;
+}
