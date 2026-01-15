@@ -137,4 +137,55 @@ router.put('/status/:id', authMiddleware, async (req, res) => {
     }
 });
 
+
+// 📌 POST: จบงาน + บันทึกผล + นัดติดตามอาการ (Follow-up)
+// ==========================================
+router.post('/complete/:id', authMiddleware, async (req, res) => {
+    const appointmentId = req.params.id;
+    const { result_summary, follow_up_date, follow_up_time, student_id } = req.body;
+    const psychologist_id = req.user.id || req.user.user_id;
+
+    let connection;
+    try {
+        connection = await db.getConnection();
+        await connection.beginTransaction();
+
+        // 1. อัปเดตงานเดิมเป็น Completed + บันทึกผล
+        // ⚠️ อย่าลืม: ต้องรัน SQL เพิ่มคอลัมน์ result_summary ใน Database ก่อนนะครับ
+        await connection.query(
+            'UPDATE appointments SET status = ?, result_summary = ? WHERE appointment_id = ?',
+            ['Completed', result_summary, appointmentId]
+        );
+
+        // 2. ถ้ามีการนัดต่อ (Follow-up) ให้สร้างนัดหมายใหม่ทันที
+        if (follow_up_date && follow_up_time) {
+            const sqlFollowUp = `
+                INSERT INTO appointments 
+                (student_id, psychologist_id, appointment_date, appointment_time, topic, type, status) 
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            `;
+            await connection.query(sqlFollowUp, [
+                student_id,
+                psychologist_id,
+                follow_up_date,
+                follow_up_time,
+                'นัดติดตามอาการ (Follow-up)',
+                'Online', 
+                'Confirmed' 
+            ]);
+        }
+
+        await connection.commit();
+        res.json({ msg: '✅ บันทึกผลการให้คำปรึกษาเรียบร้อยแล้ว!' });
+
+    } catch (err) {
+        if (connection) await connection.rollback();
+        console.error("Complete Job Error:", err);
+        res.status(500).send('Server Error');
+    } finally {
+        if (connection) connection.release();
+    }
+});
+
 module.exports = router;
+

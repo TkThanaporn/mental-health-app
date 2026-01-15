@@ -1,0 +1,72 @@
+/* src/components/psychologist/Psychologist.css */
+
+/* --- 🎨 PCSHS Theme Variables --- */
+:root {
+  --pcshs-blue: #002147;       /* น้ำเงินเข้ม */
+  --pcshs-light-blue: #1B3F8B; /* น้ำเงินสว่าง */
+  --pcshs-orange: #F26522;     /* สีแสด */
+  --pcshs-gold: #FFD700;       /* สีทอง */
+  --bg-color: #f4f7fa;         /* พื้นหลัง */
+}
+
+/* --- 📦 Layout & Cards --- */
+.dashboard-bg {
+  background-color: var(--bg-color);
+  min-height: 100vh;
+}
+
+.pcshs-card {
+  border: none !important;
+  border-radius: 20px !important;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  background: white;
+  overflow: hidden;
+}
+
+.pcshs-header-text {
+  color: var(--pcshs-blue);
+  font-weight: bold;
+}
+
+/* --- 🔘 Buttons --- */
+.btn-pcshs-orange {
+  background-color: var(--pcshs-orange) !important;
+  color: white !important;
+  border: none !important;
+  border-radius: 30px !important;
+  transition: all 0.3s ease;
+}
+
+.btn-pcshs-orange:hover {
+  background-color: #d14e11 !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(242, 101, 34, 0.3);
+}
+
+.btn-pcshs-blue {
+  background-color: var(--pcshs-blue) !important;
+  color: white !important;
+  border: none !important;
+  border-radius: 30px !important;
+}
+
+.btn-pcshs-outline {
+  border: 1px solid var(--pcshs-blue) !important;
+  color: var(--pcshs-blue) !important;
+  background: transparent !important;
+  border-radius: 30px !important;
+}
+
+.btn-pcshs-outline:hover {
+  background-color: var(--pcshs-blue) !important;
+  color: white !important;
+}
+
+/* --- 🩹 Badges & Status --- */
+.badge-available {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+  border: 1px solid #c8e6c9;
+  border-radius: 20px;
+  padding: 5px 12px;
+}

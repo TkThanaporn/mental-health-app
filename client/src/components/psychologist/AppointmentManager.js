@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Container, Card, Button, Row, Col, Alert, Badge, Modal } from 'react-bootstrap';
+import { Container, Card, Button, Row, Col, Alert, Badge, Modal, Form } from 'react-bootstrap'; // ✅ เพิ่ม Form
 import { useAuth } from '../../context/AuthContext';
 import { jwtDecode } from "jwt-decode"; 
 import ChatRoom from '../common/ChatRoom'; 
@@ -18,6 +18,15 @@ const AppointmentManager = () => {
     const [assessmentData, setAssessmentData] = useState(null);
     const [selectedStudentName, setSelectedStudentName] = useState("");
 
+    // ✅ State สำหรับ Modal จบงาน
+    const [showCompleteModal, setShowCompleteModal] = useState(false);
+    const [summaryData, setSummaryData] = useState({ 
+        summary: '', 
+        hasFollowUp: false, 
+        followDate: '', 
+        followTime: '' 
+    });
+
     useEffect(() => {
         fetchAppointments();
         const token = localStorage.getItem('token');
@@ -33,14 +42,12 @@ const AppointmentManager = () => {
     const fetchAppointments = async () => {
         try {
             const token = localStorage.getItem('token');
-            // ✅✅ แก้ไข URL ตรงนี้ให้ถูกต้องแล้วครับ ✅✅
             const res = await axios.get('http://localhost:5000/api/appointments/psychologist-appointments', {
-                headers: { 'x-auth-token': token } 
+                  headers: { 'x-auth-token': token } 
             });
             setAppointments(res.data);
             setLoading(false);
         } catch (err) {
-            console.error(err);
             setLoading(false);
         }
     };
@@ -54,7 +61,6 @@ const AppointmentManager = () => {
         } catch (err) { alert(`Error updating status`); }
     };
 
-    // ✅ ฟังก์ชันสร้างลิงก์ Google Calendar
     const openGoogleCalendar = (app) => {
         if (!app.appointment_time || !app.appointment_date) return alert("ข้อมูลวันเวลาไม่ครบถ้วน");
 
@@ -82,7 +88,39 @@ const AppointmentManager = () => {
             setShowAssessment(true);
         } catch (err) { alert("ไม่สามารถดึงข้อมูลผลประเมินได้"); }
     };
-    
+
+    // ✅ ฟังก์ชันเปิด Modal จบงาน
+    const handleOpenCompleteModal = () => {
+        setShowChat(false); // ปิดแชทก่อน
+        setShowCompleteModal(true); // เปิดหน้าจบงาน
+    };
+
+    // ✅ ฟังก์ชันบันทึกการจบงาน
+    const handleCompleteJob = async () => {
+        if (!summaryData.summary) return alert("กรุณากรอกผลการให้คำปรึกษา");
+
+        try {
+            const token = localStorage.getItem('token');
+            await axios.post(`http://localhost:5000/api/appointments/complete/${selectedChatAppt.appointment_id}`, 
+                {
+                    result_summary: summaryData.summary,
+                    student_id: selectedChatAppt.student_id,
+                    follow_up_date: summaryData.hasFollowUp ? summaryData.followDate : null,
+                    follow_up_time: summaryData.hasFollowUp ? summaryData.followTime : null
+                }, 
+                { headers: { 'x-auth-token': token } }
+            );
+            
+            alert("✅ บันทึกเสร็จสิ้น! ขอบคุณสำหรับการทำงานครับ");
+            setShowCompleteModal(false);
+            setSummaryData({ summary: '', hasFollowUp: false, followDate: '', followTime: '' });
+            fetchAppointments(); // รีโหลดข้อมูลใหม่
+        } catch (err) {
+            console.error(err);
+            alert("เกิดข้อผิดพลาดในการบันทึก");
+        }
+    };
+
     const getStatusVariant = (status) => {
         switch (status) { case 'Confirmed': return 'success'; case 'Cancelled': return 'danger'; case 'Pending': return 'warning'; default: return 'secondary'; }
     };
@@ -120,7 +158,6 @@ const AppointmentManager = () => {
                                         <Button variant="outline-info" size="sm" onClick={() => openAssessment(app.student_id, app.student_name)}>📄 ผลประเมิน</Button>
                                     </div>
                                     
-                                    {/* ✅ ปุ่ม Google Calendar */}
                                     <Button 
                                         variant="warning" 
                                         size="sm" 
@@ -151,7 +188,7 @@ const AppointmentManager = () => {
                 </Row>
             )}
 
-            {/* Modals */}
+            {/* ✅ Chat Modal (เพิ่ม Footer ปุ่มจบงาน) */}
             <Modal show={showChat} onHide={() => setShowChat(false)} size="lg" centered>
                 <Modal.Header closeButton><Modal.Title>แชทกับ: {selectedChatAppt?.student_name}</Modal.Title></Modal.Header>
                 <Modal.Body className="p-0">
@@ -159,7 +196,84 @@ const AppointmentManager = () => {
                         <ChatRoom appointmentId={selectedChatAppt.appointment_id} currentUserId={currentUserId} userName="นักจิตวิทยา" />
                     )}
                 </Modal.Body>
+                <Modal.Footer className="bg-light justify-content-between">
+                    <small className="text-muted">เมื่อพูดคุยเสร็จแล้ว กดปุ่มเพื่อบันทึกผล</small>
+                    <Button variant="success" onClick={handleOpenCompleteModal}>
+                        🏁 จบการให้คำปรึกษา & บันทึกผล
+                    </Button>
+                </Modal.Footer>
             </Modal>
+
+            {/* ✅ Modal จบงาน & นัดต่อ (เพิ่มใหม่) */}
+            <Modal show={showCompleteModal} onHide={() => setShowCompleteModal(false)} centered>
+                <Modal.Header closeButton className="bg-success text-white">
+                    <Modal.Title>📝 สรุปผลการให้คำปรึกษา</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <Form>
+                        <Form.Group className="mb-3">
+                            <Form.Label>บันทึกผลการปรึกษา / อาการเบื้องต้น</Form.Label>
+                            <Form.Control 
+                                as="textarea" 
+                                rows={4} 
+                                value={summaryData.summary}
+                                onChange={(e) => setSummaryData({...summaryData, summary: e.target.value})}
+                                placeholder="เช่น นักเรียนมีความเครียดลดลง ให้คำแนะนำเรื่อง..."
+                            />
+                        </Form.Group>
+
+                        <hr />
+                        
+                        <Form.Check 
+                            type="switch"
+                            id="follow-up-switch"
+                            label="ต้องการนัดติดตามอาการ (Follow-up) ไหม?"
+                            checked={summaryData.hasFollowUp}
+                            onChange={(e) => setSummaryData({...summaryData, hasFollowUp: e.target.checked})}
+                            className="mb-3 fw-bold text-primary"
+                        />
+
+                        {summaryData.hasFollowUp && (
+                            <div className="bg-light p-3 rounded">
+                                <h6>📅 เลือกวันนัดครั้งต่อไป</h6>
+                                <Row className="mb-2">
+                                    <Col>
+                                        <Form.Control 
+                                            type="date" 
+                                            value={summaryData.followDate}
+                                            onChange={(e) => setSummaryData({...summaryData, followDate: e.target.value})}
+                                            min={new Date().toISOString().split('T')[0]}
+                                        />
+                                    </Col>
+                                </Row>
+                                <Row>
+                                    <Col>
+                                        <Form.Select 
+                                            value={summaryData.followTime}
+                                            onChange={(e) => setSummaryData({...summaryData, followTime: e.target.value})}
+                                        >
+                                            <option value="">-- เลือกเวลา --</option>
+                                            <option>09:00-10:00</option>
+                                            <option>10:00-11:00</option>
+                                            <option>11:00-12:00</option>
+                                            <option>13:00-14:00</option>
+                                            <option>14:00-15:00</option>
+                                            <option>15:00-16:00</option>
+                                            <option>16:00-17:00</option>
+                                        </Form.Select>
+                                    </Col>
+                                </Row>
+                            </div>
+                        )}
+                    </Form>
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="secondary" onClick={() => setShowCompleteModal(false)}>ยกเลิก</Button>
+                    <Button variant="success" onClick={handleCompleteJob}>💾 บันทึกและจบงาน</Button>
+                </Modal.Footer>
+            </Modal>
+
+            {/* Assessment Modal */}
             <Modal show={showAssessment} onHide={() => setShowAssessment(false)} centered>
                 <Modal.Header closeButton><Modal.Title>ผลประเมิน: {selectedStudentName}</Modal.Title></Modal.Header>
                 <Modal.Body>

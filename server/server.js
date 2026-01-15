@@ -14,13 +14,13 @@ const app = express();
 // ==========================================
 
 app.use(cors({
-  origin: ["http://localhost:3000", "http://localhost:3001"], // รองรับทั้ง React Port 3000 และ 3001 (เผื่อไว้)
+  origin: ["http://localhost:3000", "http://localhost:3001"], 
   credentials: true
 }));
 
 app.use(express.json()); 
 
-// ตั้งค่าให้เข้าถึงโฟลเดอร์รูปภาพได้ (สำหรับโปรไฟล์)
+// ตั้งค่าให้เข้าถึงโฟลเดอร์รูปภาพได้
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // ==========================================
@@ -33,9 +33,7 @@ app.use('/api/assessments', require('./routes/assessmentRoutes'));
 app.use('/api/psychologists', require('./routes/psychologistRoutes'));
 app.use('/api/profile', require('./routes/profileRoutes'));
 app.use('/api/news', require('./routes/newsRoutes'));
-
-// ✅ เพิ่มบรรทัดนี้: เพื่อแก้ปัญหา Error 404 (Not Found) ในหน้าตารางเวลา
-app.use('/api/schedule', require('./routes/scheduleRoutes')); 
+app.use('/api/schedule', require('./routes/scheduleRoutes')); // ✅ ครบถ้วน
 
 // ==========================================
 // 3. สร้าง HTTP Server และเชื่อม Socket.io
@@ -56,7 +54,7 @@ const io = require("socket.io")(server, {
 io.on('connection', (socket) => {
     console.log(`⚡ User connected: ${socket.id}`);
 
-    // เมื่อ User เข้าห้องแชทตาม Appointment ID
+    // เมื่อ User เข้าห้องแชท
     socket.on('join_room', (appointmentId) => {
         socket.join(appointmentId);
         console.log(`📁 User joined room: ${appointmentId}`);
@@ -64,17 +62,23 @@ io.on('connection', (socket) => {
 
     // เมื่อมีการส่งข้อความ
     socket.on('send_message', async (data) => {
-        // ส่งข้อความหาทุกคนในห้องนัดหมายนั้นๆ (Real-time)
-        io.to(data.appointmentId).emit('receive_message', data);
+        // data ที่ส่งมาจาก Frontend หน้าตาแบบนี้: 
+        // { appointment_id, sender_id, message, sender_name, time }
+
+        // 1. ส่งข้อความหาทุกคนในห้อง (Real-time)
+        // ต้องส่งไปที่ data.appointment_id (ไม่ใช่ appointmentId)
+        io.to(data.appointment_id).emit('receive_message', data);
         
-        // บันทึกลง Database
+        // 2. บันทึกลง Database
         try {
             const sql = `
                 INSERT INTO chat_messages (appointment_id, sender_id, message_text) 
                 VALUES (?, ?, ?)
             `;
-            // ใช้ db.execute หรือ db.query ตามที่คุณตั้งค่าไว้ในไฟล์ config/db.js
-            await db.execute(sql, [data.appointmentId, data.senderId, data.content]);
+            // ✅ แก้ไข: ใช้ชื่อตัวแปรให้ตรงกับ Frontend (appointment_id, sender_id, message)
+            await db.query(sql, [data.appointment_id, data.sender_id, data.message]);
+            
+            console.log("💾 Message saved:", data.message);
         } catch (err) {
             console.error("❌ Save Message Error:", err.message);
         }
@@ -91,5 +95,5 @@ io.on('connection', (socket) => {
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
     console.log(`🚀 Server running on port ${PORT}`);
-    console.log(`💬 Socket.io & API Routes are ready for http://localhost:3001`);
+    console.log(`💬 Socket.io Ready!`);
 });
