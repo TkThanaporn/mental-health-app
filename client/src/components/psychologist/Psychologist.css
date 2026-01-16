@@ -361,3 +361,91 @@ h1, h2, h3, h4, h5, h6, .fw-title {
     padding: 0.5rem 1rem;
     border-radius: 30px;
 }
+/* =========================================
+   📊 PREMIUM STAT CARDS (สไตล์เดียวกับหน้าประวัติ)
+   ========================================= */
+
+.premium-stat-card {
+    border-radius: 20px;
+    padding: 1.5rem;
+    color: white;
+    position: relative;
+    overflow: hidden;
+    height: 100%;
+    min-height: 140px;
+    border: none;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.premium-stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 30px rgba(0,0,0,0.1);
+}
+
+/* ธีมสีการ์ด (ไล่เฉด) */
+.stat-navy {
+    background: linear-gradient(135deg, #00234B 0%, #004080 100%);
+    box-shadow: 0 8px 20px -5px rgba(0, 35, 75, 0.4);
+}
+.stat-success {
+    background: linear-gradient(135deg, #059669 0%, #10B981 100%);
+    box-shadow: 0 8px 20px -5px rgba(16, 185, 129, 0.4);
+}
+.stat-warning {
+    background: linear-gradient(135deg, #ea580c 0%, #f97316 100%); /* ปรับส้มให้เข้มขึ้นตามรูป */
+    box-shadow: 0 8px 20px -5px rgba(234, 88, 12, 0.4);
+}
+.stat-danger {
+    background: linear-gradient(135deg, #DC2626 0%, #EF4444 100%);
+    box-shadow: 0 8px 20px -5px rgba(220, 38, 38, 0.4);
+}
+
+/* ไอคอนพื้นหลังจางๆ */
+.stat-bg-icon {
+    position: absolute;
+    right: -15px;
+    bottom: -15px;
+    font-size: 6rem;
+    opacity: 0.15;
+    transform: rotate(-15deg);
+    pointer-events: none;
+}
+
+/* เนื้อหาในการ์ด */
+.stat-content {
+    position: relative;
+    z-index: 2;
+    text-align: center;
+    width: 100%;
+}
+
+.stat-top-label {
+    font-size: 0.9rem;
+    font-weight: 600;
+    opacity: 0.95;
+    margin-bottom: 0.5rem;
+    letter-spacing: 0.5px;
+}
+
+.stat-value-huge {
+    font-size: 3rem;
+    font-weight: 800;
+    line-height: 1;
+    margin-bottom: 0.5rem;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.stat-unit-pill {
+    background: rgba(255, 255, 255, 0.25);
+    padding: 4px 16px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    backdrop-filter: blur(4px);
+    display: inline-block;
+}

@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const http = require('http'); 
-const { Server } = require('socket.io'); 
+const { Server } = require("socket.io"); // ใช้ destructuring แบบนี้จะชัดเจนกว่า
 require('dotenv').config();
 const db = require('./config/db');
 const path = require('path'); 
@@ -12,7 +12,6 @@ const app = express();
 // ==========================================
 // 1. Middleware & CORS Configuration
 // ==========================================
-
 app.use(cors({
   origin: ["http://localhost:3000", "http://localhost:3001"], 
   credentials: true
@@ -33,14 +32,14 @@ app.use('/api/assessments', require('./routes/assessmentRoutes'));
 app.use('/api/psychologists', require('./routes/psychologistRoutes'));
 app.use('/api/profile', require('./routes/profileRoutes'));
 app.use('/api/news', require('./routes/newsRoutes'));
-app.use('/api/schedule', require('./routes/scheduleRoutes')); // ✅ ครบถ้วน
+app.use('/api/schedule', require('./routes/scheduleRoutes'));
 
 // ==========================================
 // 3. สร้าง HTTP Server และเชื่อม Socket.io
 // ==========================================
 const server = http.createServer(app);
 
-const io = require("socket.io")(server, {
+const io = new Server(server, {
   cors: {
     origin: ["http://localhost:3000", "http://localhost:3001"],
     methods: ["GET", "POST"],
@@ -55,30 +54,40 @@ io.on('connection', (socket) => {
     console.log(`⚡ User connected: ${socket.id}`);
 
     // เมื่อ User เข้าห้องแชท
-    socket.on('join_room', (appointmentId) => {
-        socket.join(appointmentId);
-        console.log(`📁 User joined room: ${appointmentId}`);
+    socket.on('join_room', (roomID) => {
+        // frontend ส่งมาเป็น "appt-12" หรือ "12" ก็ได้ แต่เราจะ join ตามนั้นเลย
+        socket.join(roomID);
+        console.log(`📁 User ${socket.id} joined room: ${roomID}`);
     });
 
     // เมื่อมีการส่งข้อความ
     socket.on('send_message', async (data) => {
-        // data ที่ส่งมาจาก Frontend หน้าตาแบบนี้: 
-        // { appointment_id, sender_id, message, sender_name, time }
+        // Data format จาก Frontend: 
+        // { room: "appt-12", author: "Name", authorId: 1, message: "Hello", time: "..." }
+        
+        console.log("📩 Received:", data);
 
-        // 1. ส่งข้อความหาทุกคนในห้อง (Real-time)
-        // ต้องส่งไปที่ data.appointment_id (ไม่ใช่ appointmentId)
-        io.to(data.appointment_id).emit('receive_message', data);
+        // 1. ส่งข้อความหาทุกคนในห้อง (Real-time) ยกเว้นคนส่งเอง (ใช้ broadcast) หรือส่งทุกคน (ใช้ io)
+        // ใช้ to(data.room) เพื่อส่งเข้าห้องที่ระบุ
+        socket.to(data.room).emit('receive_message', data);
         
         // 2. บันทึกลง Database
         try {
+            // ต้องแยก ID ออกจาก prefix "appt-" ถ้ามี
+            let apptId = data.room;
+            if (typeof apptId === 'string' && apptId.includes('-')) {
+                apptId = apptId.split('-')[1];
+            }
+
             const sql = `
                 INSERT INTO chat_messages (appointment_id, sender_id, message_text) 
                 VALUES (?, ?, ?)
             `;
-            // ✅ แก้ไข: ใช้ชื่อตัวแปรให้ตรงกับ Frontend (appointment_id, sender_id, message)
-            await db.query(sql, [data.appointment_id, data.sender_id, data.message]);
             
-            console.log("💾 Message saved:", data.message);
+            // Map ข้อมูลให้ตรงกับตาราง
+            await db.query(sql, [apptId, data.authorId, data.message]);
+            
+            console.log("💾 Message saved to DB");
         } catch (err) {
             console.error("❌ Save Message Error:", err.message);
         }
