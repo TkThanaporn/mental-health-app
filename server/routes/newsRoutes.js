@@ -1,50 +1,93 @@
-// ไฟล์: server/routes/news.js
 const express = require('express');
 const router = express.Router();
-const db = require('../config/db'); // ตรวจสอบว่า path นี้ตรงกับโฟลเดอร์ config ของคุณ
+const db = require('../config/db');
+const multer = require('multer');
+const path = require('path');
+const { authMiddleware } = require('../middleware/auth'); // ✅ เรียกใช้ Auth Middleware
 
-// ✅ 1. ส่วนดึงหมวดหมู่ (ต้องวางไว้บนสุด!)
+// ตั้งค่า Multer
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => cb(null, 'uploads/'),
+    filename: (req, file, cb) => cb(null, 'news-' + Date.now() + path.extname(file.originalname))
+});
+const upload = multer({ storage: storage });
+
+// 1. ดึงหมวดหมู่
 router.get('/categories', async (req, res) => {
     try {
-        // ข้อมูลจำลองเพื่อให้ Dropdown ทำงานได้ทันที
-        const categories = [
-            { id: 1, name: 'General', label: 'ข่าวทั่วไป' },
-            { id: 2, name: 'Academic', label: 'ข่าวการศึกษา' },
-            { id: 3, name: 'Activity', label: 'กิจกรรม' },
-            { id: 4, name: 'MentalHealth', label: 'สาระสุขภาพจิต' }
-        ];
-        res.json(categories);
-    } catch (err) {
-        console.error("❌ Get Categories Error:", err.message);
-        res.status(500).json({ message: err.message });
-    }
+        const [rows] = await db.query('SELECT * FROM news_categories');
+        res.json(rows);
+    } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// ✅ 2. ส่วนดึงข่าวทั้งหมด
+// 2. ดึงข่าวทั้งหมด
 router.get('/', async (req, res) => {
     try {
-        const [rows] = await db.execute('SELECT * FROM student_news ORDER BY created_at DESC');
+        const sql = `
+            SELECT n.*, c.category_name, u.fullname as author_name 
+            FROM student_news n
+            JOIN news_categories c ON n.category_id = c.category_id
+            LEFT JOIN users u ON n.author_id = u.user_id
+            ORDER BY n.created_at DESC
+        `;
+        const [rows] = await db.query(sql);
         res.json(rows);
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ✅ 3. เพิ่มข่าวใหม่ (ใช้ authMiddleware เพื่อระบุตัวตนนักจิตวิทยา)
+router.post('/', authMiddleware, upload.single('image'), async (req, res) => {
+    try {
+        const { title, content, category_id } = req.body;
+        // ดึง ID ของคนโพสต์จาก Token (req.user.id)
+        const author_id = req.user.id || req.user.user_id; 
+        const image_url = req.file ? `http://localhost:5000/uploads/${req.file.filename}` : null;
+
+        const sql = `INSERT INTO student_news (title, content, image_url, category_id, author_id) VALUES (?, ?, ?, ?, ?)`;
+        await db.query(sql, [title, content, image_url, category_id, author_id]); 
+        
+        res.json({ msg: 'Success' });
     } catch (err) {
-        console.error("❌ Get News Error:", err.message);
-        res.status(500).json({ message: err.message });
+        console.error(err);
+        res.status(500).json({ error: err.message });
     }
 });
 
-// ✅ 3. ส่วนเพิ่มข่าว
-router.post('/', async (req, res) => {
-    const { title, content, image_url, category_id, author_id } = req.body;
+// ✅ 4. แก้ไขข่าว (PUT)
+router.put('/:id', authMiddleware, upload.single('image'), async (req, res) => {
     try {
-        const sql = `
-            INSERT INTO student_news (title, content, image_url, category_id, author_id) 
-            VALUES (?, ?, ?, ?, ?)
-        `;
-        await db.execute(sql, [title, content, image_url || null, category_id || null, author_id || null]);
-        res.status(201).json({ message: "News created successfully" });
+        const { id } = req.params;
+        const { title, content, category_id } = req.body;
+        
+        // ถ้ามีการอัปโหลดรูปใหม่ ให้ใช้รูปใหม่ ถ้าไม่มีให้ใช้รูปเดิม (Logic นี้ทำใน SQL)
+        let sql = '';
+        let params = [];
+
+        if (req.file) {
+            // กรณีเปลี่ยนรูป
+            const image_url = `http://localhost:5000/uploads/${req.file.filename}`;
+            sql = `UPDATE student_news SET title=?, content=?, category_id=?, image_url=? WHERE news_id=?`;
+            params = [title, content, category_id, image_url, id];
+        } else {
+            // กรณีไม่เปลี่ยนรูป (ไม่ต้องอัปเดต image_url)
+            sql = `UPDATE student_news SET title=?, content=?, category_id=? WHERE news_id=?`;
+            params = [title, content, category_id, id];
+        }
+
+        await db.query(sql, params);
+        res.json({ msg: 'Updated Successfully' });
     } catch (err) {
-        console.error("❌ Create News Error:", err.message);
-        res.status(500).json({ message: err.message });
+        console.error(err);
+        res.status(500).json({ error: err.message });
     }
+});
+
+// 5. ลบข่าว
+router.delete('/:id', authMiddleware, async (req, res) => {
+    try {
+        await db.query('DELETE FROM student_news WHERE news_id = ?', [req.params.id]);
+        res.json({ msg: 'Deleted' });
+    } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 module.exports = router;
