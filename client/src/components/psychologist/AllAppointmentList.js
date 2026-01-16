@@ -1,149 +1,249 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Card, Table, Badge, Spinner, Form, InputGroup, Alert } from 'react-bootstrap';
-import { FaList, FaSearch, FaUser, FaClock, FaCalendarAlt, FaPhone } from 'react-icons/fa';
-import './Psychologist.css'; // ใช้ CSS ธีมเดิม
+import { Card, Table, Badge, Spinner, Form, InputGroup, Row, Col, Button } from 'react-bootstrap';
+import { 
+    FaSearch, FaUser, FaClock, FaCalendarAlt, 
+    FaEnvelope, FaHistory, FaCheckCircle, FaTimesCircle, 
+    FaHourglassHalf, FaMicroscope, FaDatabase, FaShieldAlt, FaFilter, FaUndo
+} from 'react-icons/fa';
+import './Psychologist.css';
 
 const AllAppointmentList = () => {
     const [appointments, setAppointments] = useState([]);
     const [loading, setLoading] = useState(true);
+    
+    // --- 🔍 State สำหรับการกรองข้อมูล ---
     const [searchTerm, setSearchTerm] = useState('');
+    const [filterDate, setFilterDate] = useState('');
+    const [filterYear, setFilterYear] = useState('');
+    const [filterTime, setFilterTime] = useState('');
 
-    useEffect(() => {
-        fetchHistory();
-    }, []);
+    useEffect(() => { fetchHistory(); }, []);
 
     const fetchHistory = async () => {
         try {
             const token = localStorage.getItem('token');
-            // ✅ เรียก API เส้นประวัติทั้งหมด (History)
             const res = await axios.get('http://localhost:5000/api/appointments/psychologist-history', {
                 headers: { 'x-auth-token': token }
             });
             setAppointments(res.data);
             setLoading(false);
         } catch (err) {
-            console.error("Error fetching history:", err);
+            console.error("Fetch Error:", err);
             setLoading(false);
         }
     };
 
-    // ฟังก์ชันช่วยแสดง Badge สีตามสถานะ
-    const getStatusBadge = (status) => {
+    // --- 🛠 ฟังก์ชันรีเซ็ตตัวกรอง ---
+    const resetFilters = () => {
+        setSearchTerm('');
+        setFilterDate('');
+        setFilterYear('');
+        setFilterTime('');
+    };
+
+    // --- 🔍 Logic การกรองข้อมูลขั้นสูง ---
+    const filteredAppointments = appointments.filter(app => {
+        const appDate = new Date(app.date);
+        const appYear = appDate.getFullYear().toString();
+        const appDateString = app.date.split('T')[0]; // ดึง YYYY-MM-DD
+
+        const matchesSearch = !searchTerm || 
+            (app.student_name?.toLowerCase().includes(searchTerm.toLowerCase())) ||
+            (app.topic?.toLowerCase().includes(searchTerm.toLowerCase()));
+
+        const matchesDate = !filterDate || appDateString === filterDate;
+        const matchesYear = !filterYear || appYear === filterYear;
+        const matchesTime = !filterTime || app.time_slot === filterTime;
+
+        return matchesSearch && matchesDate && matchesYear && matchesTime;
+    });
+
+    // --- 📊 คำนวณสถิติจากข้อมูลที่กรองแล้ว ---
+    const stats = {
+        total: filteredAppointments.length,
+        completed: filteredAppointments.filter(a => a.status === 'Completed').length,
+        pending: filteredAppointments.filter(a => a.status === 'Pending' || a.status === 'Confirmed').length,
+        cancelled: filteredAppointments.filter(a => a.status === 'Cancelled').length
+    };
+
+    const getStatusConfig = (status) => {
         switch (status) {
-            case 'Pending': return <Badge bg="warning" text="dark">รออนุมัติ</Badge>;
-            case 'Confirmed': return <Badge bg="success">ยืนยันแล้ว</Badge>;
-            case 'Completed': return <Badge bg="primary">เสร็จสิ้น</Badge>;
-            case 'Cancelled': return <Badge bg="danger">ยกเลิก</Badge>;
-            default: return <Badge bg="secondary">{status}</Badge>;
+            case 'Pending': return { label: 'รอเข้าพบ', cls: 'st-pen-pcshs' };
+            case 'Confirmed': return { label: 'ยืนยันนัด', cls: 'st-conf-pcshs' };
+            case 'Completed': return { label: 'สำเร็จแล้ว', cls: 'st-comp-pcshs' };
+            case 'Cancelled': return { label: 'ยกเลิกนัด', cls: 'st-can-pcshs' };
+            default: return { label: status, cls: 'st-def-pcshs' };
         }
     };
 
-    // ฟังก์ชันจัดรูปแบบวันที่
-    const formatDate = (dateString) => {
-        if (!dateString) return "-";
-        return new Date(dateString).toLocaleDateString('th-TH', {
-            weekday: 'short', day: 'numeric', month: 'short', year: 'numeric'
-        });
-    };
+    // สร้างรายการปีที่มีข้อมูลให้เลือกอัตโนมัติ
+    const availableYears = [...new Set(appointments.map(app => new Date(app.date).getFullYear().toString()))].sort();
 
-    // ระบบค้นหา (Filter)
-    const filteredAppointments = appointments.filter(app => 
-        (app.student_name && app.student_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (app.status && app.status.toLowerCase().includes(searchTerm.toLowerCase()))
+    // รายการช่วงเวลา (อิงตามระบบนัดหมาย)
+    const timeSlots = ["09:00-10:00", "10:00-11:00", "11:00-12:00", "13:00-14:00", "14:00-15:00", "15:00-16:00", "16:00-17:00", "17:00-18:00"];
+
+    if (loading) return (
+        <div className="loading-science-container text-center py-5">
+            <Spinner animation="border" variant="primary" />
+            <div className="loading-text mt-3 fw-bold pcshs-navy">กำลังเชื่อมต่อฐานข้อมูลจัดเก็บ...</div>
+        </div>
     );
 
     return (
-        <div className="fade-in-up">
-            <h4 className="pcshs-header-text mb-4">
-                <FaList className="me-2" /> ประวัติการนัดหมายทั้งหมด
-            </h4>
-
-            <Card className="pcshs-card shadow-sm border-0">
-                <Card.Header className="bg-white border-0 py-3 px-4">
-                    <div className="d-flex justify-content-between align-items-center flex-wrap gap-3">
-                        <div>
-                            <h5 className="mb-1 fw-bold text-dark">รายการทั้งหมด</h5>
-                            <small className="text-muted">รวมทุกสถานะ (เสร็จสิ้น, ยกเลิก, รออนุมัติ)</small>
-                        </div>
-                        
-                        {/* ช่องค้นหา */}
-                        <InputGroup style={{ maxWidth: '300px' }}>
-                            <InputGroup.Text className="bg-light border-end-0">
-                                <FaSearch className="text-muted" />
-                            </InputGroup.Text>
-                            <Form.Control 
-                                placeholder="ค้นหาชื่อ หรือ สถานะ..." 
-                                className="bg-light border-start-0"
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                            />
-                        </InputGroup>
+        <div className="pcshs-archive-container fade-in-up">
+            {/* Header */}
+            <div className="archive-header mb-4">
+                <div className="d-flex align-items-center mb-3">
+                    <div className="brand-icon-box me-3"><FaMicroscope /></div>
+                    <div>
+                        <h1 className="fw-800 pcshs-navy m-0">คลังข้อมูลประวัติการนัดหมาย</h1>
+                        <p className="text-muted m-0">ค้นหาและวิเคราะห์ประวัติการดูแลช่วยเหลือนักเรียน</p>
                     </div>
+                </div>
+            </div>
+
+            {/* --- 🛠 แผงควบคุมตัวกรอง (Scientific Filter Bar) --- */}
+            <Card className="filter-card shadow-sm border-0 mb-4 rounded-4 overflow-hidden">
+                <Card.Header className="bg-navy text-white py-2 px-3 d-flex align-items-center">
+                    <FaFilter className="me-2 small" /> <span className="small fw-bold">ตัวกรองข้อมูลขั้นสูง</span>
                 </Card.Header>
-                
-                <Card.Body className="p-0">
-                    {loading ? (
-                        <div className="text-center py-5">
-                            <Spinner animation="border" variant="primary" />
-                            <p className="mt-2 text-muted">กำลังโหลดข้อมูล...</p>
+                <Card.Body className="bg-white p-3">
+                    <Row className="g-3">
+                        <Col lg={3} md={6}>
+                            <Form.Label className="small fw-bold text-muted">ค้นหาชื่อ/หัวข้อ</Form.Label>
+                            <InputGroup size="sm">
+                                <InputGroup.Text className="bg-light border-0"><FaSearch className="text-muted"/></InputGroup.Text>
+                                <Form.Control 
+                                    className="bg-light border-0 shadow-none"
+                                    placeholder="ชื่อนักเรียน..." 
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                />
+                            </InputGroup>
+                        </Col>
+                        <Col lg={2} md={6}>
+                            <Form.Label className="small fw-bold text-muted">วันที่นัดหมาย</Form.Label>
+                            <Form.Control 
+                                size="sm" type="date" className="bg-light border-0 shadow-none"
+                                value={filterDate} onChange={(e) => setFilterDate(e.target.value)}
+                            />
+                        </Col>
+                        <Col lg={2} md={6}>
+                            <Form.Label className="small fw-bold text-muted">ปีการศึกษา (พ.ศ.)</Form.Label>
+                            <Form.Select 
+                                size="sm" className="bg-light border-0 shadow-none"
+                                value={filterYear} onChange={(e) => setFilterYear(e.target.value)}
+                            >
+                                <option value="">ทุกปี</option>
+                                {availableYears.map(year => (
+                                    <option key={year} value={year}>{parseInt(year) + 543}</option>
+                                ))}
+                            </Form.Select>
+                        </Col>
+                        <Col lg={3} md={6}>
+                            <Form.Label className="small fw-bold text-muted">ช่วงเวลา</Form.Label>
+                            <Form.Select 
+                                size="sm" className="bg-light border-0 shadow-none"
+                                value={filterTime} onChange={(e) => setFilterTime(e.target.value)}
+                            >
+                                <option value="">ทุกช่วงเวลา</option>
+                                {timeSlots.map(slot => <option key={slot} value={slot}>{slot} น.</option>)}
+                            </Form.Select>
+                        </Col>
+                        <Col lg={2} md={12} className="d-flex align-items-end">
+                            <Button variant="outline-danger" size="sm" className="w-100 rounded-pill fw-bold border-0" onClick={resetFilters}>
+                                <FaUndo className="me-1" /> ล้างตัวกรอง
+                            </Button>
+                        </Col>
+                    </Row>
+                </Card.Body>
+            </Card>
+
+            {/* สถิติรวม */}
+            <Row className="g-4 mb-5">
+                {[
+                    { label: 'ผลลัพธ์ที่พบ', value: stats.total, icon: <FaDatabase/>, type: 'navy' },
+                    { label: 'ดำเนินการสำเร็จ', value: stats.completed, icon: <FaCheckCircle/>, type: 'success' },
+                    { label: 'รอการเข้าพบ', value: stats.pending, icon: <FaHourglassHalf/>, type: 'warning' },
+                    { label: 'ยกเลิก/ไม่มา', value: stats.cancelled, icon: <FaTimesCircle/>, type: 'danger' }
+                ].map((item, idx) => (
+                    <Col key={idx} lg={3} sm={6}>
+                        <div className={`archive-stat-card card-${item.type}`}>
+                            <div className="stat-body p-3">
+                                <div className="stat-top d-flex align-items-center mb-1">
+                                    <span className="icon-circle-sm me-2">{item.icon}</span>
+                                    <span className="label-text-sm text-uppercase">{item.label}</span>
+                                </div>
+                                <div className="stat-bottom d-flex align-items-baseline">
+                                    <span className="value-text-md">{item.value}</span>
+                                    <span className="unit-text ms-2">รายการ</span>
+                                </div>
+                            </div>
                         </div>
-                    ) : filteredAppointments.length === 0 ? (
-                        <div className="text-center py-5">
-                            <div className="text-muted opacity-25 mb-2" style={{ fontSize: '3rem' }}>📋</div>
-                            <p className="text-muted">ไม่พบประวัติการนัดหมาย</p>
-                        </div>
-                    ) : (
-                        <div className="table-responsive">
-                            <Table hover className="align-middle mb-0">
-                                <thead className="bg-light text-muted small text-uppercase">
-                                    <tr>
-                                        <th className="ps-4 py-3 border-0">วันที่</th>
-                                        <th className="py-3 border-0">เวลา</th>
-                                        <th className="py-3 border-0">นักเรียน</th>
-                                        <th className="py-3 border-0">ช่องทางติดต่อ</th>
-                                        <th className="py-3 border-0 text-center">สถานะ</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {filteredAppointments.map((app) => (
-                                        <tr key={app.appointment_id}>
-                                            <td className="ps-4 fw-semibold text-dark">
-                                                <FaCalendarAlt className="me-2 text-muted small" />
-                                                {formatDate(app.date)}
-                                            </td>
-                                            <td className="text-primary fw-bold font-monospace">
-                                                <FaClock className="me-2 small" />
-                                                {app.time_slot}
+                    </Col>
+                ))}
+            </Row>
+
+            {/* ตารางแสดงผล */}
+            <div className="scientific-table-card shadow-lg border-0">
+                <div className="table-top-bar d-flex justify-content-between align-items-center px-4 py-3 bg-navy rounded-top-4">
+                    <div className="fw-700 text-white"><FaHistory className="me-2"/> ผลการกรองข้อมูลล่าสุด</div>
+                    <Badge bg="info" className="status-online"><FaShieldAlt className="me-1"/> ข้อมูลได้รับการเข้ารหัส</Badge>
+                </div>
+                <div className="table-responsive">
+                    <table className="table pcshs-archive-table align-middle m-0">
+                        <thead>
+                            <tr>
+                                <th className="ps-4">วัน-เวลา</th>
+                                <th>ข้อมูลนักเรียน</th>
+                                <th>รายละเอียด</th>
+                                <th className="text-center">สถานะ</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {filteredAppointments.length > 0 ? (
+                                filteredAppointments.map((app) => {
+                                    const config = getStatusConfig(app.status);
+                                    return (
+                                        <tr key={app.appointment_id} className="archive-row">
+                                            <td className="ps-4">
+                                                <div className="date-main fw-bold">{new Date(app.date).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' })}</div>
+                                                <div className="time-sub text-primary small fw-bold"><FaClock className="me-1"/>{app.time_slot}</div>
                                             </td>
                                             <td>
                                                 <div className="d-flex align-items-center">
-                                                    <div className="bg-light rounded-circle p-2 me-2 text-secondary">
-                                                        <FaUser size={12} />
+                                                    <div className="student-icon me-3 bg-light p-2 rounded-circle text-navy"><FaUser /></div>
+                                                    <div>
+                                                        <div className="student-name-text fw-bold">{app.student_name}</div>
+                                                        <div className="student-id-text small text-muted">ID: #{app.appointment_id}</div>
                                                     </div>
-                                                    <span className="fw-medium">{app.student_name || "ไม่ระบุชื่อ"}</span>
                                                 </div>
                                             </td>
-                                            <td className="text-muted small">
-                                                {app.student_phone && (
-                                                    <div className="mb-1"><FaPhone className="me-1"/> {app.student_phone}</div>
-                                                )}
-                                                <div className="text-truncate" style={{maxWidth: '150px'}}>{app.student_email}</div>
+                                            <td>
+                                                <div className="contact-pill bg-light px-2 py-1 rounded-pill small mb-1">
+                                                    <FaEnvelope className="me-2 opacity-50"/>{app.student_email}
+                                                </div>
+                                                <div className="topic-highlight small fw-bold text-navy">{app.topic || 'ปรึกษาทั่วไป'}</div>
                                             </td>
                                             <td className="text-center">
-                                                {getStatusBadge(app.status)}
+                                                <div className={`status-tag ${config.cls}`}>{config.label}</div>
                                             </td>
                                         </tr>
-                                    ))}
-                                </tbody>
-                            </Table>
-                        </div>
-                    )}
-                </Card.Body>
-                <div className="card-footer bg-white border-0 text-muted small text-end py-3 pe-4">
-                    แสดงผล {filteredAppointments.length} รายการ
+                                    );
+                                })
+                            ) : (
+                                <tr>
+                                    <td colSpan="4" className="text-center py-5">
+                                        <div className="text-muted fw-bold">ไม่พบข้อมูลที่ตรงกับเงื่อนไขการกรองของคุณ</div>
+                                        <Button variant="link" size="sm" onClick={resetFilters}>คลิกที่นี่เพื่อล้างค่าทั้งหมด</Button>
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
                 </div>
-            </Card>
+            </div>
         </div>
     );
 };

@@ -1,103 +1,274 @@
-/* src/components/psychologist/Psychologist.css */
+@import url('https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&family=Sarabun:wght@300;400;500;600&display=swap');
 
-/* --- 🎨 PCSHS Theme Variables --- */
 :root {
-  --pcshs-blue: #002147;       /* น้ำเงินเข้ม */
-  --pcshs-light-blue: #1B3F8B; /* น้ำเงินสว่าง */
-  --pcshs-orange: #F26522;     /* สีแสด */
-  --pcshs-gold: #FFD700;       /* สีทอง */
-  --bg-color: #f4f7fa;         /* พื้นหลัง */
+  /* --- PCSHS Brand Colors (Theme) --- */
+  --pcshs-blue-deep: #00234B;    /* น้ำเงินเข้ม จภ. */
+  --pcshs-blue-royal: #1B4588;   /* น้ำเงินสว่าง */
+  --pcshs-orange: #F26522;       /* แสด จภ. */
+  --pcshs-orange-light: #FF8D59; /* แสดอ่อนไล่เฉด */
+  
+  /* --- Surfaces & Text --- */
+  --bg-body: #F0F4F8;            /* พื้นหลังเทาอมฟ้า สบายตา */
+  --surface-white: #FFFFFF;
+  --text-primary: #1E293B;
+  --text-secondary: #64748B;
+  
+  /* --- Effects --- */
+  --shadow-sm: 0 2px 4px rgba(0,35,75, 0.05);
+  --shadow-md: 0 6px 15px -3px rgba(0,35,75, 0.1);
+  --shadow-glow-orange: 0 0 15px rgba(242, 101, 34, 0.4);
+  --radius-xl: 20px;
+  --radius-lg: 12px;
+  --sidebar-width: 280px;
 }
 
-/* --- 📦 Layout & Cards --- */
-.dashboard-bg {
-  background-color: var(--bg-color);
+body {
+  font-family: 'Sarabun', sans-serif;
+  background-color: var(--bg-body);
+  color: var(--text-primary);
+  overflow-x: hidden;
+}
+
+h1, h2, h3, h4, h5, h6, .fw-title {
+  font-family: 'Prompt', sans-serif;
+}
+
+/* --- Layout --- */
+.dashboard-wrapper {
+  display: flex;
   min-height: 100vh;
+  width: 100%;
 }
 
-.pcshs-card {
-  border: none !important;
-  border-radius: 20px !important;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-  background: white;
-  overflow: hidden;
-}
-
-.pcshs-header-text {
-  color: var(--pcshs-blue);
-  font-weight: bold;
-}
-
-/* --- 🔘 Buttons --- */
-.btn-pcshs-orange {
-  background-color: var(--pcshs-orange) !important;
-  color: white !important;
-  border: none !important;
-  border-radius: 30px !important;
+/* --- Sidebar Styling --- */
+.pcshs-sidebar {
+  width: var(--sidebar-width);
+  background: linear-gradient(180deg, var(--pcshs-blue-deep) 0%, #00152e 100%);
+  color: white;
+  height: 100vh;
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 1020;
   transition: all 0.3s ease;
+  box-shadow: 4px 0 20px rgba(0,0,0,0.1);
 }
 
-.btn-pcshs-orange:hover {
-  background-color: #d14e11 !important;
+/* --- Logo Section with Glow Effect --- */
+.logo-section {
+  padding: 2.5rem 1.5rem 1.5rem;
+  background: radial-gradient(circle at center, rgba(27, 69, 136, 0.4) 0%, rgba(0, 35, 75, 0) 70%);
+  text-align: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.pcshs-logo-glow {
+  width: 75px;
+  height: auto;
+  margin-bottom: 10px;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3)); 
+  transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.pcshs-logo-glow:hover {
+  transform: scale(1.1) rotate(-2deg);
+  filter: drop-shadow(0 0 15px rgba(242, 101, 34, 0.6));
+}
+
+.school-name {
+  font-family: 'Prompt', sans-serif;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  background: linear-gradient(to right, #ffffff, #e2e8f0);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-top: 5px;
+}
+
+/* --- Navigation Links --- */
+.nav-item-custom {
+  color: rgba(255, 255, 255, 0.7) !important;
+  font-family: 'Prompt', sans-serif;
+  font-weight: 400;
+  padding: 12px 20px;
+  margin: 6px 16px;
+  border-radius: var(--radius-lg);
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  font-size: 0.95rem;
+  border: 1px solid transparent;
+  cursor: pointer;
+}
+
+.nav-item-custom:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: white !important;
+  transform: translateX(4px);
+}
+
+.nav-item-custom.active {
+  background: linear-gradient(90deg, var(--pcshs-orange) 0%, #FF8D59 100%);
+  color: white !important;
+  font-weight: 600;
+  box-shadow: var(--shadow-glow-orange);
+}
+
+/* --- Main Content Area --- */
+.main-content {
+  flex: 1;
+  background-color: var(--bg-body);
+  min-height: 100vh;
+  transition: margin-left 0.3s ease;
+  width: 100%;
+}
+
+@media (min-width: 992px) {
+  .main-content {
+    margin-left: var(--sidebar-width);
+    width: calc(100% - var(--sidebar-width));
+  }
+}
+
+/* --- Glassmorphism Navbar --- */
+.navbar-modern {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+  padding: 0.8rem 2rem;
+  position: sticky;
+  top: 0;
+  z-index: 900;
+}
+
+/* --- Hero Banner --- */
+.hero-welcome {
+  /* ปรับปรุงพื้นหลัง Hero ให้ดูนวลขึ้น */
+  background: linear-gradient(135deg, #1B4588 0%, #00234B 100%);
+  border-radius: var(--radius-xl);
+  color: white;
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--shadow-md);
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+.hero-bg-pattern {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 100%;
+  height: 100%;
+  background-image: radial-gradient(circle at 85% 20%, rgba(242, 101, 34, 0.15) 0%, transparent 45%);
+  z-index: 0;
+}
+
+/* --- Stat Cards --- */
+.stat-card {
+  background: white;
+  border-radius: var(--radius-xl);
+  border: 1px solid #E2E8F0;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  height: 100%;
+}
+
+.stat-card:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--shadow-md);
+  border-color: rgba(242, 101, 34, 0.3);
+}
+
+.stat-icon-wrapper {
+  width: 50px;
+  height: 50px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  margin-right: 1rem;
+}
+
+.bg-orange-soft { background: #FFF3E0; color: var(--pcshs-orange); }
+.bg-blue-soft { background: #E0F2FE; color: var(--pcshs-blue-royal); }
+.bg-green-soft { background: #DCFCE7; color: #166534; }
+
+/* --- Buttons --- */
+.btn-pcshs {
+  background: var(--pcshs-orange);
+  border: none;
+  color: white;
+  border-radius: 50px;
+  padding: 10px 24px;
+  font-weight: 500;
+  font-family: 'Prompt', sans-serif;
+  transition: all 0.3s;
+}
+
+.btn-pcshs:hover {
+  background: #d95213;
+  color: white;
   transform: translateY(-2px);
-  box-shadow: 0 4px 10px rgba(242, 101, 34, 0.3);
+  box-shadow: 0 4px 12px rgba(242, 101, 34, 0.3);
 }
 
-.btn-pcshs-blue {
-  background-color: var(--pcshs-blue) !important;
-  color: white !important;
-  border: none !important;
-  border-radius: 30px !important;
+/* --- Mobile Offcanvas Fix --- */
+.offcanvas-custom {
+  background-color: var(--pcshs-blue-deep) !important;
 }
 
-.btn-pcshs-outline {
-  border: 1px solid var(--pcshs-blue) !important;
-  color: var(--pcshs-blue) !important;
-  background: transparent !important;
-  border-radius: 30px !important;
+.fade-in {
+  animation: fadeIn 0.5s ease-in-out;
 }
 
-.btn-pcshs-outline:hover {
-  background-color: var(--pcshs-blue) !important;
-  color: white !important;
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
-/* --- 🩹 Badges & Status --- */
-.badge-available {
-  background-color: #e8f5e9;
-  color: #2e7d32;
-  border: 1px solid #c8e6c9;
-  border-radius: 20px;
-  padding: 5px 12px;
-}
-/* การลอยตัวของโลโก้ */
-.animate-float {
-    animation: float 3s ease-in-out infinite;
+/* ----------------------------------------------------------------- */
+/* --- ส่วน Animation โลโก้ (Levitate & Shine + Position Fix) --- */
+/* ----------------------------------------------------------------- */
+
+@keyframes floatUp {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-12px) rotate(2deg); }
 }
 
-@keyframes float {
-    0% { transform: translateY(0px); }
-    50% { transform: translateY(-15px); }
-    100% { transform: translateY(0px); }
+@keyframes shine {
+  0% { left: -100%; opacity: 0; }
+  50% { opacity: 0.5; }
+  100% { left: 100%; opacity: 0; }
 }
 
-/* เอฟเฟกต์การ์ดสรุปตอนเอาเมาส์วาง */
-.hover-up {
-    transition: all 0.3s ease;
-    cursor: pointer;
+.hero-logo-container {
+  position: relative;
+  /* ขยับเข้ามาด้านในมากขึ้นตามที่ขอ */
+  margin-right: 80px; 
+  z-index: 1;
 }
 
-.hover-up:hover {
-    transform: translateY(-10px);
-    box-shadow: 0 15px 30px rgba(0,0,0,0.1) !important;
+.hero-logo-img {
+  width: 170px;
+  filter: drop-shadow(0 10px 15px rgba(0, 0, 0, 0.2));
+  
+  /* Animation ลอยตัว */
+  animation: floatUp 5s ease-in-out infinite; 
+  position: relative;
+  z-index: 2;
+  transition: transform 0.3s;
 }
 
-/* อนิเมชันเลื่อนขึ้นตอนเปิดหน้า */
-.fade-in-up {
-    animation: fadeInUp 0.6s ease-out;
-}
-
-@keyframes fadeInUp {
-    from { opacity: 0; transform: translateY(30px); }
-    to { opacity: 1; transform: translateY(0); }
+/* Animation แสงวิบวับวิ่งผ่าน */
+.hero-logo-container::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background: linear-gradient(to right, transparent 0%, rgba(255,255,255,0.6) 50%, transparent 100%);
+  transform: skewX(-25deg);
+  z-index: 3;
+  pointer-events: none;
+  /* แสงวิ่งผ่านทุกๆ 6 วินาที */
+  animation: shine 6s infinite; 
 }

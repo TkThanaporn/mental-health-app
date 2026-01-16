@@ -1,20 +1,21 @@
-// src/components/psychologist/PsychologistDashboard.js
 import React, { useState } from 'react';
 import { Container, Button, Card, Row, Col, Nav, Navbar, Offcanvas, Badge } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import { 
     FaHome, FaCalendarAlt, FaList, FaSignOutAlt, 
-    FaUserEdit, FaClock, FaSearch, FaBars, FaUserCircle,
-    FaCalendarCheck, FaUserClock, FaCheckCircle // เพิ่มไอคอนใหม่
+    FaUserEdit, FaClock, FaBars, FaUserCircle,
+    FaCalendarCheck, FaStethoscope, FaClipboardCheck, FaSearch
 } from 'react-icons/fa';
 
 import './Psychologist.css';
 
-// นำเข้า Component
+// Import Components (สมมติว่ามีไฟล์เหล่านี้อยู่)
 import AppointmentManager from './AppointmentManager'; 
 import ScheduleManager from './ScheduleManager'; 
 import AllAppointmentList from './AllAppointmentList'; 
 import ProfileEditor from './ProfileEditor';
+
+// Logo โรงเรียน
 import pcshsLogo from '../../assets/pcshs_logo.png'; 
 
 const PsychologistDashboard = () => {
@@ -22,157 +23,224 @@ const PsychologistDashboard = () => {
     const [activeTab, setActiveTab] = useState('dashboard'); 
     const [showMobileMenu, setShowMobileMenu] = useState(false);
 
+    // Mock Data (ข้อมูลจำลอง)
+    const psychologistName = "ดร.สมชาย ใจดี";
+
     const handleLogout = () => {
         localStorage.removeItem('token');
         localStorage.removeItem('role');
         navigate('/login');
     };
 
-    const handleCloseMobileMenu = () => setShowMobileMenu(false);
-    const handleShowMobileMenu = () => setShowMobileMenu(true);
-
     const handleMenuClick = (tabName) => {
         setActiveTab(tabName);
-        handleCloseMobileMenu();
+        setShowMobileMenu(false);
     };
 
-    const theme = {
-        primaryBlue: '#002147',
-        lightBlue: '#f4f7fa',
-        orange: '#F26522',
-        textGold: '#FFD700'
-    };
-
+    // --- Sidebar Component (ส่วนเมนูด้านซ้าย) ---
     const SidebarContent = () => (
-        <div className="d-flex flex-column h-100 text-white" style={{ background: theme.primaryBlue }}>
-            <div className="mb-4 mt-4 px-4 text-center">
-                <img src={pcshsLogo} alt="PCSHS" style={{ width: '60px', marginBottom: '10px' }} />
-                <h5 className="fw-bold mb-0" style={{ color: 'white' }}>PCSHS <span style={{ color: theme.orange }}>HeartCare</span></h5>
-                <small className="text-white-50">Psychologist Workspace</small>
+        <div className="d-flex flex-column h-100">
+            {/* Logo Section : จุดเด่นที่มีแสง Glow */}
+            <div className="logo-section">
+                <img 
+                    src={pcshsLogo} 
+                    alt="PCSHS Logo" 
+                    className="pcshs-logo-glow" 
+                />
+                <h6 className="school-name mb-0">PCSHS HeartCare</h6>
+                {/* เส้นขีดสีส้มเอกลักษณ์ */}
+                <div style={{ width: '40px', height: '2px', background: 'var(--pcshs-orange)', margin: '8px auto', borderRadius: '2px' }}></div>
+                <small className="text-white-50" style={{fontSize: '0.75rem', fontWeight: 300}}>
+                    ระบบดูแลช่วยเหลือนักเรียน
+                </small>
             </div>
 
-            <Nav className="flex-column w-100 px-3 mt-3">
-                <Nav.Link onClick={() => handleMenuClick('dashboard')} className={`mb-2 text-white d-flex align-items-center rounded-3 p-3 transition-all ${activeTab === 'dashboard' ? 'btn-pcshs-orange shadow' : 'hover-effect'}`}>
+            {/* Menu List */}
+            <Nav className="flex-column w-100 mt-3 px-2">
+                <div onClick={() => handleMenuClick('dashboard')} className={`nav-item-custom ${activeTab === 'dashboard' ? 'active' : ''}`}>
                     <FaHome className="me-3" /> หน้าหลัก
-                </Nav.Link>
-                <Nav.Link onClick={() => handleMenuClick('appointments')} className={`mb-2 text-white d-flex align-items-center rounded-3 p-3 transition-all ${activeTab === 'appointments' ? 'btn-pcshs-orange shadow' : 'hover-effect'}`}>
-                    <FaCalendarAlt className="me-3" /> จัดการนัดหมาย & แชท
-                </Nav.Link>
-                <Nav.Link onClick={() => handleMenuClick('all-list')} className={`mb-2 text-white d-flex align-items-center rounded-3 p-3 transition-all ${activeTab === 'all-list' ? 'btn-pcshs-orange shadow' : 'hover-effect'}`}>
-                    <FaList className="me-3" /> ประวัตินัดหมายทั้งหมด
-                </Nav.Link>
-                <Nav.Link onClick={() => handleMenuClick('schedule')} className={`mb-2 text-white d-flex align-items-center rounded-3 p-3 transition-all ${activeTab === 'schedule' ? 'btn-pcshs-orange shadow' : 'hover-effect'}`}>
+                </div>
+                <div onClick={() => handleMenuClick('appointments')} className={`nav-item-custom ${activeTab === 'appointments' ? 'active' : ''}`}>
+                    <FaCalendarAlt className="me-3" /> จัดการนัดหมาย
+                </div>
+                <div onClick={() => handleMenuClick('all-list')} className={`nav-item-custom ${activeTab === 'all-list' ? 'active' : ''}`}>
+                    <FaList className="me-3" /> ประวัติทั้งหมด
+                </div>
+                <div onClick={() => handleMenuClick('schedule')} className={`nav-item-custom ${activeTab === 'schedule' ? 'active' : ''}`}>
                     <FaClock className="me-3" /> ตั้งค่าตารางเวลา
-                </Nav.Link>
-                <Nav.Link onClick={() => handleMenuClick('profile')} className={`mb-2 text-white d-flex align-items-center rounded-3 p-3 transition-all ${activeTab === 'profile' ? 'btn-pcshs-orange shadow' : 'hover-effect'}`}>
-                    <FaUserEdit className="me-3" /> แก้ไขข้อมูลส่วนตัว
-                </Nav.Link>
+                </div>
+                <div onClick={() => handleMenuClick('profile')} className={`nav-item-custom ${activeTab === 'profile' ? 'active' : ''}`}>
+                    <FaUserEdit className="me-3" /> ข้อมูลส่วนตัว
+                </div>
             </Nav>
 
-            <div className="mt-auto p-4 border-top border-white-10">
-                <Nav.Link onClick={handleLogout} className="text-white-50 d-flex align-items-center rounded-3 p-2 hover-danger">
-                    <FaSignOutAlt className="me-3" /> ออกจากระบบ
-                </Nav.Link>
+            {/* Logout Section */}
+            <div className="mt-auto p-4 border-top border-secondary border-opacity-25">
+                <Button variant="link" onClick={handleLogout} className="text-white-50 text-decoration-none p-0 d-flex align-items-center hover-danger">
+                    <FaSignOutAlt className="me-2" /> ออกจากระบบ
+                </Button>
             </div>
         </div>
     );
 
+    // --- Main Content Renderer (ส่วนแสดงเนื้อหา) ---
     const renderContent = () => {
         switch (activeTab) {
             case 'dashboard':
                 return (
-                    <div className="fade-in-up">
-                        {/* Banner ต้อนรับ (ตามรูปภาพต้นฉบับที่คุณอยากให้สวย) */}
-                        <Card className="border-0 shadow-lg mb-4 text-white overflow-hidden" 
-                              style={{ borderRadius: '25px', background: `linear-gradient(135deg, ${theme.primaryBlue} 0%, #1B3F8B 100%)`, position: 'relative' }}>
-                            <div className="glass-circle"></div>
-                            <Card.Body className="p-4 p-md-5">
-                                <Row className="align-items-center">
-                                    <Col md={8} className="text-center text-md-start">
-                                        <Badge bg="warning" text="dark" className="mb-3 px-3 py-2 rounded-pill fw-bold shadow-sm">Psychologist Dashboard</Badge>
-                                        <h1 className="display-5 fw-bold mb-2">ยินดีต้อนรับกลับมา</h1>
-                                        <h4 className="fw-light mb-4" style={{ color: theme.orange }}>แดชบอร์ดส่วนตัวสำหรับการดูแลนักเรียน</h4>
-                                        <div className="d-flex gap-2 justify-content-center justify-content-md-start">
-                                            <Button className="btn-pcshs-orange rounded-pill px-4 py-2 fw-bold shadow" onClick={() => handleMenuClick('appointments')}>
-                                                <FaCalendarCheck className="me-2"/> ดูการนัดหมายวันนี้
-                                            </Button>
-                                        </div>
-                                    </Col>
-                                    <Col md={4} className="d-none d-md-block text-center">
-                                        <div className="bg-white p-3 rounded-circle shadow-lg d-inline-block animate-float" style={{ width: '180px', height: '180px' }}>
-                                            <img src={pcshsLogo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-                                        </div>
-                                    </Col>
-                                </Row>
-                            </Card.Body>
-                        </Card>
+                    <div className="fade-in">
+                        {/* 1. Hero Banner: แก้ไขส่วนนี้เพื่อใส่โลโก้ทางขวา */}
+                        <div className="hero-welcome p-4 p-lg-5 mb-4 d-flex align-items-center justify-content-between">
+                            <div className="hero-bg-pattern"></div>
+                            
+                            {/* ฝั่งซ้าย: ข้อความต้อนรับ */}
+                            <div className="position-relative z-1">
+                                <Badge bg="warning" text="dark" className="mb-2 px-3 rounded-pill fw-bold">Psychologist Panel</Badge>
+                                <h1 className="fw-title display-6 fw-bold mb-2">สวัสดี, {psychologistName}</h1>
+                                <p className="text-white-50 mb-4 fw-light" style={{maxWidth: '550px'}}>
+                                    ยินดีต้อนรับสู่ระบบบริหารจัดการงานจิตวิทยา โรงเรียนวิทยาศาสตร์จุฬาภรณราชวิทยาลัย
+                                </p>
+                                <Button className="btn-pcshs shadow-lg" onClick={() => handleMenuClick('appointments')}>
+                                    <FaCalendarCheck className="me-2"/> ตรวจสอบนัดหมายวันนี้
+                                </Button>
+                            </div>
 
-                        {/* Quick Stats */}
+                            {/* ฝั่งขวา: ใส่โลโก้โรงเรียนแบบเรืองแสงตามรูป */}
+                            <div className="d-none d-md-block hero-logo-container">
+                                <img 
+                                    src={pcshsLogo} 
+                                    alt="PCSHS School Logo" 
+                                    className="hero-logo-img" 
+                                />
+                                {/* ไอคอนหูฟังหมอแบบจางๆ เป็นพื้นหลังเพิ่มความสวยงาม */}
+                                <FaStethoscope 
+                                    size={200} 
+                                    style={{
+                                        position: 'absolute', 
+                                        right: '-40px', 
+                                        opacity: 0.05, 
+                                        color: 'white', 
+                                        transform: 'rotate(-20deg)',
+                                        zIndex: -1
+                                    }} 
+                                />
+                            </div>
+                        </div>
+
+                        {/* 2. Stats Cards: สถิติสำคัญ */}
                         <Row className="g-4 mb-4">
                             <Col md={4}>
-                                <Card className="border-0 shadow-sm rounded-4 h-100 bg-white hover-up">
+                                <Card className="stat-card border-0 shadow-sm">
                                     <Card.Body className="d-flex align-items-center p-4">
-                                        <div className="rounded-circle p-3 me-3" style={{ background: '#E3F2FD', color: theme.primaryBlue }}><FaUserClock size={24} /></div>
-                                        <div><h6 className="text-muted mb-1">รอยืนยันนัดหมาย</h6><h3 className="fw-bold mb-0">-- รายการ</h3></div>
+                                        <div className="stat-icon-wrapper bg-blue-soft">
+                                            <FaClock />
+                                        </div>
+                                        <div>
+                                            <small className="text-muted fw-bold font-prompt">รอยืนยันนัดหมาย</small>
+                                            <h2 className="mb-0 fw-bold text-dark">5 <span className="fs-6 text-muted fw-light">รายการ</span></h2>
+                                        </div>
                                     </Card.Body>
                                 </Card>
                             </Col>
                             <Col md={4}>
-                                <Card className="border-0 shadow-sm rounded-4 h-100 bg-white hover-up">
+                                <Card className="stat-card border-0 shadow-sm">
                                     <Card.Body className="d-flex align-items-center p-4">
-                                        <div className="rounded-circle p-3 me-3" style={{ background: '#FFF3E0', color: theme.orange }}><FaCalendarAlt size={24} /></div>
-                                        <div><h6 className="text-muted mb-1">นัดหมายวันนี้</h6><h3 className="fw-bold mb-0">-- รายการ</h3></div>
+                                        <div className="stat-icon-wrapper bg-orange-soft">
+                                            <FaCalendarAlt />
+                                        </div>
+                                        <div>
+                                            <small className="text-muted fw-bold font-prompt">นัดหมายวันนี้</small>
+                                            <h2 className="mb-0 fw-bold text-dark">3 <span className="fs-6 text-muted fw-light">ราย</span></h2>
+                                        </div>
                                     </Card.Body>
                                 </Card>
                             </Col>
                             <Col md={4}>
-                                <Card className="border-0 shadow-sm rounded-4 h-100 bg-white hover-up">
+                                <Card className="stat-card border-0 shadow-sm">
                                     <Card.Body className="d-flex align-items-center p-4">
-                                        <div className="rounded-circle p-3 me-3" style={{ background: '#E8F5E9', color: '#2E7D32' }}><FaCheckCircle size={24} /></div>
-                                        <div><h6 className="text-muted mb-1">สำเร็จแล้วทั้งหมด</h6><h3 className="fw-bold mb-0">-- เคส</h3></div>
+                                        <div className="stat-icon-wrapper bg-green-soft">
+                                            <FaClipboardCheck />
+                                        </div>
+                                        <div>
+                                            <small className="text-muted fw-bold font-prompt">ดูแลสำเร็จแล้ว</small>
+                                            <h2 className="mb-0 fw-bold text-dark">128 <span className="fs-6 text-muted fw-light">เคส</span></h2>
+                                        </div>
                                     </Card.Body>
                                 </Card>
                             </Col>
                         </Row>
+                        
+                        {/* 3. Placeholder for Activity: ส่วนเนื้อหาเพิ่มเติม */}
+                        <Card className="border-0 shadow-sm rounded-4 bg-white">
+                            <Card.Body className="p-4">
+                                <div className="d-flex justify-content-between align-items-center mb-3">
+                                    <h5 className="fw-title mb-0">กิจกรรมการนัดหมายล่าสุด</h5>
+                                    <Button variant="light" size="sm" className="rounded-pill text-muted"><FaSearch className="me-1"/> ค้นหา</Button>
+                                </div>
+                                <div className="text-center py-5 bg-light rounded-3 border border-dashed">
+                                    <p className="text-muted mb-0">
+                                        - พื้นที่สำหรับแสดงตารางนัดหมาย หรือ กราฟสรุปผลการดำเนินงาน -
+                                    </p>
+                                </div>
+                            </Card.Body>
+                        </Card>
                     </div>
                 );
             case 'appointments': return <AppointmentManager />;
             case 'schedule': return <ScheduleManager />;
             case 'all-list': return <AllAppointmentList />;
             case 'profile': return <ProfileEditor />;
-            default: return <div className="p-5 text-center text-muted"><h4>หน้ายังไม่พร้อมใช้งาน</h4></div>;
+            default: return null;
         }
     };
 
     return (
-        <div className="d-flex dashboard-bg">
-            {/* Sidebar Desktop */}
-            <div className="sidebar-desktop flex-column text-white shadow" style={{ width: '280px', height: '100vh', position: 'fixed', left: 0, top: 0, zIndex: 1000, background: theme.primaryBlue }}>
+        <div className="dashboard-wrapper">
+            {/* 1. Desktop Sidebar (แสดงเมื่อจอใหญ่) */}
+            <div className="pcshs-sidebar d-none d-lg-block">
                 <SidebarContent />
             </div>
 
-            {/* Sidebar Mobile */}
-            <Offcanvas show={showMobileMenu} onHide={handleCloseMobileMenu} style={{ width: '280px', background: theme.primaryBlue }}>
-                <Offcanvas.Body className="p-0"><SidebarContent /></Offcanvas.Body>
+            {/* 2. Mobile Sidebar (Offcanvas) */}
+            <Offcanvas 
+                show={showMobileMenu} 
+                onHide={() => setShowMobileMenu(false)} 
+                className="offcanvas-custom text-white"
+                style={{ width: '280px' }}
+            >
+                <Offcanvas.Header closeButton closeVariant="white" />
+                <Offcanvas.Body className="p-0">
+                    <SidebarContent />
+                </Offcanvas.Body>
             </Offcanvas>
 
-            {/* Main Content Area */}
-            <div className="dashboard-content flex-grow-1 w-100" style={{ marginLeft: window.innerWidth > 992 ? '280px' : '0' }}>
-                <Navbar bg="white" className="shadow-sm px-4 py-3 sticky-top">
-                    <div className="d-flex align-items-center w-100 justify-content-between">
-                        <Button variant="link" className="d-lg-none text-dark p-0 me-3" onClick={handleShowMobileMenu}><FaBars size={24}/></Button>
-                        <div className="fw-bold text-navy d-none d-sm-block">ระบบสนับสนุนดูแลช่วยเหลือนักเรียน (Psychologist)</div>
-                        <div className="d-flex align-items-center">
-                            <div className="text-end me-3 d-none d-md-block">
-                                <div className="fw-bold" style={{ fontSize: '0.9rem' }}>นักจิตวิทยา</div>
-                                <Badge bg="success" className="rounded-pill" style={{ fontSize: '0.7rem' }}>Online</Badge>
-                            </div>
-                            <div className="rounded-circle shadow-sm p-1 bg-light border"><FaUserCircle size={32} color={theme.primaryBlue} /></div>
+            {/* 3. Main Content Area */}
+            <div className="main-content d-flex flex-column">
+                {/* 3.1 Navbar */}
+                <Navbar className="navbar-modern justify-content-between">
+                    <div className="d-flex align-items-center">
+                        <Button variant="link" className="d-lg-none text-dark p-0 me-3" onClick={() => setShowMobileMenu(true)}>
+                            <FaBars size={24}/>
+                        </Button>
+                        <h5 className="fw-title mb-0 text-dark d-none d-sm-block">
+                            <span style={{color: 'var(--pcshs-blue-deep)'}}>Psychologist</span> Workspace
+                        </h5>
+                    </div>
+                    
+                    <div className="d-flex align-items-center gap-3">
+                        <div className="text-end d-none d-md-block line-height-sm">
+                            <div className="fw-bold text-dark" style={{fontSize: '0.9rem'}}>{psychologistName}</div>
+                            <small className="text-success fw-bold" style={{fontSize: '0.75rem'}}>● Online</small>
+                        </div>
+                        <div className="position-relative cursor-pointer">
+                             <FaUserCircle size={40} color="var(--pcshs-blue-deep)" />
+                             <span className="position-absolute bottom-0 end-0 bg-success border border-white rounded-circle p-1"></span>
                         </div>
                     </div>
                 </Navbar>
 
-                <Container fluid className="p-4 content-wrapper">
+                {/* 3.2 Dynamic Body Content */}
+                <Container fluid className="p-4 flex-grow-1">
                     {renderContent()}
                 </Container>
             </div>
