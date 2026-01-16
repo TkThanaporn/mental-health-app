@@ -1,87 +1,168 @@
-/* src/components/student/StudentDashboard.css */
-
-/* Animation */
-.fade-in-up {
-    animation: fadeInUp 0.6s ease-out;
+/* Color Variables for PCSHS Theme */
+:root {
+    --pcshs-blue: #0035ad;
+    --pcshs-orange: #f26522;
+    --pcshs-bg-gradient: linear-gradient(135deg, #e3f2fd 0%, #fff3e0 100%); /* ฟ้าอ่อนไปส้มอ่อน */
+    --pcshs-blue-light: #e8eaf6;
+    --pcshs-orange-light: #fff3e0;
 }
 
-@keyframes fadeInUp {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
+/* Base Layout */
+.pcshs-dashboard {
+    background-color: #f8f9fa;
+    min-height: 100vh;
 }
 
-/* Modern Card Styles */
-.appt-modern-card {
-    transition: transform 0.2s, box-shadow 0.2s;
-    background: #fff;
-    border: none;
+/* Navbar */
+.pcshs-navbar {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(0,0,0,0.05);
 }
 
-.appt-modern-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
-}
-
-.card-accent-bar {
-    width: 100%;
-    height: 6px;
-}
-
-/* Modal Chat Custom Style */
-.chat-modal-custom .modal-content {
-    border: none;
-    border-radius: 1rem;
+/* Hero Section */
+.hero-section {
+    padding-top: 100px; /* Space for fixed navbar */
+    padding-bottom: 80px;
+    background: var(--pcshs-bg-gradient);
+    min-height: 60vh;
+    border-bottom-right-radius: 50px; /* เพิ่มความโค้งมนตรงมุมล่าง */
+    border-bottom-left-radius: 50px;
+    position: relative;
     overflow: hidden;
-    box-shadow: 0 15px 40px rgba(0,0,0,0.2);
 }
 
-.chat-modal-custom .modal-header {
-    background-color: #fff;
-    padding: 1.5rem;
-    border-bottom: 1px solid #f0f0f0;
+.text-section {
+    z-index: 2;
 }
 
-.chat-modal-custom .modal-footer {
-    background-color: #fff;
-    border-top: 1px solid #f0f0f0;
+.fw-extrabold {
+    font-weight: 800;
 }
 
-/* Avatar Circle */
+/* Buttons */
+.btn-hero-primary {
+    background: linear-gradient(90deg, #f26522 0%, #ff8a50 100%);
+    border: none;
+    border-radius: 50px;
+    padding: 12px 30px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.btn-hero-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(242, 101, 34, 0.3);
+}
+
+.btn-hero-secondary {
+    border-radius: 50px;
+    padding: 12px 30px;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+/* Logo Animation */
+.school-logo {
+    max-height: 350px;
+    filter: drop-shadow(0 10px 15px rgba(0,0,0,0.1));
+}
+
+.floating-animation {
+    animation: float 6s ease-in-out infinite;
+}
+
+@keyframes float {
+    0% { transform: translateY(0px); }
+    50% { transform: translateY(-20px); }
+    100% { transform: translateY(0px); }
+}
+
+/* Menu Cards */
+.menu-card {
+    transition: transform 0.3s, box-shadow 0.3s;
+    background: white;
+}
+
+.menu-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 30px rgba(0,0,0,0.08) !important;
+}
+
+.icon-box {
+    width: 50px;
+    height: 50px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.bg-orange-light { background-color: var(--pcshs-orange-light); }
+.text-orange { color: var(--pcshs-orange); }
+
+.bg-blue-light { background-color: var(--pcshs-blue-light); }
+.text-blue { color: var(--pcshs-blue); }
+
+/* Appointment Cards */
+.appt-modern-card {
+    transition: all 0.2s;
+}
+.appt-modern-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.08) !important;
+}
+.card-status-strip {
+    height: 5px;
+    width: 100%;
+}
+.btn-chat-active {
+    background-color: var(--pcshs-blue);
+    border: none;
+}
+.btn-chat-active:hover {
+    background-color: #002a8a;
+}
+
+/* Chat Modal */
 .avatar-circle {
     width: 45px;
     height: 45px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.2rem;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+.bg-gradient-primary {
+    background: linear-gradient(135deg, var(--pcshs-blue) 0%, #4a90e2 100%);
 }
 
-/* Scrollbar for Chat Body */
-.chat-modal-custom .modal-body {
-    scrollbar-width: thin;
-    scrollbar-color: #cbd5e1 #f8f9fa;
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+    .reverse-column-mobile {
+        flex-direction: column-reverse;
+    }
+    .text-section {
+        text-align: center;
+        margin-top: 2rem;
+    }
+    .school-logo {
+        max-height: 200px;
+    }
+    .display-4 {
+        font-size: 2.5rem;
+    }
 }
 
-.chat-modal-custom .modal-body::-webkit-scrollbar {
-    width: 8px;
+/* Animations */
+.fade-in-up {
+    animation: fadeInUp 0.8s ease-out forwards;
+    opacity: 0;
 }
+.delay-100 { animation-delay: 0.2s; }
 
-.chat-modal-custom .modal-body::-webkit-scrollbar-track {
-    background: #f1f1f1;
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
 }
-
-.chat-modal-custom .modal-body::-webkit-scrollbar-thumb {
-    background-color: #cbd5e1;
-    border-radius: 10px;
-    border: 2px solid #f1f1f1;
-}
-
-/* Utility Colors for Badges (Optional overrides) */
-.bg-success { background-color: #10b981 !important; }
-.bg-danger { background-color: #ef4444 !important; }
-.bg-warning { background-color: #f59e0b !important; color: white !important; }
-.bg-secondary { background-color: #64748b !important; }
