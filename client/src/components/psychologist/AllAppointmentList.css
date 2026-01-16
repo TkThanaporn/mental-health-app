@@ -1,0 +1,240 @@
+/* =========================================
+   🧪 SCIENTIFIC PREMIUM DASHBOARD - Specific Styles
+   สไตล์เฉพาะสำหรับหน้าคลังข้อมูล (Redesigned)
+   ========================================= */
+
+/* --- 🌌 Background & Container (พื้นหลังวิทยาศาสตร์) --- */
+.pcshs-archive-container {
+    position: relative;
+    /* เพิ่ม Pattern พื้นหลังจางๆ */
+    background-image: 
+        radial-gradient(circle at 10% 20%, rgba(0, 35, 75, 0.03) 0%, transparent 20%),
+        radial-gradient(circle at 90% 80%, rgba(242, 101, 34, 0.03) 0%, transparent 20%),
+        linear-gradient(0deg, rgba(240, 244, 248, 0.8) 0%, rgba(240, 244, 248, 0.8) 100%),
+        url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%2300234B' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    background-attachment: fixed;
+    min-height: 90vh;
+    padding-bottom: 2rem;
+}
+
+.archive-header .brand-icon-box {
+    width: 50px; height: 50px;
+    background: linear-gradient(135deg, var(--pcshs-blue-deep), var(--pcshs-blue-royal));
+    color: white;
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.5rem;
+    box-shadow: 0 4px 12px rgba(0, 35, 75, 0.2);
+}
+
+/* --- 💎 Glassmorphism Panels (แผงกระจก) --- */
+.glass-panel {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    box-shadow: 0 8px 32px rgba(0, 35, 75, 0.05);
+    border-radius: 24px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+/* --- 🎛️ Modern Filter Bar (ตัวกรองแบบใหม่) --- */
+.filter-header-modern {
+    background: linear-gradient(90deg, var(--pcshs-blue-deep) 0%, var(--pcshs-blue-royal) 100%);
+    color: white;
+    padding: 1rem 1.5rem;
+    display: flex; align-items: center;
+    font-weight: 600; letter-spacing: 0.5px;
+}
+
+.modern-label {
+    font-size: 0.8rem; font-weight: 700;
+    color: var(--pcshs-blue-deep);
+    margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.5px;
+}
+
+/* Pill-shaped Inputs */
+.modern-input-group .input-group-text {
+    background: #fff; border: none;
+    border-radius: 50px 0 0 50px;
+    padding-left: 1.2rem;
+    color: var(--pcshs-text-muted);
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+}
+
+.modern-input-group .form-control,
+.modern-select, .modern-date {
+    border: none;
+    background: #fff;
+    border-radius: 0 50px 50px 0;
+    padding: 0.7rem 1rem;
+    font-size: 0.95rem;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+    transition: all 0.3s;
+}
+
+.modern-select, .modern-date { border-radius: 50px; }
+
+.modern-input-group .form-control:focus,
+.modern-select:focus, .modern-date:focus {
+    background: #fff;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.02), 0 0 0 3px rgba(0, 35, 75, 0.1);
+}
+
+.btn-reset-modern {
+    border-radius: 50px;
+    padding: 0.7rem 1.5rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    background: rgba(220, 53, 69, 0.1);
+    color: #dc3545;
+    border: none; transition: all 0.3s;
+}
+.btn-reset-modern:hover {
+    background: #dc3545; color: white;
+    box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+}
+
+/* --- 📊 Premium Stat Cards (การ์ดสถิติแบบพรีเมียม) --- */
+.premium-stat-card {
+    border-radius: 24px;
+    padding: 1.5rem;
+    color: white;
+    position: relative;
+    overflow: hidden;
+    height: 100%;
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
+    border: none;
+}
+
+.premium-stat-card:hover {
+    transform: translateY(-10px) scale(1.02);
+}
+
+/* Gradients & Shadows */
+.stat-navy {
+    background: linear-gradient(135deg, var(--pcshs-blue-deep), var(--pcshs-blue-royal));
+    box-shadow: 0 10px 20px -5px rgba(0, 35, 75, 0.4);
+}
+.stat-success {
+    background: linear-gradient(135deg, #059669, #10B981);
+    box-shadow: 0 10px 20px -5px rgba(16, 185, 129, 0.4);
+}
+.stat-warning {
+    background: linear-gradient(135deg, #D97706, #F59E0B);
+    box-shadow: 0 10px 20px -5px rgba(245, 158, 11, 0.4);
+}
+.stat-danger {
+    background: linear-gradient(135deg, #DC2626, #EF4444);
+    box-shadow: 0 10px 20px -5px rgba(239, 68, 68, 0.4);
+}
+
+.stat-bg-icon {
+    position: absolute; right: -20px; bottom: -20px;
+    font-size: 5rem; opacity: 0.15; transform: rotate(-15deg);
+}
+
+.stat-content { position: relative; z-index: 2; }
+.stat-top-label { font-size: 0.85rem; font-weight: 600; opacity: 0.9; letter-spacing: 1px; }
+.stat-value-huge { font-size: 2.8rem; font-weight: 800; line-height: 1.1; margin: 0.5rem 0; }
+.stat-unit-pill {
+    background: rgba(255, 255, 255, 0.2);
+    padding: 2px 10px; border-radius: 20px;
+    font-size: 0.75rem; font-weight: 600;
+}
+
+/* --- 📑 Modern Table Rows as Cards (ตารางแบบการ์ด) --- */
+.modern-table-container {
+    background: transparent; /* ให้เห็นพื้นหลัง */
+    box-shadow: none; border: none;
+}
+
+.table-top-bar-modern {
+    background: transparent; padding: 1rem 0.5rem;
+    border-bottom: 2px solid rgba(0, 35, 75, 0.05);
+}
+
+.pcshs-archive-table { border-collapse: separate; border-spacing: 0 12px; } /* เว้นระยะห่างระหว่างแถว */
+
+.pcshs-archive-table thead th {
+    border: none; background: transparent;
+    color: var(--pcshs-text-muted); font-weight: 700;
+    text-transform: uppercase; font-size: 0.8rem; letter-spacing: 0.5px;
+    padding: 0 1.5rem 1rem;
+}
+
+/* เปลี่ยนแถวให้เป็นการ์ด */
+.archive-row-card {
+    background: rgba(255, 255, 255, 0.9);
+    box-shadow: 0 4px 15px rgba(0, 35, 75, 0.03);
+    transition: all 0.2s ease-in-out;
+}
+
+.archive-row-card td {
+    border: none; padding: 1.2rem 1.5rem;
+    vertical-align: middle;
+}
+
+/* มุมโค้งหัวท้ายแถว */
+.archive-row-card td:first-child { border-top-left-radius: 16px; border-bottom-left-radius: 16px; }
+.archive-row-card td:last-child { border-top-right-radius: 16px; border-bottom-right-radius: 16px; }
+
+.archive-row-card:hover {
+    transform: translateY(-3px) scale(1.005);
+    background: #fff;
+    box-shadow: 0 8px 25px rgba(0, 35, 75, 0.08);
+    z-index: 10; position: relative;
+}
+
+/* Table Content Styling */
+.date-badge {
+    background: #f0f4f8; color: var(--pcshs-blue-deep);
+    font-weight: 700; padding: 6px 12px; border-radius: 10px;
+    display: inline-block; text-align: center;
+}
+.date-day { font-size: 1.1rem; line-height: 1; }
+.date-month { font-size: 0.75rem; text-transform: uppercase; }
+.time-sub-modern { color: var(--pcshs-orange); font-weight: 600; font-size: 0.85rem; margin-top: 6px; }
+
+.student-avatar-glow {
+    width: 48px; height: 48px;
+    background: linear-gradient(135deg, #fff, #f0f4f8);
+    border: 2px solid white;
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    color: var(--pcshs-blue-deep); font-size: 1.3rem;
+    box-shadow: 0 4px 10px rgba(0, 35, 75, 0.1);
+}
+
+.info-pill {
+    background: #f8fafc; border: 1px solid #e2e8f0;
+    padding: 4px 12px; border-radius: 30px;
+    font-size: 0.8rem; color: #64748b; display: inline-flex; align-items: center;
+}
+
+.topic-badge {
+    background: rgba(242, 101, 34, 0.1); color: var(--pcshs-orange);
+    font-weight: 600; font-size: 0.85rem;
+    padding: 4px 12px; border-radius: 30px; display: inline-block; margin-top: 6px;
+}
+
+/* Glowing Status Chips */
+.status-chip {
+    padding: 6px 16px; border-radius: 30px;
+    font-size: 0.75rem; font-weight: 700;
+    display: inline-flex; align-items: center;
+    position: relative; overflow: hidden;
+}
+.status-chip::before { content: ''; width: 8px; height: 8px; border-radius: 50%; margin-right: 8px; }
+
+.chip-pen { background: #fffbeb; color: #b45309; border: 1px solid #fcd34d; }
+.chip-pen::before { background: #f59e0b; box-shadow: 0 0 8px #f59e0b; }
+
+.chip-conf { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+.chip-conf::before { background: #3b82f6; box-shadow: 0 0 8px #3b82f6; }
+
+.chip-comp { background: #ecfdf5; color: #047857; border: 1px solid #6ee7b7; }
+.chip-comp::before { background: #10b981; box-shadow: 0 0 8px #10b981; }
+
+.chip-can { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
+.chip-can::before { background: #ef4444; box-shadow: 0 0 8px #ef4444; }

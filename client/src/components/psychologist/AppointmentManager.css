@@ -1,139 +1,212 @@
-/* src/components/psychologist/AppointmentManager.css */
-@import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap');
+/* =========================================
+   🧬 SCIENTIFIC APPOINTMENT MANAGER
+   ธีมจัดการนัดหมายแบบห้องแล็บข้อมูล
+   ========================================= */
+
+@import url('https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&family=Sarabun:wght@300;400;500;600&display=swap');
 
 :root {
-    --pcshs-navy: #002147;
-    --pcshs-orange: #F26522;
-    --pcshs-light-blue: #e6ecf2;
-    --pcshs-white: #ffffff;
+    --pcshs-navy: #00234B;
+    --pcshs-orange: #F25C05;
+    --glass-bg: rgba(255, 255, 255, 0.85);
+    --glass-border: 1px solid rgba(255, 255, 255, 0.6);
+    --shadow-soft: 0 10px 30px rgba(0, 35, 75, 0.05);
+    --shadow-hover: 0 15px 40px rgba(0, 35, 75, 0.1);
 }
 
+/* --- 🌌 Background Structure --- */
 .appt-pcshs-container {
-    background: linear-gradient(135deg, #f0f4f8 0%, #e6ecf2 100%);
-    min-height: 100vh;
-    padding: 2.5rem 0;
+    position: relative;
     font-family: 'Sarabun', sans-serif;
+    min-height: 100vh;
+    padding-bottom: 3rem;
+    /* Pattern วิทยาศาสตร์ */
+    background-image: 
+        radial-gradient(circle at 15% 15%, rgba(242, 101, 34, 0.04) 0%, transparent 25%),
+        linear-gradient(135deg, #f8fafc 0%, #eef2f6 100%),
+        url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%2300234B' fill-opacity='0.03' fill-rule='evenodd'/%3E%3C/svg%3E");
+    background-attachment: fixed;
 }
 
-/* --- Header Section --- */
-.header-brand-border {
-    border-left: 5px solid var(--pcshs-orange);
-    padding-left: 15px;
-}
+h1, h2, h3, h4, h5 { font-family: 'Prompt', sans-serif; }
 
+/* --- Header & Brand --- */
 .appt-header-title {
     color: var(--pcshs-navy);
     font-weight: 800;
     letter-spacing: -0.5px;
 }
 
-/* --- Search & Toggle --- */
-.search-box-pcshs {
-    border-radius: 12px;
-    border: 2px solid var(--pcshs-light-blue);
-    background: var(--pcshs-white);
-    transition: all 0.3s ease;
-}
-
-.search-box-pcshs:focus-within {
-    border-color: var(--pcshs-navy);
-    box-shadow: 0 0 0 4px rgba(0, 33, 71, 0.1);
-}
-
-.btn-toggle-pcshs {
-    border-radius: 10px;
-    font-weight: 600;
-    padding: 8px 20px;
-}
-
-/* --- Card Design (Science High School Look) --- */
-.pcshs-card {
-    border: none !important;
-    border-radius: 20px !important;
-    background: var(--pcshs-white);
-    box-shadow: 0 10px 25px rgba(0, 33, 71, 0.05) !important;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    overflow: hidden;
-}
-
-.pcshs-card:hover {
-    transform: translateY(-10px);
-    box-shadow: 0 20px 40px rgba(0, 33, 71, 0.12) !important;
-}
-
-/* แถบสีด้านบนการ์ด */
-.card-top-accent {
-    height: 5px;
-    width: 100%;
-    background: var(--pcshs-navy);
-}
-
-.card-top-accent.pending { background: var(--pcshs-orange); }
-.card-top-accent.confirmed { background: #10b981; }
-
-/* วันที่แบบปฏิทินจุฬาภรณ์ */
-.pcshs-date-badge {
-    background: var(--pcshs-navy);
+.brand-icon-box {
+    width: 50px; height: 50px;
+    background: linear-gradient(135deg, var(--pcshs-navy), #1e3a8a);
     color: white;
-    padding: 10px;
-    border-radius: 12px;
-    text-align: center;
-    min-width: 65px;
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.5rem;
+    box-shadow: 0 4px 15px rgba(0, 35, 75, 0.2);
 }
 
-.pcshs-date-badge .day { font-size: 1.4rem; font-weight: 700; line-height: 1; }
-.pcshs-date-badge .month { font-size: 0.75rem; text-transform: uppercase; opacity: 0.9; }
-
-/* --- Buttons --- */
-.btn-pcshs-primary {
-    background-color: var(--pcshs-navy) !important;
-    border: none !important;
-    border-radius: 12px !important;
-    font-weight: 600 !important;
-    padding: 10px 20px !important;
-    transition: all 0.3s ease !important;
-}
-
-.btn-pcshs-primary:hover {
-    background-color: var(--pcshs-orange) !important;
-    box-shadow: 0 8px 15px rgba(242, 101, 34, 0.3) !important;
-}
-
-.action-circle-btn {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: #f8fafc;
-    color: var(--pcshs-navy);
-    cursor: pointer;
-    transition: all 0.2s;
+/* --- Search & Toggle (Pill Styles) --- */
+.search-box-modern {
+    background: #fff;
     border: 1px solid #e2e8f0;
+    border-radius: 50px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+    overflow: hidden;
+    transition: 0.3s;
 }
 
-.action-circle-btn:hover {
+.search-box-modern:focus-within {
+    border-color: var(--pcshs-navy);
+    box-shadow: 0 0 0 4px rgba(0, 35, 75, 0.1);
+}
+
+.view-toggle-container {
+    background: #e2e8f0;
+    border-radius: 50px;
+    padding: 4px;
+    display: flex;
+}
+
+.btn-toggle-modern {
+    border-radius: 50px;
+    padding: 6px 20px;
+    font-weight: 600; font-size: 0.9rem;
+    border: none;
+    transition: 0.3s;
+    background: transparent; color: #64748b;
+}
+
+.btn-toggle-modern.active {
+    background: white;
+    color: var(--pcshs-navy);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+/* --- 🧊 Card Mode (Modern Glass Cards) --- */
+.appt-modern-card {
+    background: #fff;
+    border-radius: 20px;
+    border: none;
+    box-shadow: var(--shadow-soft);
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
+    overflow: hidden;
+    position: relative;
+    height: 100%;
+}
+
+.appt-modern-card:hover {
+    transform: translateY(-8px);
+    box-shadow: var(--shadow-hover);
+}
+
+/* Status Accents (แถบสีด้านบน) */
+.card-accent-bar { height: 6px; width: 100%; }
+.accent-pending { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+.accent-confirmed { background: linear-gradient(90deg, #10b981, #34d399); }
+.accent-cancelled { background: linear-gradient(90deg, #ef4444, #f87171); }
+
+/* Date Box in Card */
+.date-box-card {
+    background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+    border-radius: 12px;
+    padding: 8px 16px;
+    text-align: center;
+    color: var(--pcshs-navy);
+    min-width: 70px;
+}
+.date-d { font-size: 1.5rem; font-weight: 800; line-height: 1; }
+.date-m { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
+
+/* Student Info */
+.student-badge {
+    background: rgba(0, 35, 75, 0.05);
+    color: var(--pcshs-navy);
+    padding: 6px 12px;
+    border-radius: 30px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    display: inline-flex; align-items: center;
+}
+
+/* Action Buttons in Card */
+.card-actions {
+    margin-top: 1rem;
+    border-top: 1px solid #f1f5f9;
+    padding-top: 1rem;
+}
+
+.btn-chat-modern {
     background: var(--pcshs-navy);
     color: white;
+    border-radius: 12px;
+    font-weight: 600;
+    transition: 0.2s;
+    border: none;
+}
+.btn-chat-modern:hover { background: #1e3a8a; transform: translateY(-2px); }
+
+/* --- 📑 Table Mode (Rows as Cards) --- */
+.modern-table-wrapper {
+    background: rgba(255,255,255,0.6);
+    backdrop-filter: blur(10px);
+    border-radius: 24px;
+    padding: 1.5rem;
+    border: 1px solid rgba(255,255,255,0.8);
+    box-shadow: var(--shadow-soft);
 }
 
-/* --- Table Styles --- */
-.pcshs-table-card {
-    border-radius: 20px !important;
-    border: none !important;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04) !important;
+.pcshs-table-modern { border-collapse: separate; border-spacing: 0 12px; width: 100%; }
+
+.pcshs-table-modern thead th {
+    border: none; background: transparent;
+    font-family: 'Prompt', sans-serif;
+    font-size: 0.85rem; font-weight: 600;
+    color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;
+    padding-bottom: 0.5rem;
 }
 
-.pcshs-table thead th {
-    background-color: var(--pcshs-navy);
-    color: white;
-    font-weight: 500;
-    padding: 15px;
+/* Row Style */
+.table-row-card {
+    background: #fff;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+    transition: all 0.2s ease-in-out;
+}
+
+.table-row-card td {
+    padding: 1.2rem;
+    vertical-align: middle;
     border: none;
 }
 
-.pcshs-table tbody td {
-    padding: 18px 15px;
-    border-bottom: 1px solid #f1f5f9;
+.table-row-card td:first-child { border-top-left-radius: 16px; border-bottom-left-radius: 16px; }
+.table-row-card td:last-child { border-top-right-radius: 16px; border-bottom-right-radius: 16px; }
+
+.table-row-card:hover {
+    transform: scale(1.01);
+    box-shadow: 0 8px 25px rgba(0, 35, 75, 0.08);
+    z-index: 10; position: relative;
 }
+
+/* Status Chips */
+.status-pill {
+    padding: 4px 12px; border-radius: 20px;
+    font-size: 0.75rem; font-weight: 700;
+    display: inline-flex; align-items: center; gap: 6px;
+}
+.sp-pending { background: #fff7ed; color: #c2410c; border: 1px solid #ffedd5; }
+.sp-confirmed { background: #ecfdf5; color: #047857; border: 1px solid #d1fae5; }
+.sp-cancelled { background: #fef2f2; color: #b91c1c; border: 1px solid #fee2e2; }
+
+/* Dropdown Menu */
+.modern-dropdown .dropdown-toggle::after { display: none; }
+.modern-dropdown .dropdown-menu {
+    border: none; box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+    border-radius: 16px; padding: 0.5rem;
+}
+.modern-dropdown .dropdown-item {
+    border-radius: 10px; padding: 8px 12px; font-size: 0.9rem;
+}
+.modern-dropdown .dropdown-item:hover { background: #f1f5f9; }
+.modern-dropdown .dropdown-item.danger:hover { background: #fef2f2; color: #ef4444; }

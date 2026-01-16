@@ -1,257 +1,214 @@
 /* =========================================
-   🏛️ PCSHS ULTRA MODERN THEME - News Module
+   🧪 NEWS MANAGEMENT - Scientific Theme
+   ดีไซน์แบบห้องแล็บข้อมูล (เหมือนหน้าประวัติ)
    ========================================= */
 
-@import url('https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&family=Sarabun:wght@300;400;500;600&display=swap');
 
 :root {
-    --pcshs-orange: #F25C05;
     --pcshs-blue: #003566;
-    --grad-orange: linear-gradient(135deg, #F25C05 0%, #ff8c42 100%);
-    --grad-blue: linear-gradient(135deg, #003566 0%, #006494 100%);
-    --glass-bg: rgba(255, 255, 255, 0.95);
-    --shadow-soft: 0 10px 40px -10px rgba(0,0,50,0.08);
-    --shadow-hover: 0 20px 50px -12px rgba(0,0,50,0.15);
-    --radius-xl: 24px;
+    --pcshs-blue-deep: #00234B;
+    --pcshs-orange: #F25C05;
+    --pcshs-text-muted: #64748b;
+    --glass-bg: rgba(255, 255, 255, 0.85);
+    --glass-border: 1px solid rgba(255, 255, 255, 0.5);
 }
 
-.news-container {
-    font-family: 'Prompt', sans-serif;
+/* --- 🌌 Background Structure --- */
+.pcshs-news-container {
+    font-family: 'Sarabun', sans-serif;
     position: relative;
-    z-index: 1;
+    /* พื้นหลังลายวิทยาศาสตร์เดียวกับหน้า Archive */
+    background-image: 
+        radial-gradient(circle at 10% 20%, rgba(0, 35, 75, 0.03) 0%, transparent 20%),
+        radial-gradient(circle at 90% 80%, rgba(242, 101, 34, 0.03) 0%, transparent 20%),
+        linear-gradient(0deg, rgba(240, 244, 248, 0.9) 0%, rgba(240, 244, 248, 0.9) 100%),
+        url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%2300234B' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    background-attachment: fixed;
+    min-height: 100vh;
+    padding-bottom: 3rem;
 }
 
-/* Background Blob Effect */
-.news-container::before {
-    content: '';
-    position: absolute;
-    top: -50px; right: -50px;
-    width: 300px; height: 300px;
-    background: var(--pcshs-blue);
-    opacity: 0.03;
-    border-radius: 50%;
-    filter: blur(60px);
-    z-index: -1;
-}
+h1, h2, h3, h4, h5, .fw-title { font-family: 'Prompt', sans-serif; }
 
-/* --- Header Section --- */
-.news-header-wrapper {
-    display: flex;
-    align-items: center;
-    margin-bottom: 2rem;
-}
-
-.news-header-line {
-    width: 6px; height: 45px;
-    background: var(--grad-orange);
-    border-radius: 4px;
-    margin-right: 1.2rem;
-}
-
-.news-header-title {
-    font-weight: 800;
-    color: var(--pcshs-blue);
-    margin: 0;
-}
-
-.news-header-subtitle {
-    font-size: 0.9rem;
-    color: #8898aa;
-    letter-spacing: 0.5px;
-}
-
-/* --- Card Design --- */
-.news-card {
-    border: none;
-    border-radius: var(--radius-xl);
-    background: var(--glass-bg);
-    box-shadow: var(--shadow-soft);
-    margin-bottom: 3rem;
-    overflow: hidden;
-    transition: 0.3s;
-}
-
-.news-card:hover { box-shadow: var(--shadow-hover); }
-
-.news-card-header {
-    padding: 1.5rem 2rem;
+/* --- Header --- */
+.news-header .brand-icon-box {
+    width: 55px; height: 55px;
+    background: linear-gradient(135deg, var(--pcshs-blue-deep), #1B4588);
     color: white;
-    font-weight: 600;
-}
-
-.gradient-blue { background: var(--grad-blue); }
-.gradient-warning { background: linear-gradient(135deg, #f6ad55 0%, #ed8936 100%); color: white !important; }
-
-/* --- Form Elements --- */
-.news-input-group label {
-    font-weight: 600;
-    color: #4a5568;
-    margin-bottom: 0.5rem;
-    display: block;
-    font-size: 0.9rem;
-}
-
-.pcshs-input {
-    background-color: #f8fafc !important;
-    border: 2px solid transparent !important;
-    border-radius: 12px !important;
-    padding: 0.8rem 1rem !important;
-    font-size: 1rem !important;
-    transition: 0.3s !important;
-}
-
-.pcshs-input:focus {
-    background-color: white !important;
-    border-color: var(--pcshs-blue) !important;
-    box-shadow: 0 0 0 4px rgba(0, 53, 102, 0.1) !important;
-}
-
-/* --- Upload Area --- */
-.news-upload-wrapper {
-    background-color: #f8fafc;
     border-radius: 16px;
-    border: 2px dashed #cbd5e0;
-    min-height: 220px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    position: relative;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.6rem;
+    box-shadow: 0 4px 15px rgba(0, 35, 75, 0.2);
+}
+
+/* --- 💎 Glass Panels (กรอบกระจก) --- */
+.glass-panel {
+    background: var(--glass-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: var(--glass-border);
+    box-shadow: 0 8px 32px rgba(0, 35, 75, 0.05);
+    border-radius: 24px;
     overflow: hidden;
-    transition: 0.3s;
+    transition: all 0.3s ease;
 }
 
-.news-upload-wrapper:hover {
-    border-color: var(--pcshs-orange);
-    background-color: #fff7ed;
-}
-
-.news-upload-wrapper input[type="file"] {
-    position: absolute;
-    width: 100%; height: 100%;
-    opacity: 0; cursor: pointer;
-    z-index: 2;
-}
-
-.news-preview-image {
-    width: 100%; height: 100%;
-    object-fit: cover;
-    position: absolute;
-    top: 0; left: 0;
-    z-index: 1;
-}
-
-/* --- Buttons --- */
-.btn-pcshs-grad {
-    background: var(--grad-orange);
-    border: none;
+.panel-header-modern {
+    background: linear-gradient(90deg, var(--pcshs-blue-deep) 0%, #1B4588 100%);
     color: white;
-    padding: 0.8rem;
-    border-radius: 50px;
-    font-weight: 600;
-    transition: 0.3s;
-}
-
-.btn-pcshs-grad:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 10px 20px rgba(242, 92, 5, 0.3);
-    color: white;
-}
-
-.btn-pcshs-grad.edit-mode { background: linear-gradient(135deg, #ecc94b 0%, #d69e2e 100%); }
-
-/* --- Table Styles --- */
-.news-table thead th {
-    background-color: #f7fafc;
-    color: #4a5568;
-    font-weight: 600;
-    text-transform: uppercase;
-    font-size: 0.8rem;
-    padding: 1.2rem;
-    border: none;
-}
-
-.news-table-row td {
-    vertical-align: middle;
-    padding: 1rem;
-    border-bottom: 1px solid #edf2f7;
-}
-
-.news-table-row:hover { background-color: #f8fbff; }
-
-.news-thumbnail {
-    width: 60px; height: 60px;
-    border-radius: 10px;
-    object-fit: cover;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-}
-
-.pcshs-badge-pill {
-    background: #e2e8f0;
-    color: #2d3748;
-    border-radius: 50px;
-    padding: 6px 12px;
+    padding: 1rem 1.5rem;
+    display: flex; justify-content: space-between; align-items: center;
+    font-family: 'Prompt', sans-serif;
     font-weight: 500;
 }
 
-/* --- Action Buttons --- */
-.action-btn-group { display: flex; justify-content: flex-end; gap: 8px; }
+/* --- 📝 Form Inputs (Pill Shape) --- */
+.modern-label {
+    font-family: 'Prompt', sans-serif;
+    font-size: 0.85rem; font-weight: 600;
+    color: var(--pcshs-blue-deep);
+    margin-bottom: 0.5rem; letter-spacing: 0.5px;
+}
 
-.btn-icon {
-    width: 36px; height: 36px;
-    border-radius: 50%;
+.modern-input, .modern-textarea, .modern-select {
     border: none;
-    background: #edf2f7;
-    color: #718096;
-    display: flex; align-items: center; justify-content: center;
-    transition: 0.2s;
+    background: #fff;
+    border-radius: 50px;
+    padding: 0.8rem 1.2rem;
+    font-size: 0.95rem;
+    box-shadow: inset 0 2px 6px rgba(0,0,0,0.03);
+    transition: all 0.3s;
+    color: #334155;
 }
 
-.btn-icon:hover { background: var(--pcshs-blue); color: white; }
-.btn-icon.delete:hover { background: #fc8181; color: white; }
+.modern-textarea { border-radius: 20px; }
 
-/* --- Modal Styles --- */
-.news-modal-content {
-    border: none;
-    border-radius: 24px;
-    overflow: hidden;
+.modern-input:focus, .modern-textarea:focus, .modern-select:focus {
+    background: #fff;
+    box-shadow: inset 0 2px 6px rgba(0,0,0,0.03), 0 0 0 3px rgba(0, 35, 75, 0.1);
+    outline: none;
 }
 
-.news-modal-banner {
-    height: 350px;
-    background-size: cover;
-    background-position: center;
-    position: relative;
-    background-color: #2d3748;
-}
-
-.news-modal-overlay {
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.2) 60%, rgba(0,0,0,0.1) 100%);
-}
-
-.news-modal-title-overlay {
-    position: absolute;
-    bottom: 30px; left: 30px; right: 30px;
-    color: white;
-}
-
-.news-modal-close-btn {
-    position: absolute;
-    top: 20px; right: 20px;
-    width: 40px; height: 40px;
-    background: rgba(255,255,255,0.25);
-    backdrop-filter: blur(8px);
-    border: 1px solid rgba(255,255,255,0.3);
-    border-radius: 50%;
-    color: white;
-    display: flex; align-items: center; justify-content: center;
-    cursor: pointer;
+/* --- 📸 Upload Box --- */
+.modern-upload-box {
+    background: #fff;
+    border: 2px dashed #cbd5e0;
+    border-radius: 20px;
+    min-height: 240px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    position: relative; overflow: hidden; cursor: pointer;
     transition: 0.3s;
 }
 
-.news-modal-close-btn:hover {
-    background: white; color: black;
-    transform: rotate(90deg);
+.modern-upload-box:hover {
+    border-color: var(--pcshs-orange);
+    background: #fffbf7;
 }
+
+.preview-img {
+    width: 100%; height: 100%; object-fit: cover;
+    position: absolute; top: 0; left: 0;
+}
+
+/* --- 🔘 Buttons --- */
+.btn-modern-action {
+    border-radius: 50px;
+    padding: 0.7rem 1.5rem;
+    font-family: 'Prompt', sans-serif;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    border: none;
+    transition: all 0.3s;
+    background: linear-gradient(135deg, var(--pcshs-orange) 0%, #FF8E53 100%);
+    color: white;
+    box-shadow: 0 4px 15px rgba(242, 92, 5, 0.3);
+}
+
+.btn-modern-action:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(242, 92, 5, 0.4);
+    color: white;
+}
+
+.btn-modern-action.edit-mode {
+    background: linear-gradient(135deg, #fbbf24 0%, #d97706 100%);
+    box-shadow: 0 4px 15px rgba(251, 191, 36, 0.4);
+}
+
+/* --- 📑 Modern Table (Rows as Cards) --- */
+.table-container-modern {
+    padding: 1rem;
+}
+
+.news-table {
+    border-collapse: separate;
+    border-spacing: 0 12px; /* Gap between rows */
+    width: 100%;
+}
+
+.news-table thead th {
+    border: none; background: transparent;
+    color: var(--pcshs-text-muted);
+    font-family: 'Prompt', sans-serif;
+    font-weight: 600; font-size: 0.8rem;
+    text-transform: uppercase; letter-spacing: 1px;
+    padding: 0 1.5rem 0.5rem;
+}
+
+/* Row Card Style */
+.news-row-card {
+    background: #ffffff;
+    box-shadow: 0 4px 15px rgba(0, 35, 75, 0.04);
+    transition: all 0.2s ease-in-out;
+}
+
+.news-row-card td {
+    border: none;
+    padding: 1.2rem 1.5rem;
+    vertical-align: middle;
+}
+
+.news-row-card td:first-child { border-top-left-radius: 16px; border-bottom-left-radius: 16px; }
+.news-row-card td:last-child { border-top-right-radius: 16px; border-bottom-right-radius: 16px; }
+
+.news-row-card:hover {
+    transform: translateY(-3px) scale(1.005);
+    box-shadow: 0 8px 25px rgba(0, 35, 75, 0.08);
+    position: relative; z-index: 10;
+}
+
+/* Table Content Elements */
+.date-box {
+    text-align: center;
+    background: #f1f5f9; color: var(--pcshs-blue-deep);
+    border-radius: 10px; padding: 6px 12px;
+    font-weight: 700; min-width: 60px;
+}
+.date-d { font-size: 1.2rem; line-height: 1; }
+.date-m { font-size: 0.75rem; text-transform: uppercase; }
+
+.news-thumb-modern {
+    width: 70px; height: 50px;
+    border-radius: 8px; object-fit: cover;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.cat-badge {
+    background: rgba(27, 69, 136, 0.1); color: var(--pcshs-blue-deep);
+    font-family: 'Prompt', sans-serif; font-size: 0.75rem; font-weight: 600;
+    padding: 4px 12px; border-radius: 20px;
+}
+
+.action-btn-circle {
+    width: 36px; height: 36px;
+    border-radius: 50%; border: none;
+    display: flex; align-items: center; justify-content: center;
+    background: #f8fafc; color: #64748b;
+    transition: 0.2s; margin-left: 6px;
+}
+.action-btn-circle:hover { background: var(--pcshs-blue); color: white; }
+.action-btn-circle.delete:hover { background: #ef4444; color: white; }
+
+/* --- 🖼️ Modal --- */
+.modern-modal-content { border: none; border-radius: 24px; overflow: hidden; }

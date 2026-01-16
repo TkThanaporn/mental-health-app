@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { Container, Button, Card, Row, Col, Nav, Navbar, Offcanvas, Badge } from 'react-bootstrap';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios'; // ✅ ต้อง import axios
+import { Container, Button, Card, Row, Col, Nav, Navbar, Offcanvas, Badge, Image } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import { 
     FaHome, FaCalendarAlt, FaList, FaSignOutAlt, 
@@ -14,15 +15,35 @@ import AppointmentManager from './AppointmentManager';
 import ScheduleManager from './ScheduleManager'; 
 import AllAppointmentList from './AllAppointmentList'; 
 import ProfileEditor from './ProfileEditor';
-import NewsManagement from './NewsManagement'; // ✅ Import component ใหม่
+import NewsManagement from './NewsManagement'; 
 import pcshsLogo from '../../assets/pcshs_logo.png'; 
 
 const PsychologistDashboard = () => {
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('dashboard'); 
     const [showMobileMenu, setShowMobileMenu] = useState(false);
+    
+    // ✅ 1. สร้าง State สำหรับเก็บข้อมูลจริง
+    const [psychologist, setPsychologist] = useState({
+        fullname: 'กำลังโหลด...', // ค่าเริ่มต้นระหว่างรอ
+        profile_image: ''
+    });
 
-    const psychologistName = "ดร.สมชาย ใจดี";
+    // ✅ 2. ดึงข้อมูลจริงเมื่อโหลดหน้าเว็บ
+    useEffect(() => {
+        const fetchProfile = async () => {
+            try {
+                const token = localStorage.getItem('token');
+                const res = await axios.get('http://localhost:5000/api/profile/me', {
+                    headers: { 'x-auth-token': token }
+                });
+                setPsychologist(res.data); // อัปเดตข้อมูลจริงลง State
+            } catch (err) {
+                console.error("Failed to load profile", err);
+            }
+        };
+        fetchProfile();
+    }, [activeTab]); // เพิ่ม activeTab เพื่อให้รีเฟรชเมื่อกดเปลี่ยนเมนู (เผื่อแก้ชื่อเสร็จแล้วกลับมาหน้าหลัก)
 
     const handleLogout = () => {
         localStorage.removeItem('token');
@@ -66,7 +87,10 @@ const PsychologistDashboard = () => {
                             <div className="hero-bg-pattern"></div>
                             <div className="position-relative z-1">
                                 <Badge bg="warning" text="dark" className="mb-2 px-3 rounded-pill fw-bold">Psychologist Panel</Badge>
-                                <h1 className="fw-title display-6 fw-bold mb-2">สวัสดี, {psychologistName}</h1>
+                                
+                                {/* ✅ 3. ใช้ตัวแปร psychologist.fullname แทนค่า Hardcode */}
+                                <h1 className="fw-title display-6 fw-bold mb-2">สวัสดี, {psychologist.fullname}</h1>
+                                
                                 <p className="text-white-50 mb-4 fw-light" style={{maxWidth: '550px'}}>ยินดีต้อนรับสู่ระบบบริหารจัดการงานจิตวิทยา</p>
                                 <Button className="btn-pcshs shadow-lg" onClick={() => handleMenuClick('appointments')}><FaCalendarCheck className="me-2"/> ตรวจสอบนัดหมายวันนี้</Button>
                             </div>
@@ -75,7 +99,7 @@ const PsychologistDashboard = () => {
                                 <FaStethoscope size={200} style={{ position: 'absolute', right: '-40px', opacity: 0.05, color: 'white', transform: 'rotate(-20deg)', zIndex: -1 }} />
                             </div>
                         </div>
-                        {/* Stats & Activity (ย่อไว้เพื่อประหยัดพื้นที่) */}
+                        {/* Stats & Activity */}
                         <Row className="g-4 mb-4">
                             <Col md={4}><Card className="stat-card shadow-sm"><Card.Body className="d-flex align-items-center p-4"><div className="stat-icon-wrapper bg-blue-soft"><FaClock /></div><div><small className="text-muted fw-bold">รอยืนยัน</small><h2 className="mb-0 fw-bold">5</h2></div></Card.Body></Card></Col>
                             <Col md={4}><Card className="stat-card shadow-sm"><Card.Body className="d-flex align-items-center p-4"><div className="stat-icon-wrapper bg-orange-soft"><FaCalendarAlt /></div><div><small className="text-muted fw-bold">นัดวันนี้</small><h2 className="mb-0 fw-bold">3</h2></div></Card.Body></Card></Col>
@@ -84,7 +108,7 @@ const PsychologistDashboard = () => {
                     </div>
                 );
             case 'appointments': return <AppointmentManager />;
-            case 'news': return <NewsManagement />; // ✅ เรียกใช้ NewsManagement
+            case 'news': return <NewsManagement />;
             case 'schedule': return <ScheduleManager />;
             case 'all-list': return <AllAppointmentList />;
             case 'profile': return <ProfileEditor />;
@@ -105,8 +129,20 @@ const PsychologistDashboard = () => {
                         <h5 className="fw-title mb-0 text-dark d-none d-sm-block"><span style={{color: 'var(--pcshs-blue-deep)'}}>Psychologist</span> Workspace</h5>
                     </div>
                     <div className="d-flex align-items-center gap-3">
-                        <div className="text-end d-none d-md-block line-height-sm"><div className="fw-bold text-dark" style={{fontSize: '0.9rem'}}>{psychologistName}</div><small className="text-success fw-bold" style={{fontSize: '0.75rem'}}>● Online</small></div>
-                        <div className="position-relative cursor-pointer"><FaUserCircle size={40} color="var(--pcshs-blue-deep)" /><span className="position-absolute bottom-0 end-0 bg-success border border-white rounded-circle p-1"></span></div>
+                        <div className="text-end d-none d-md-block line-height-sm">
+                            {/* ✅ 4. ใช้ตัวแปร psychologist.fullname ที่ Navbar ด้านบนขวา */}
+                            <div className="fw-bold text-dark" style={{fontSize: '0.9rem'}}>{psychologist.fullname}</div>
+                            <small className="text-success fw-bold" style={{fontSize: '0.75rem'}}>● Online</small>
+                        </div>
+                        <div className="position-relative cursor-pointer">
+                            {/* ✅ 5. โชว์รูปโปรไฟล์จริงด้วย (ถ้ามี) */}
+                            {psychologist.profile_image ? (
+                                <Image src={psychologist.profile_image} roundedCircle style={{width: '40px', height: '40px', objectFit: 'cover'}} />
+                            ) : (
+                                <FaUserCircle size={40} color="var(--pcshs-blue-deep)" />
+                            )}
+                            <span className="position-absolute bottom-0 end-0 bg-success border border-white rounded-circle p-1"></span>
+                        </div>
                     </div>
                 </Navbar>
                 <Container fluid className="p-4 flex-grow-1">{renderContent()}</Container>
