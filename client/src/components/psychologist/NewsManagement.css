@@ -5,14 +5,6 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&family=Sarabun:wght@300;400;500;600&display=swap');
 
-:root {
-    --pcshs-blue: #003566;
-    --pcshs-blue-deep: #00234B;
-    --pcshs-orange: #F25C05;
-    --pcshs-text-muted: #64748b;
-    --glass-bg: rgba(255, 255, 255, 0.85);
-    --glass-border: 1px solid rgba(255, 255, 255, 0.5);
-}
 
 /* --- 🌌 Background Structure --- */
 .pcshs-news-container {

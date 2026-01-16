@@ -1,0 +1,138 @@
+/* =========================================
+   👤 PROFILE EDITOR - Specific Styles
+   สไตล์เฉพาะสำหรับหน้าแก้ไขข้อมูลส่วนตัว
+   ========================================= */
+
+/* --- 1. Header Section --- */
+.header-brand-border {
+    border-left: 5px solid var(--pcshs-orange);
+    padding-left: 1rem;
+    margin-bottom: 2rem;
+}
+
+/* --- 2. Profile Card (Glassmorphism & Structure) --- */
+.stat-card-ultra {
+    background: #ffffff;
+    border-radius: 24px;
+    box-shadow: 0 10px 40px rgba(0, 35, 75, 0.05);
+    border: none;
+    overflow: hidden;
+    position: relative;
+    transition: transform 0.3s ease;
+}
+
+.stat-card-ultra:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 50px rgba(0, 35, 75, 0.08);
+}
+
+/* --- 3. Avatar Section (รูปโปรไฟล์) --- */
+.stat-orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(40px);
+    z-index: 0;
+}
+
+.avatar-wrapper {
+    position: relative;
+    display: inline-block;
+}
+
+.profile-img-preview {
+    width: 200px;
+    height: 200px;
+    object-fit: cover;
+    border: 6px solid #ffffff;
+    border-radius: 50%;
+    position: relative;
+    z-index: 1;
+    background-color: #f0f4f8; /* สีพื้นหลังรูปกันโหลดไม่ขึ้น */
+    box-shadow: 0 8px 20px rgba(0, 35, 75, 0.15);
+}
+
+.btn-camera-upload {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    width: 45px;
+    height: 45px;
+    background: var(--pcshs-orange);
+    color: white;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    border: 3px solid #ffffff;
+    box-shadow: 0 4px 10px rgba(242, 101, 34, 0.3);
+    z-index: 2;
+    transition: all 0.3s ease;
+}
+
+.btn-camera-upload:hover {
+    background: #d95213;
+    transform: scale(1.1);
+}
+
+/* --- 4. Form Inputs --- */
+/* ปรับแต่ง Label ให้น่าสนใจ */
+.form-label-custom {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.5rem;
+}
+
+/* ปรับแต่ง Input ให้ดูทันสมัย */
+.form-control-custom, .form-select-custom {
+    background-color: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 0.8rem 1rem;
+    font-size: 1rem;
+    color: var(--pcshs-blue-deep);
+    transition: all 0.3s ease;
+}
+
+.form-control-custom:focus, .form-select-custom:focus {
+    background-color: #ffffff;
+    border-color: var(--pcshs-blue-royal);
+    box-shadow: 0 0 0 4px rgba(27, 69, 136, 0.1);
+}
+
+.form-control-custom::placeholder {
+    color: #cbd5e1;
+}
+
+/* --- 5. Buttons & Badges --- */
+.badge-role {
+    background: #f1f5f9;
+    color: var(--pcshs-blue-deep);
+    border: 1px solid #e2e8f0;
+    padding: 0.5rem 1rem;
+    border-radius: 50px;
+    font-weight: 700;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    display: inline-block;
+}
+
+.btn-save-profile {
+    background: linear-gradient(135deg, var(--pcshs-orange) 0%, #ff8c42 100%);
+    border: none;
+    color: white;
+    padding: 0.8rem 2rem;
+    border-radius: 50px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    box-shadow: 0 4px 15px rgba(242, 92, 5, 0.3);
+    transition: all 0.3s ease;
+}
+
+.btn-save-profile:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(242, 92, 5, 0.4);
+    color: white;
+}

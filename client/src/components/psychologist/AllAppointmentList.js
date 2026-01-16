@@ -86,7 +86,7 @@ const AllAppointmentList = () => {
                 <div className="d-flex align-items-center">
                     <div className="brand-icon-box me-4"><FaMicroscope /></div>
                     <div>
-                        <h1 className="fw-800 pcshs-navy m-0 display-6" style={{letterSpacing: '-1px'}}>คลังข้อมูลประวัติการนัดหมาย</h1>
+                        <h1 className="fw-800 pcshs-navy m-0 display-6 fw-bold" style={{letterSpacing: '-1px'}}>คลังข้อมูลประวัติการนัดหมาย</h1>
                         <p className="text-muted m-0 mt-2 lead">ศูนย์กลางข้อมูลเพื่อการวิเคราะห์และติดตามการดูแลนักเรียน</p>
                     </div>
                 </div>

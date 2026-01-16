@@ -125,7 +125,7 @@ const NewsManagement = () => {
                 <div className="brand-icon-box me-4"><FaBullhorn /></div>
                 <div>
                     {/* ✅ แก้ไขตรงนี้: เปลี่ยน fw-bold เป็น fw-normal (ไม่หนา) */}
-                    <h1 className="fw-normal pcshs-blue-deep m-0 display-6" style={{letterSpacing: '-1px'}}>ระบบจัดการข่าวสาร</h1>
+                    <h1 className="fw-bold pcshs-blue-deep m-0 display-6" style={{letterSpacing: '-1px'}}>ระบบจัดการข่าวสาร</h1>
                     <p className="text-muted m-0 mt-2 lead">เผยแพร่ข้อมูลข่าวสารและกิจกรรมสำหรับนักเรียน</p>
                 </div>
             </div>

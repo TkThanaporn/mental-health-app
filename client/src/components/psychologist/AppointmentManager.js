@@ -81,7 +81,7 @@ const AppointmentManager = () => {
                 <div className="d-flex align-items-center">
                     <div className="brand-icon-box me-4"><FaCalendarAlt /></div>
                     <div>
-                        <h1 className="appt-header-title m-0 display-6 fw-normal">จัดการข้อมูลการนัดหมาย</h1>
+                        <h1 className="appt-header-title m-0 display-6 fw-bold">จัดการข้อมูลการนัดหมาย</h1>
                         <p className="text-muted m-0 mt-1 lead">ตรวจสอบและจัดการคิวให้คำปรึกษานักเรียน</p>
                     </div>
                 </div>
