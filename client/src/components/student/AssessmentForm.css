@@ -1,0 +1,139 @@
+/* client/src/components/student/AssessmentForm.css */
+
+/* --- Layout & Background --- */
+.assessment-wrapper {
+    background-color: #F7F9FC; /* ใช้สีเดียวกับ Dashboard */
+    min-height: 100vh;
+}
+
+/* --- Header Section --- */
+.header-section {
+    position: relative;
+    z-index: 10;
+    background: white;
+    border-bottom-right-radius: 24px;
+    border-bottom-left-radius: 24px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+}
+
+.icon-box-header {
+    width: 60px; height: 60px;
+    display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, #FFF3E0, #FFE0B2);
+    color: #F26522; /* pcshs-orange */
+    border-radius: 50%;
+    margin: 0 auto 1rem;
+    font-size: 1.5rem;
+}
+
+/* --- Progress Bar --- */
+.progress-container {
+    height: 10px;
+    background-color: #e9ecef;
+    border-radius: 50px;
+    overflow: hidden;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
+}
+
+.custom-progress-bar {
+    background: linear-gradient(90deg, #004299 0%, #0066cc 100%); /* pcshs-blue gradients */
+    transition: width 0.5s ease-in-out;
+}
+
+/* --- Question Card --- */
+.question-card {
+    border: none !important;
+    background: white;
+    border-radius: 20px !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+    transition: all 0.3s ease;
+    border-left: 5px solid transparent !important;
+}
+
+.question-card.answered {
+    border-left-color: #28a745 !important; /* สีเขียวเมื่อตอบแล้ว */
+    background: #fdfdfd;
+}
+
+.question-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+}
+
+/* --- Option Buttons (ปุ่มเลือกคะแนน) --- */
+.option-btn {
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 15px 10px;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    background: white;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.option-btn:hover {
+    border-color: #00225a; /* pcshs-blue-soft */
+    background: #f7f9fc;
+}
+
+/* Active State (เมื่อถูกเลือก) */
+.option-btn.active {
+    border-color: #004299; /* pcshs-blue */
+    background: rgba(0, 66, 153, 0.05);
+    box-shadow: 0 0 0 2px rgba(0, 66, 153, 0.1);
+}
+
+.option-btn.active .score-circle {
+    background: #004299; /* pcshs-blue */
+    color: white;
+    transform: scale(1.1);
+}
+
+.option-btn.active .option-label {
+    color: #004299; /* pcshs-blue */
+    font-weight: 700;
+}
+
+/* วงกลมคะแนน */
+.score-circle {
+    width: 35px; height: 35px;
+    border-radius: 50%;
+    background: #edf2f7;
+    color: #718096;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: bold;
+    margin-bottom: 8px;
+    transition: all 0.3s ease;
+}
+
+.option-label {
+    font-size: 0.9rem;
+    text-align: center;
+    color: #4a5568;
+    line-height: 1.2;
+}
+
+/* เฉพาะปุ่มระดับรุนแรงสุด (3) ให้เป็นสีส้ม */
+.option-btn[data-score="3"].active {
+    border-color: #F26522; /* pcshs-orange */
+    background: rgba(242, 101, 34, 0.05);
+}
+.option-btn[data-score="3"].active .score-circle {
+    background: #F26522;
+}
+.option-btn[data-score="3"].active .option-label {
+    color: #F26522;
+}
+
+/* Modal Animation */
+.modal-custom .modal-content {
+    border: none;
+    border-radius: 24px;
+    box-shadow: 0 15px 40px rgba(0,0,0,0.2);
+}
