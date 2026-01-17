@@ -1,168 +1,279 @@
-/* Color Variables for PCSHS Theme */
+@import url('https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap');
+
+/* --- PCSHS Premium Theme Variables --- */
 :root {
-    --pcshs-blue: #0035ad;
-    --pcshs-orange: #f26522;
-    --pcshs-bg-gradient: linear-gradient(135deg, #e3f2fd 0%, #fff3e0 100%); /* ฟ้าอ่อนไปส้มอ่อน */
-    --pcshs-blue-light: #e8eaf6;
-    --pcshs-orange-light: #fff3e0;
+    /* ปรับจูนสีให้ดูแพงขึ้น */
+    --pcshs-blue: #004299; /* น้ำเงินที่ลึกขึ้น */
+    --pcshs-blue-soft: #00225a;
+    --pcshs-orange: #F26522; /* ส้มแสดออริจินัล */
+    --pcshs-orange-soft: #FF8F5C;
+    
+    /* พื้นหลังโทนสว่างแบบละมุน */
+    --bg-main: #F7F9FC;
+    --bg-glass: rgba(255, 255, 255, 0.85);
+    --border-glass: rgba(255, 255, 255, 0.6);
+    
+    /* เงาแบบนุ่มนวล (Soft Shadows) */
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
+    --shadow-md: 0 8px 24px rgba(0, 40, 120, 0.08);
+    --shadow-lg: 0 15px 40px rgba(0, 40, 120, 0.12);
+    --shadow-hover: 0 20px 50px rgba(0, 40, 120, 0.18);
 }
 
 /* Base Layout */
 .pcshs-dashboard {
-    background-color: #f8f9fa;
+    background-color: var(--bg-main);
     min-height: 100vh;
+    font-family: 'Kanit', sans-serif;
+    color: #4A5568; /* สี text เทาเข้ม อ่านสบายตา */
+    overflow-x: hidden;
 }
 
-/* Navbar */
+/* --- Navbar: Premium Glass --- */
 .pcshs-navbar {
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(10px);
-    border-bottom: 1px solid rgba(0,0,0,0.05);
-}
-
-/* Hero Section */
-.hero-section {
-    padding-top: 100px; /* Space for fixed navbar */
-    padding-bottom: 80px;
-    background: var(--pcshs-bg-gradient);
-    min-height: 60vh;
-    border-bottom-right-radius: 50px; /* เพิ่มความโค้งมนตรงมุมล่าง */
-    border-bottom-left-radius: 50px;
-    position: relative;
-    overflow: hidden;
-}
-
-.text-section {
-    z-index: 2;
-}
-
-.fw-extrabold {
-    font-weight: 800;
-}
-
-/* Buttons */
-.btn-hero-primary {
-    background: linear-gradient(90deg, #f26522 0%, #ff8a50 100%);
-    border: none;
-    border-radius: 50px;
-    padding: 12px 30px;
-    font-size: 1.1rem;
-    font-weight: 600;
+    background: rgba(255, 255, 255, 0.9) !important; /* โปร่งแสงมากขึ้น */
+    backdrop-filter: blur(16px) saturate(180%); /* เบลอฉากหลังเนียนๆ */
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+    padding-top: 12px;
+    padding-bottom: 12px;
     transition: all 0.3s ease;
 }
 
-.btn-hero-primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 10px 20px rgba(242, 101, 34, 0.3);
+.navbar-brand span {
+    letter-spacing: -0.5px;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
 
-.btn-hero-secondary {
+/* เมนู Navbar */
+.nav-link-custom {
+    color: #718096 !important;
+    font-weight: 500;
+    margin: 0 8px;
+    padding: 8px 12px !important;
+    border-radius: 12px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex; align-items: center;
+}
+
+.nav-link-custom:hover {
+    color: var(--pcshs-blue) !important;
+    background: rgba(0, 66, 153, 0.05);
+    transform: translateY(-1px);
+}
+
+.nav-link-custom.active {
+    color: var(--pcshs-blue) !important;
+    background: rgba(0, 66, 153, 0.08);
+    box-shadow: var(--shadow-sm);
+}
+
+/* User Dropdown */
+.dropdown-toggle.btn-light {
+    background: white !important;
+    border: 1px solid var(--border-glass) !important;
+    box-shadow: var(--shadow-sm);
+    padding: 6px 12px;
+    transition: all 0.3s ease;
+}
+.dropdown-toggle.btn-light:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateY(-1px);
+}
+.dropdown-menu {
+    border: none !important;
+    box-shadow: var(--shadow-lg) !important;
+    border-radius: 16px !important;
+    padding: 10px;
+    animation: slideInDown 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
+}
+.dropdown-item {
+    border-radius: 10px;
+    padding: 8px 12px;
+    font-weight: 500;
+}
+
+/* --- Hero Section: Refined Gradient & Pattern --- */
+.hero-section {
+    padding-top: 150px;
+    padding-bottom: 110px;
+    position: relative;
+    /* Gradient ที่นุ่มนวลขึ้น */
+    background: linear-gradient(125deg, #cbe1ff 0%, #ffe0d1 100%);
+    border-bottom-right-radius: 80px;
+    border-bottom-left-radius: 80px;
+    overflow: hidden;
+}
+
+/* ลายเส้นตารางที่ดูแพงขึ้น */
+.hero-section::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-image: 
+        linear-gradient(rgba(0, 66, 153, 0.03) 1.5px, transparent 1.5px),
+        linear-gradient(90deg, rgba(0, 66, 153, 0.03) 1.5px, transparent 1.5px);
+    background-size: 50px 50px;
+    mask-image: radial-gradient(circle at center, black 40%, transparent 100%);
+    pointer-events: none;
+}
+
+/* แสงฟุ้ง Ambient Light */
+.hero-section::after {
+    content: '';
+    position: absolute;
+    top: -20%; right: -10%;
+    width: 600px; height: 600px;
+    background: radial-gradient(circle, rgba(242, 101, 34, 0.06) 0%, transparent 60%);
+    filter: blur(60px);
+    z-index: 0;
+}
+
+.hero-section h1 {
+    letter-spacing: -1px;
+    line-height: 1.2;
+    text-shadow: 0 4px 10px rgba(0,0,0,0.05);
+}
+
+.btn-hero-primary {
+    background: linear-gradient(135deg, var(--pcshs-orange) 0%, var(--pcshs-orange-soft) 100%);
+    border: none;
+    padding: 14px 40px;
     border-radius: 50px;
-    padding: 12px 30px;
-    font-size: 1.1rem;
     font-weight: 600;
+    letter-spacing: 0.5px;
+    color: white;
+    box-shadow: 0 8px 20px rgba(242, 101, 34, 0.3);
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    position: relative; overflow: hidden; z-index: 1;
+}
+/* เพิ่มแสงวูบวาบตอน Hover ปุ่ม */
+.btn-hero-primary::before {
+    content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: 0.5s; z-index: -1;
+}
+.btn-hero-primary:hover::before { left: 100%; }
+.btn-hero-primary:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 30px rgba(242, 101, 34, 0.4);
 }
 
-/* Logo Animation */
 .school-logo {
-    max-height: 350px;
-    filter: drop-shadow(0 10px 15px rgba(0,0,0,0.1));
+    max-height: 380px;
+    /* เงาที่ดูสมจริงขึ้น */
+    filter: drop-shadow(0 25px 40px rgba(0, 21, 49, 0.2));
 }
-
-.floating-animation {
-    animation: float 6s ease-in-out infinite;
-}
-
+.floating-animation { animation: float 7s ease-in-out infinite; }
 @keyframes float {
-    0% { transform: translateY(0px); }
-    50% { transform: translateY(-20px); }
-    100% { transform: translateY(0px); }
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(-18px) rotate(1deg); }
 }
 
-/* Menu Cards */
+/* --- Menu Cards: Super Glassmorphism --- */
 .menu-card {
-    transition: transform 0.3s, box-shadow 0.3s;
-    background: white;
+    /* พื้นหลังแบบกระจกฝ้าที่ชัดเจนขึ้น */
+    background: var(--bg-glass);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--border-glass) !important;
+    border-radius: 24px !important;
+    box-shadow: var(--shadow-md);
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    cursor: pointer;
+    overflow: hidden;
 }
 
 .menu-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 15px 30px rgba(0,0,0,0.08) !important;
+    transform: translateY(-15px) scale(1.02);
+    box-shadow: var(--shadow-hover) !important;
+    border-color: rgba(255,255,255,0.9) !important;
 }
+
+/* แสงสะท้อนบนการ์ด */
+.menu-card::after {
+    content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+    background: linear-gradient(45deg, transparent, rgba(255,255,255,0.4), transparent);
+    transform: rotate(45deg); transition: 0.6s; opacity: 0;
+}
+.menu-card:hover::after { opacity: 1; transform: rotate(45deg) translate(50%, 50%); }
 
 .icon-box {
-    width: 50px;
-    height: 50px;
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    width: 70px; height: 70px;
+    border-radius: 20px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 2rem;
+    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow: var(--shadow-sm);
+}
+.menu-card:hover .icon-box { transform: scale(1.15) rotate(5deg); }
+
+/* ปรับสีพื้นหลังไอคอนให้สดใสขึ้นนิดนึง */
+.bg-orange-light { background: linear-gradient(135deg, #FFF3E0, #FFE0B2); color: var(--pcshs-orange); }
+.bg-blue-light { background: linear-gradient(135deg, #E3F2FD, #BBDEFB); color: var(--pcshs-blue); }
+
+/* --- Appointment Cards & Section --- */
+.section-header h3 { letter-spacing: -0.5px; }
+.section-header .bg-primary { 
+    background: linear-gradient(to bottom, var(--pcshs-blue), var(--pcshs-blue-soft)) !important; 
+    box-shadow: 0 2px 10px rgba(0, 66, 153, 0.2);
 }
 
-.bg-orange-light { background-color: var(--pcshs-orange-light); }
-.text-orange { color: var(--pcshs-orange); }
-
-.bg-blue-light { background-color: var(--pcshs-blue-light); }
-.text-blue { color: var(--pcshs-blue); }
-
-/* Appointment Cards */
 .appt-modern-card {
-    transition: all 0.2s;
+    border: none;
+    border-radius: 20px;
+    background: white;
+    box-shadow: var(--shadow-sm);
+    transition: all 0.3s ease;
+    border-left: 6px solid transparent;
 }
 .appt-modern-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 10px 25px rgba(0,0,0,0.08) !important;
+    transform: translateY(-8px);
+    box-shadow: var(--shadow-lg);
 }
-.card-status-strip {
-    height: 5px;
-    width: 100%;
-}
+
+/* Status Border Colors */
+.appt-modern-card:has(.bg-success) { border-left-color: #198754; }
+.appt-modern-card:has(.bg-warning) { border-left-color: #ffc107; }
+.appt-modern-card:has(.bg-secondary) { border-left-color: #A0AEC0; }
+.appt-modern-card:has(.bg-danger) { border-left-color: #E53E3E; }
+
+.card-status-strip { display: none; }
+
+.info-group { background-color: #F8FAFC !important; border: 1px solid #EDF2F7; }
+
+/* Chat Button */
 .btn-chat-active {
-    background-color: var(--pcshs-blue);
-    border: none;
+    background: linear-gradient(135deg, var(--pcshs-blue) 0%, var(--pcshs-blue-soft) 100%) !important;
+    border: none !important;
+    box-shadow: 0 4px 12px rgba(0, 66, 153, 0.2);
 }
 .btn-chat-active:hover {
-    background-color: #002a8a;
+    box-shadow: 0 8px 20px rgba(0, 66, 153, 0.3);
+    transform: translateY(-2px);
 }
 
-/* Chat Modal */
-.avatar-circle {
-    width: 45px;
-    height: 45px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-.bg-gradient-primary {
-    background: linear-gradient(135deg, var(--pcshs-blue) 0%, #4a90e2 100%);
-}
-
-/* Mobile Responsiveness */
-@media (max-width: 768px) {
-    .reverse-column-mobile {
-        flex-direction: column-reverse;
-    }
-    .text-section {
-        text-align: center;
-        margin-top: 2rem;
-    }
-    .school-logo {
-        max-height: 200px;
-    }
-    .display-4 {
-        font-size: 2.5rem;
-    }
-}
-
-/* Animations */
-.fade-in-up {
-    animation: fadeInUp 0.8s ease-out forwards;
-    opacity: 0;
-}
+/* Utilities & Animations */
+.text-primary { color: var(--pcshs-blue) !important; }
+.fade-in-up { animation: fadeInUp 0.8s cubic-bezier(0.25, 0.8, 0.25, 1) forwards; opacity: 0; }
 .delay-100 { animation-delay: 0.2s; }
+@keyframes fadeInUp { from { opacity: 0; transform: translateY(40px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes slideInDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
 
-@keyframes fadeInUp {
-    from { opacity: 0; transform: translateY(30px); }
-    to { opacity: 1; transform: translateY(0); }
+/* Mobile Fixes */
+@media (max-width: 991px) {
+    .hero-section { padding-top: 120px; text-align: center; }
+    .reverse-column-mobile { flex-direction: column-reverse; }
+    .school-logo { max-height: 280px; margin-bottom: 30px; }
+    .menu-card { margin-top: 0; }
+    .nav-link-custom { margin: 5px 0; justify-content: flex-start; }
+    .nav-link-custom::after { display: none; } /* ซ่อนขีดเส้นใต้ในมือถือ */
+    .navbar-collapse {
+        background: white;
+        padding: 20px;
+        border-radius: 20px;
+        box-shadow: var(--shadow-lg);
+        margin-top: 15px;
+    }
 }
