@@ -13,22 +13,16 @@ import Register from './components/auth/Register';
 import PrivateRoute from './components/routing/PrivateRoute';
 
 // Dashboards & pages
-// หมายเหตุ: ปิด AdminDashboard ไว้ก่อนเพราะยังไม่ได้สร้างไฟล์
-// import AdminDashboard from './components/admin/AdminDashboard'; 
-
 import PsychologistDashboard from './components/psychologist/PsychologistDashboard';
 import AppointmentManager from './components/psychologist/AppointmentManager';
-import NewsManagement from './components/psychologist/NewsManagement'; // ✅ เพิ่ม Import หน้าจัดการข่าวสาร
+import NewsManagement from './components/psychologist/NewsManagement'; 
 
 import StudentDashboard from './components/student/StudentDashboard';
 import AssessmentForm from './components/student/AssessmentForm'; 
 import AppointmentBooking from './components/student/AppointmentBooking';
+import StudentNews from './components/student/StudentNews'; // ✅ 1. Import มาแล้ว
 
-
-// ✅ เพิ่ม Import Profile เข้ามา
 import Profile from './components/common/Profile';
-
-// ✅ 1. Import หน้าจัดการตารางเวลาเข้ามา
 import ScheduleManager from './components/psychologist/ScheduleManager';
 
 const App = () => {
@@ -41,7 +35,9 @@ const App = () => {
           <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          {/* เพิ่มบรรทัดนี้ลงไปครับ 👇 */}
+          
+          {/* หมายเหตุ: Schedule ควรเป็น Private ของ Psychologist ไหมครับ? 
+              ถ้าใช่ ควรย้ายไปไว้ในกลุ่ม Psychologist ด้านล่างครับ แต่ถ้าไว้เทสก่อนก็ OK ครับ */}
           <Route path="/psychologist/schedule" element={<ScheduleManager />} />   
 
           {/* ===== Shared Routes (ใช้ร่วมกันได้ทุก Role) ===== */}
@@ -82,6 +78,16 @@ const App = () => {
             }
           />
 
+          {/* ✅ 2. เพิ่ม Route สำหรับหน้าข่าวสารตรงนี้ครับ */}
+          <Route
+            path="/news"
+            element={
+              <PrivateRoute allowedRoles={['Student']}>
+                <StudentNews />
+              </PrivateRoute>
+            }
+          />
+
           {/* ===== Psychologist Routes ===== */}
           <Route
             path="/psychologist/dashboard"
@@ -109,18 +115,6 @@ const App = () => {
               </PrivateRoute>
             }
           />
-
-          {/* ===== Admin Routes - ปิดไว้เพื่อป้องกัน Error 'AdminDashboard is not defined' ===== */}
-          {/* <Route
-            path="/admin/dashboard"
-            element={
-              <PrivateRoute allowedRoles={['Admin']}>
-                <AdminDashboard />
-              </PrivateRoute>
-            }
-          /> 
-          */}
-
 
         </Routes>
       </AuthProvider>

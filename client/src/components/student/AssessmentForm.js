@@ -1,16 +1,13 @@
-// client/src/components/student/AssessmentForm.js
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Container, Button, Card, Row, Col, Navbar, Nav, Modal, Dropdown } from 'react-bootstrap';
+import { Container, Button, Card, Row, Col, Modal } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext'; // 1. Import Auth Context
-import { jwtDecode } from "jwt-decode"; // 2. Import JWT Decode
 import { 
-    FaClipboardCheck, FaInfoCircle, FaCheckCircle, 
-    FaHome, FaNewspaper, FaHeartbeat, FaCalendarAlt, FaHistory, FaUserCircle, FaSignOutAlt 
-} from 'react-icons/fa'; // Import Icon ให้ครบ
+    FaClipboardCheck, FaInfoCircle, FaCheckCircle 
+} from 'react-icons/fa'; 
 
-import pcshsLogo from '../../assets/pcshs_logo.png'; 
+// Import Navbar ตัวกลาง
+import PCSHSNavbar from '../common/Navbar/PCSHSNavbar';
 
 // Import CSS
 import './StudentDashboard.css'; 
@@ -29,7 +26,6 @@ const PHQAQuestions = [
 ];
 
 const AssessmentForm = () => {
-    const { logout } = useAuth(); // ดึงฟังก์ชัน Logout
     const navigate = useNavigate();
     
     // State สำหรับฟอร์ม
@@ -39,22 +35,7 @@ const AssessmentForm = () => {
     const [showResultModal, setShowResultModal] = useState(false);
     const [progress, setProgress] = useState(0);
 
-    // State สำหรับ Navbar (ชื่อผู้ใช้)
-    const [currentUserName, setCurrentUserName] = useState("นักเรียน");
-
-    // ดึงชื่อผู้ใช้จาก Token (เหมือนหน้า Dashboard)
-    useEffect(() => {
-        const token = localStorage.getItem('token');
-        if (token) {
-            try {
-                const decoded = jwtDecode(token);
-                const userObj = decoded.user || decoded;
-                if(userObj.name) setCurrentUserName(userObj.name);
-            } catch (e) {
-                console.error("Token Error", e);
-            }
-        }
-    }, []);
+    // ไม่ต้องดึง user จาก token แล้ว เพราะ Navbar จัดการให้
 
     // คำนวณ Progress Bar
     useEffect(() => {
@@ -109,59 +90,8 @@ const AssessmentForm = () => {
 
     return (
         <div className="assessment-wrapper pcshs-dashboard">
-            {/* 1. Full Navbar (Same as StudentDashboard) */}
-            <Navbar expand="lg" className="pcshs-navbar fixed-top">
-                <Container>
-                    <Navbar.Brand onClick={() => navigate('/')} style={{cursor:'pointer'}} className="fw-bold d-flex align-items-center">
-                        <img src={pcshsLogo} alt="Logo" height="40" className="me-2"/>
-                        <div>
-                            <span style={{ color: '#0035ad', fontSize: '1.2rem' }}>PCSHS</span> 
-                            <span style={{ color: '#f26522', fontSize: '1.2rem' }}>Care</span>
-                        </div>
-                    </Navbar.Brand>
-                    
-                    <Navbar.Toggle aria-controls="basic-navbar-nav" />
-                    
-                    <Navbar.Collapse id="basic-navbar-nav">
-                        <Nav className="ms-auto align-items-center gap-2">
-                            <Nav.Link onClick={() => navigate('/')} className="nav-link-custom">
-                                <FaHome className="me-1 mb-1"/> หน้าหลัก
-                            </Nav.Link>
-                            <Nav.Link onClick={() => navigate('/news')} className="nav-link-custom">
-                                <FaNewspaper className="me-1 mb-1"/> ข่าวสาร
-                            </Nav.Link>
-                            {/* Highlight เมนูนี้เป็น Active */}
-                            <Nav.Link onClick={() => navigate('/student/assessment')} className="nav-link-custom active">
-                                <FaHeartbeat className="me-1 mb-1"/> ประเมินสุขภาพใจ
-                            </Nav.Link>
-                            <Nav.Link onClick={() => navigate('/student/book')} className="nav-link-custom">
-                                <FaCalendarAlt className="me-1 mb-1"/> จองคิว
-                            </Nav.Link>
-                            <Nav.Link onClick={() => navigate('/student/dashboard')} className="nav-link-custom">
-                                <FaHistory className="me-1 mb-1"/> ข้อมูลการนัดหมาย
-                            </Nav.Link>
-                            
-                            <div className="vr mx-2 d-none d-lg-block text-secondary"></div>
-
-                            {/* User Profile Dropdown */}
-                            <Dropdown align="end">
-                                <Dropdown.Toggle variant="light" className="rounded-pill btn-sm d-flex align-items-center gap-2 border bg-white text-dark py-1 px-3 ms-2">
-                                    <FaUserCircle className="text-primary" size={20}/>
-                                    <span className="d-none d-lg-inline fw-medium">{currentUserName}</span>
-                                </Dropdown.Toggle>
-                                <Dropdown.Menu className="border-0 shadow-lg mt-2 rounded-4">
-                                    <Dropdown.Header>จัดการบัญชี</Dropdown.Header>
-                                    <Dropdown.Item onClick={() => navigate('/profile')}>โปรไฟล์ส่วนตัว</Dropdown.Item>
-                                    <Dropdown.Divider />
-                                    <Dropdown.Item onClick={logout} className="text-danger">
-                                        <FaSignOutAlt className="me-2"/> ออกจากระบบ
-                                    </Dropdown.Item>
-                                </Dropdown.Menu>
-                            </Dropdown>
-                        </Nav>
-                    </Navbar.Collapse>
-                </Container>
-            </Navbar>
+            {/* 1. ใช้ Navbar ตัวกลาง */}
+            <PCSHSNavbar />
 
             {/* เพิ่มระยะห่างเพราะ Navbar เป็น fixed-top */}
             <div style={{ marginTop: '100px' }}></div>

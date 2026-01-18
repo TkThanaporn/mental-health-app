@@ -1,21 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../../context/AuthContext';
-import { Container, Button, Card, Row, Col, Badge, Modal, Alert, Spinner, Navbar, Nav, Dropdown } from 'react-bootstrap';
+import { Container, Button, Card, Row, Col, Badge, Modal, Alert, Spinner } from 'react-bootstrap';
 import axios from 'axios';
 import { jwtDecode } from "jwt-decode";
 import { useNavigate } from 'react-router-dom';
 import ChatRoom from '../common/ChatRoom'; 
 import { 
     FaComments, FaUserMd, FaClock, FaCalendarAlt, FaHistory, 
-    FaCheckCircle, FaTimesCircle, FaExclamationCircle, FaUserCircle, 
-    FaSignOutAlt, FaHeartbeat, FaChevronRight, FaClipboardList, FaNewspaper, FaHome
+    FaCheckCircle, FaTimesCircle, FaExclamationCircle, 
+    FaHeartbeat, FaChevronRight, FaClipboardList
 } from 'react-icons/fa';
 
 import './StudentDashboard.css';
 import pcshsLogo from '../../assets/pcshs_logo.png';
 
+// Import Navbar ตัวกลางเข้ามาใช้งาน
+import PCSHSNavbar from '../common/Navbar/PCSHSNavbar';
+
 const StudentDashboard = () => {
-    const { logout } = useAuth();
+    // ไม่ต้องดึง logout จาก useAuth ตรงนี้แล้ว เพราะ Navbar จัดการให้
     const navigate = useNavigate();
     
     const [appointments, setAppointments] = useState([]);
@@ -71,63 +73,11 @@ const StudentDashboard = () => {
 
     return (
         <div className="pcshs-dashboard">
-            {/* 1. Navbar Section (Updated Menu) */}
-            <Navbar expand="lg" className="pcshs-navbar fixed-top">
-                <Container>
-                    <Navbar.Brand onClick={() => navigate('/')} style={{cursor:'pointer'}} className="fw-bold d-flex align-items-center">
-                        <img src={pcshsLogo} alt="Logo" height="40" className="me-2"/>
-                        <div>
-                            <span style={{ color: '#0035ad', fontSize: '1.2rem' }}>PCSHS</span> 
-                            <span style={{ color: '#f26522', fontSize: '1.2rem' }}>Care</span>
-                        </div>
-                    </Navbar.Brand>
-                    
-                    <Navbar.Toggle aria-controls="basic-navbar-nav" />
-                    
-                    <Navbar.Collapse id="basic-navbar-nav">
-                        <Nav className="ms-auto align-items-center gap-2">
-                            {/* เมนูตามคำขอ: หน้าหลัก ข่าวสาร ประเมินสุขภาพใจ จองคิว ข้อมูลการนัดหมาย */}
-                            <Nav.Link onClick={() => navigate('/')} className="nav-link-custom">
-                                <FaHome className="me-1 mb-1"/> หน้าหลัก
-                            </Nav.Link>
-                            <Nav.Link onClick={() => navigate('/news')} className="nav-link-custom">
-                                <FaNewspaper className="me-1 mb-1"/> ข่าวสาร
-                            </Nav.Link>
-                            <Nav.Link onClick={() => navigate('/student/assessment')} className="nav-link-custom">
-                                <FaHeartbeat className="me-1 mb-1"/> ประเมินสุขภาพใจ
-                            </Nav.Link>
-                            <Nav.Link onClick={() => navigate('/student/book')} className="nav-link-custom">
-                                <FaCalendarAlt className="me-1 mb-1"/> จองคิว
-                            </Nav.Link>
-                            {/* ลิงก์มาที่หน้านี้แหละ แต่ตั้งชื่อให้ตรงโจทย์ */}
-                            <Nav.Link onClick={() => navigate('/student/dashboard')} className="nav-link-custom active">
-                                <FaHistory className="me-1 mb-1"/> ข้อมูลการนัดหมาย
-                            </Nav.Link>
-                            
-                            <div className="vr mx-2 d-none d-lg-block text-secondary"></div>
+            {/* 1. เรียกใช้ Navbar ตัวกลาง (แทนโค้ดเดิมที่ยาวๆ) */}
+            <PCSHSNavbar />
 
-                            {/* User Profile Dropdown */}
-                            <Dropdown align="end">
-                                <Dropdown.Toggle variant="light" className="rounded-pill btn-sm d-flex align-items-center gap-2 border bg-white text-dark py-1 px-3 ms-2">
-                                    <FaUserCircle className="text-primary" size={20}/>
-                                    <span className="d-none d-lg-inline fw-medium">{currentUserName}</span>
-                                </Dropdown.Toggle>
-                                <Dropdown.Menu className="border-0 shadow-lg mt-2 rounded-4">
-                                    <Dropdown.Header>จัดการบัญชี</Dropdown.Header>
-                                    <Dropdown.Item onClick={() => navigate('/profile')}>โปรไฟล์ส่วนตัว</Dropdown.Item>
-                                    <Dropdown.Divider />
-                                    <Dropdown.Item onClick={logout} className="text-danger">
-                                        <FaSignOutAlt className="me-2"/> ออกจากระบบ
-                                    </Dropdown.Item>
-                                </Dropdown.Menu>
-                            </Dropdown>
-                        </Nav>
-                    </Navbar.Collapse>
-                </Container>
-            </Navbar>
-
-            {/* 2. Hero Section */}
-            <section className="hero-section d-flex align-items-center">
+            {/* 2. Hero Section (เพิ่ม marginTop เพื่อไม่ให้ Navbar บัง) */}
+            <section className="hero-section d-flex align-items-center" style={{ marginTop: '70px' }}>
                 <Container>
                     <Row className="align-items-center reverse-column-mobile">
                         <Col lg={7} md={6} className="text-section fade-in-up">
@@ -161,7 +111,6 @@ const StudentDashboard = () => {
                     <Col md={5} lg={4}>
                          <Card className="h-100 menu-card rounded-4" onClick={() => navigate('/student/assessment')}>
                             <Card.Body className="p-4 d-flex align-items-center">
-                                {/* Icon 1: คลิปบอร์ด (ดูเป็นแบบประเมิน/วิชาการ) */}
                                 <div className="icon-box bg-orange-light me-3">
                                     <FaClipboardList />
                                 </div>
@@ -176,7 +125,6 @@ const StudentDashboard = () => {
                     <Col md={5} lg={4}>
                         <Card className="h-100 menu-card rounded-4" onClick={() => navigate('/student/book')}>
                             <Card.Body className="p-4 d-flex align-items-center">
-                                {/* Icon 2: แพทย์ (ดูเป็นการปรึกษาผู้เชี่ยวชาญ) */}
                                 <div className="icon-box bg-blue-light me-3">
                                     <FaUserMd />
                                 </div>
@@ -213,7 +161,6 @@ const StudentDashboard = () => {
                             return (
                                 <Col lg={6} key={appt.appointment_id}>
                                     <Card className="shadow-sm rounded-4 h-100 overflow-hidden appt-modern-card">
-                                        {/* ใช้ Border-left แทนแถบสีเดิม */}
                                         <div className={`card-status-strip bg-${statusInfo.bg}`}></div>
                                         <Card.Body className="p-4">
                                             <div className="d-flex justify-content-between align-items-start mb-3">

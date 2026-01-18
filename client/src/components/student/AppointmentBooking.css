@@ -1,136 +1,117 @@
-/* client/src/components/student/AppointmentBooking.css */
+/* 1. Import ฟอนต์ Kanit */
+@import url('https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap');
 
+/* 2. บังคับใช้ฟอนต์กับ Wrapper หลัก */
 .booking-wrapper {
-    background-color: #f4f6f9; /* สีพื้นหลังเทาอ่อน สบายตา */
-    min-height: 100vh;
-    font-family: 'Sarabun', sans-serif;
-    padding-bottom: 60px;
+  font-family: 'Kanit', sans-serif;
+  background-color: #f4f6f9; /* สีพื้นหลังให้อ่อนสบายตา */
+  min-height: 100vh;
 }
 
-/* --- Psychologist Card (Left Side) --- */
+/* --- ตกแต่ง Card --- */
+.booking-card {
+  border: none;
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+}
+
 .psycho-card {
-    border: none !important;
-    border-radius: 24px !important;
-    overflow: hidden;
-    background: white;
-    transition: transform 0.3s ease;
+  border: none;
+  border-radius: 20px;
+  overflow: hidden;
+  background: #fff;
 }
 
-.psycho-card:hover {
-    transform: translateY(-5px);
-}
-
+/* พื้นหลังส่วนหัวของ Card นักจิตวิทยา */
 .psycho-cover-bg {
-    height: 100px;
-    background: linear-gradient(135deg, #0035ad 0%, #0056b3 100%);
+  height: 100px;
+  background: linear-gradient(135deg, #0d6efd 0%, #0dcaf0 100%);
 }
 
 .psycho-avatar-container {
-    margin-top: -60px;
-    position: relative;
-    display: inline-block;
+  margin-top: -60px; /* ดึงรูปขึ้นไปทับ cover */
 }
 
 .psycho-img {
-    width: 120px;
-    height: 120px;
-    object-fit: cover;
-    border: 4px solid white;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+  width: 120px;
+  height: 120px;
+  object-fit: cover;
+  border: 4px solid #fff;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
 }
 
 .psycho-badge {
-    background-color: #e3f2fd;
-    color: #0035ad;
-    font-weight: 600;
-    padding: 5px 15px;
-    border-radius: 20px;
-    font-size: 0.85rem;
+  background-color: #e7f1ff;
+  color: #0d6efd;
+  padding: 5px 15px;
+  border-radius: 50px;
+  font-size: 0.85rem;
+  font-weight: 500;
 }
 
-/* --- Booking Form Card (Right Side) --- */
-.booking-card {
-    border: none !important;
-    border-radius: 24px !important;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+/* --- ตกแต่ง Form Inputs --- */
+.form-control-custom,
+.form-select-custom {
+  border-radius: 12px;
+  border: 1px solid #dee2e6;
+  padding: 12px 15px;
+  font-size: 0.95rem;
+  transition: all 0.3s;
+}
+
+.form-control-custom:focus,
+.form-select-custom:focus {
+  border-color: #0d6efd;
+  box-shadow: 0 0 0 4px rgba(13, 110, 253, 0.1);
 }
 
 .form-label-custom {
-    font-weight: 600;
-    color: #344767;
-    margin-bottom: 8px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
+  font-weight: 500;
+  color: #495057;
+  margin-bottom: 8px;
 }
 
-.form-control-custom, .form-select-custom {
-    border-radius: 12px !important;
-    padding: 12px 15px !important;
-    border: 1px solid #e2e8f0;
-    background-color: #f8fafc;
-    transition: all 0.2s;
-}
-
-.form-control-custom:focus, .form-select-custom:focus {
-    background-color: #fff;
-    border-color: #0035ad;
-    box-shadow: 0 0 0 4px rgba(0, 53, 173, 0.1);
-}
-
-/* --- Time Slot Buttons --- */
+/* --- ตารางเวลา (Time Slots) --- */
 .time-slot-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-    gap: 10px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 12px;
 }
 
 .slot-btn {
-    border: 1px solid #dee2e6;
-    background: white;
-    color: #495057;
-    border-radius: 12px;
-    padding: 10px 5px;
-    font-size: 0.95rem;
-    font-weight: 500;
-    transition: all 0.2s ease;
+  background: #fff;
+  border: 1px solid #dee2e6;
+  border-radius: 10px;
+  padding: 10px 5px;
+  color: #495057;
+  font-family: 'Kanit', sans-serif;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
 .slot-btn:hover {
-    border-color: #0035ad;
-    color: #0035ad;
-    background: #ebf3ff;
+  border-color: #0d6efd;
+  color: #0d6efd;
+  background-color: #f8f9fa;
 }
 
 .slot-btn.active {
-    background: #0035ad; /* สีหลัก */
-    color: white;
-    border-color: #0035ad;
-    box-shadow: 0 4px 10px rgba(0, 53, 173, 0.3);
-    transform: scale(1.05);
+  background-color: #0d6efd;
+  color: #fff;
+  border-color: #0d6efd;
+  box-shadow: 0 4px 10px rgba(13, 110, 253, 0.3);
+  transform: translateY(-2px);
 }
 
-/* --- Action Buttons --- */
+/* --- ปุ่มยืนยัน --- */
 .btn-confirm {
-    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-    border: none;
-    border-radius: 12px;
-    font-weight: 600;
-    font-size: 1.1rem;
-    transition: all 0.3s;
+  border-radius: 15px;
+  font-weight: 600;
+  font-size: 1.1rem;
+  transition: transform 0.2s;
 }
 
 .btn-confirm:hover {
-    box-shadow: 0 8px 20px rgba(40, 167, 69, 0.3);
-    transform: translateY(-2px);
-}
-
-/* --- Navbar Adjustments (ถ้าจำเป็นต้อง Override) --- */
-.nav-link-custom {
-    font-weight: 500;
-    color: #555 !important;
-    transition: color 0.2s;
-}
-.nav-link-custom:hover, .nav-link-custom.active {
-    color: #0035ad !important;
+  transform: translateY(-2px);
 }

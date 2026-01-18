@@ -1,0 +1,45 @@
+/* src/components/common/PCSHSNavbar.css */
+
+/* --- Navbar: Premium Glass --- */
+.pcshs-navbar {
+    background: rgba(255, 255, 255, 0.9) !important;
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+    padding-top: 12px;
+    padding-bottom: 12px;
+    transition: all 0.3s ease;
+}
+
+.navbar-brand span {
+    letter-spacing: -0.5px;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+/* เมนู Navbar */
+.nav-link-custom {
+    color: #718096 !important;
+    font-weight: 500;
+    margin: 0 8px;
+    padding: 8px 12px !important;
+    border-radius: 12px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex; align-items: center;
+    cursor: pointer; /* เพิ่ม cursor pointer */
+}
+
+.nav-link-custom:hover {
+    color: var(--pcshs-blue) !important;
+    background: rgba(0, 66, 153, 0.05);
+    transform: translateY(-1px);
+}
+
+.nav-link-custom.active {
+    color: var(--pcshs-blue) !important;
+    background: rgba(0, 66, 153, 0.08);
+    box-shadow: var(--shadow-sm);
+}
+
+/* User Dropdown Style (บางส่วน) */
+.vr { border-left: 1px solid #cbd5e0; opacity: 1; }
