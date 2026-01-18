@@ -1,4 +1,3 @@
-// client/src/App.js
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import 'bootstrap/dist/css/bootstrap.min.css';
@@ -16,14 +15,16 @@ import PrivateRoute from './components/routing/PrivateRoute';
 import PsychologistDashboard from './components/psychologist/PsychologistDashboard';
 import AppointmentManager from './components/psychologist/AppointmentManager';
 import NewsManagement from './components/psychologist/NewsManagement'; 
+import ScheduleManager from './components/psychologist/ScheduleManager';
 
 import StudentDashboard from './components/student/StudentDashboard';
 import AssessmentForm from './components/student/AssessmentForm'; 
 import AppointmentBooking from './components/student/AppointmentBooking';
-import StudentNews from './components/student/StudentNews'; // ✅ 1. Import มาแล้ว
+import StudentNews from './components/student/StudentNews'; 
+// ✅ Import Component นัดหมายเข้ามา
+import StudentAppointments from './components/student/StudentAppointments'; 
 
 import Profile from './components/common/Profile';
-import ScheduleManager from './components/psychologist/ScheduleManager';
 
 const App = () => {
   return (
@@ -36,8 +37,6 @@ const App = () => {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           
-          {/* หมายเหตุ: Schedule ควรเป็น Private ของ Psychologist ไหมครับ? 
-              ถ้าใช่ ควรย้ายไปไว้ในกลุ่ม Psychologist ด้านล่างครับ แต่ถ้าไว้เทสก่อนก็ OK ครับ */}
           <Route path="/psychologist/schedule" element={<ScheduleManager />} />   
 
           {/* ===== Shared Routes (ใช้ร่วมกันได้ทุก Role) ===== */}
@@ -78,12 +77,21 @@ const App = () => {
             }
           />
 
-          {/* ✅ 2. เพิ่ม Route สำหรับหน้าข่าวสารตรงนี้ครับ */}
           <Route
             path="/news"
             element={
               <PrivateRoute allowedRoles={['Student']}>
                 <StudentNews />
+              </PrivateRoute>
+            }
+          />
+
+          {/* ✅ เพิ่ม Route: ประวัติการนัดหมาย (หน้าแยก) */}
+          <Route
+            path="/student/appointments"
+            element={
+              <PrivateRoute allowedRoles={['Student']}>
+                <StudentAppointments />
               </PrivateRoute>
             }
           />

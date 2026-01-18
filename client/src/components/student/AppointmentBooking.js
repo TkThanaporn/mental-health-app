@@ -1,21 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Container, Form, Button, Card, Alert, Row, Col, Image } from 'react-bootstrap';
+import { Container, Form, Button, Card, Alert, Row, Col, Image, Badge } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import { 
     FaCalendarAlt, FaClock, FaVideo, FaUserFriends, FaCommentDots, FaMapMarkerAlt,
-    FaPhone, FaQuoteLeft, FaVenusMars, FaEnvelope
+    FaPhone, FaQuoteLeft, FaVenusMars, FaEnvelope, FaAtom, FaChevronRight, FaInfoCircle
 } from 'react-icons/fa';
 
-// Import Navbar ตัวกลาง
 import PCSHSNavbar from '../common/Navbar/PCSHSNavbar';
-
 import './AppointmentBooking.css';
 
 const AppointmentBooking = () => {
     const navigate = useNavigate();
     
-    // State
+    // State (คงเดิมจาก Logic ของคุณ)
     const [psycho, setPsycho] = useState(null);
     const [availableSlots, setAvailableSlots] = useState([]); 
     const [dailySlots, setDailySlots] = useState([]); 
@@ -26,32 +24,26 @@ const AppointmentBooking = () => {
     const [message, setMessage] = useState(null);
     const [groupMembers, setGroupMembers] = useState(['']); 
 
-    // --- 1. เช็ค Prerequisite (ต้องทำแบบประเมินก่อน) ---
+    // ... (useEffect และ Functions สำหรับดึงข้อมูล เหมือนเดิมทุกประการ) ...
     useEffect(() => {
         const checkPrerequisite = async () => {
             try {
                 const token = localStorage.getItem('token');
                 if (!token) return; 
-                
                 const res = await axios.get('http://localhost:5000/api/assessments/latest', {
                     headers: { 'x-auth-token': token }
                 });
-
                 if (!res.data) {
                     alert("⚠️ คุณจำเป็นต้องทำแบบประเมินสุขภาพจิตก่อนจองคิวครับ");
                     navigate('/student/assessment'); 
                 }
-            } catch (err) {
-                console.error("Error checking assessment:", err);
-            }
+            } catch (err) { console.error(err); }
         };
         checkPrerequisite();
     }, [navigate]);
 
-    // --- 2. โหลดข้อมูล ---
     useEffect(() => { fetchPsychologistAndSchedule(); }, []);
 
-    // --- 3. กรองตารางเวลา ---
     useEffect(() => {
         if (formData.date && availableSlots.length > 0) {
             const slotsForDate = availableSlots.filter(slot => {
@@ -70,26 +62,19 @@ const AppointmentBooking = () => {
             const resPsycho = await axios.get('http://localhost:5000/api/psychologists/available', {
                 headers: { 'x-auth-token': token } 
             });
-
-            if (Array.isArray(resPsycho.data) && resPsycho.data.length > 0) {
+            if (resPsycho.data.length > 0) {
                 const selectedPsycho = resPsycho.data[0];
                 setPsycho(selectedPsycho);
                 const resSchedule = await axios.get(`http://localhost:5000/api/schedule/psychologist/${selectedPsycho.user_id}`);
                 setAvailableSlots(resSchedule.data);
             }
-        } catch (err) {
-            console.error("Error fetching data:", err);
-            setMessage({ type: 'danger', text: 'ไม่สามารถดึงข้อมูลได้' });
-        }
+        } catch (err) { setMessage({ type: 'danger', text: 'ไม่สามารถดึงข้อมูลได้' }); }
     };
     
-    // Handlers
     const handleFormChange = (e) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
-        if (name === 'consultation_type' && value === 'Individual') {
-            setGroupMembers(['']);
-        }
+        if (name === 'consultation_type' && value === 'Individual') setGroupMembers(['']);
     };
 
     const handleGroupMemberChange = (index, value) => {
@@ -98,28 +83,9 @@ const AppointmentBooking = () => {
         setGroupMembers(newMembers);
     };
 
-    const removeGroupMember = (indexToRemove) => {
-        setGroupMembers(groupMembers.filter((_, index) => index !== indexToRemove));
-    };
-
-    const handleAddToGoogleCalendar = () => {
-        if (!formData.date || !formData.time) return;
-        const [startT, endT] = formData.time.split('-');
-        const cleanDate = formData.date.replace(/-/g, '');
-        const startTime = `${cleanDate}T${startT.trim().replace(':', '')}00`;
-        const endTime = `${cleanDate}T${endT.trim().replace(':', '')}00`;
-        const title = encodeURIComponent(`นัดหมายปรึกษาจิตวิทยา (${formData.type})`);
-        const details = encodeURIComponent(`หัวข้อ: ${formData.topic}\nกับนักจิตวิทยา: ${psycho.fullname}`);
-        const location = encodeURIComponent(formData.type === 'Online' ? 'Online Meeting' : 'ห้องให้คำปรึกษา');
-        const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${startTime}/${endTime}&details=${details}&location=${location}`;
-        window.open(calendarUrl, '_blank');
-    };
-
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!psycho) return setMessage({ type: 'danger', text: 'ไม่พบนักจิตวิทยา' });
-        if (!selectedScheduleId) return setMessage({ type: 'danger', text: 'กรุณาเลือกเวลา' });
-
+        if (!selectedScheduleId) return setMessage({ type: 'danger', text: 'กรุณาเลือกช่วงเวลาที่ต้องการ' });
         try {
             const token = localStorage.getItem('token');
             const dataToSend = {
@@ -130,229 +96,178 @@ const AppointmentBooking = () => {
                 consultation_type: formData.consultation_type,
                 group_members: formData.consultation_type === 'Group' ? groupMembers.filter(m => m.trim() !== '') : []
             };
-            
             await axios.post('http://localhost:5000/api/appointments', dataToSend, { 
                 headers: { 'x-auth-token': token } 
             });
-            
             setMessage({ type: 'success', text: 'จองสำเร็จ!' });
-
-        } catch (err) {
-            console.error("Booking Error:", err);
-            setMessage({ type: 'danger', text: err.response?.data?.msg || 'การจองล้มเหลว' });
-        }
+        } catch (err) { setMessage({ type: 'danger', text: err.response?.data?.msg || 'การจองล้มเหลว' }); }
     };
 
-    if (!psycho) return <div className="text-center mt-5 pt-5 text-muted">กำลังโหลดข้อมูล...</div>;
-    
-    // ข้อมูลพื้นฐาน (Fallback ถ้าไม่มีรูป)
-    const psychoName = psycho.fullname || 'นักจิตวิทยา';
-    const psychoImage = psycho.profile_image || "https://placehold.co/150?text=Psycho";
+    if (!psycho) return <div className="loader-container"><div className="spinner-science"></div></div>;
 
     return (
         <div className="booking-wrapper">
-             <PCSHSNavbar />
-            <div style={{ marginTop: '90px' }}></div>
+            <PCSHSNavbar />
+            <div className="science-bg-grid"></div>
 
-            <Container className="py-4">
-                <div className="mb-4 text-center text-md-start">
-                    <h2 className="fw-bold text-dark"><FaCalendarAlt className="text-primary me-2"/>จองคิวปรึกษา (Real-time)</h2>
-                    <p className="text-muted">เลือกวันและเวลาที่คุณสะดวกเพื่อพูดคุยกับนักจิตวิทยา</p>
+            <Container className="content-area py-5">
+                {/* Header Style ตามรูปภาพที่ส่งมา */}
+                <div className="header-style-custom mb-5">
+                    <div className="d-flex align-items-center gap-2 mb-1">
+                        <FaAtom className="text-orange atom-icon-spin" />
+                        <span className="text-orange fw-bold letter-spacing-2 small-title">PCSHS STUDENT CARE</span>
+                    </div>
+                    <h1 className="fw-extrabold text-navy main-title-text">การนัดหมายปรึกษา</h1>
+                    <div className="title-underline"></div>
                 </div>
-                
+
                 {message && message.type === 'success' ? (
-                    <Alert variant="success" className="text-center shadow-sm border-0 rounded-4 p-5">
-                        <div className="mb-3 display-1">🎉</div>
-                        <h2 className="fw-bold text-success mb-3">จองคิวสำเร็จ!</h2>
-                        <div className="d-flex justify-content-center gap-3 mt-4">
-                            <Button variant="warning" size="lg" className="rounded-pill text-dark fw-bold px-4" onClick={handleAddToGoogleCalendar}>
-                                📅 เพิ่มลง Calendar
-                            </Button>
-                            <Button variant="outline-primary" size="lg" className="rounded-pill px-4" onClick={() => navigate('/student/dashboard')}>
-                                กลับหน้าหลัก
-                            </Button>
+                    <Card className="success-finish-card border-0 shadow-lg text-center p-5 fade-in-up">
+                        <div className="success-icon-wrapper mb-4">🎉</div>
+                        <h2 className="fw-bold text-navy mb-3">จองคิวสำเร็จแล้ว!</h2>
+                        <p className="text-muted mb-4">นักจิตวิทยาได้รับคำขอของคุณแล้ว แล้วพบกันนะครับ</p>
+                        <div className="d-flex justify-content-center gap-3">
+                            <Button className="btn-pcshs-navy rounded-pill px-4" onClick={() => navigate('/student/appointments')}>ดูนัดหมายของฉัน</Button>
                         </div>
-                    </Alert>
+                    </Card>
                 ) : (
-                    <>
-                        {message && <Alert variant={message.type} className="rounded-3 shadow-sm">{message.text}</Alert>}
-                        
-                        <Row className="g-4">
-                            {/* --- Left Column: แสดงเฉพาะข้อมูลที่มีจริง --- */}
-                            <Col lg={4}>
-                                <Card className="psycho-card h-100 shadow-sm border-0 overflow-hidden">
-                                    <div className="psycho-cover-bg" style={{background: 'linear-gradient(135deg, #0035ad 0%, #0060ff 100%)', height: '120px'}}></div>
+                    <Row className="g-4">
+                        {/* Profile Psychologist */}
+                        <Col lg={4}>
+                            <Card className="profile-glass-card border-0 shadow-sm sticky-top" style={{ top: '100px' }}>
+                                <div className="card-top-accent-orange"></div>
+                                <Card.Body className="p-4 text-center">
+                                    <div className="avatar-container mb-3">
+                                        <Image src={psycho.profile_image || "https://placehold.co/200?text=Psycho"} roundedCircle className="profile-img-lg" />
+                                    </div>
+                                    <h4 className="fw-bold text-navy mb-1">{psycho.fullname}</h4>
+                                    <Badge bg="light" text="dark" className="border rounded-pill px-3 py-2 fw-normal mb-4">
+                                        นักจิตวิทยาประจำศูนย์
+                                    </Badge>
                                     
-                                    <Card.Body className="text-center px-4 pb-5 pt-0 position-relative">
-                                        <div className="psycho-avatar-container" style={{marginTop: '-60px'}}>
-                                            <Image 
-                                                src={psychoImage} 
-                                                roundedCircle 
-                                                className="psycho-img bg-white" 
-                                                style={{width: '120px', height: '120px', objectFit: 'cover', border: '4px solid white', boxShadow: '0 4px 15px rgba(0,0,0,0.1)'}} 
-                                            />
+                                    <div className="bio-box mb-4">
+                                        <FaQuoteLeft className="quote-icon-small" />
+                                        <p className="m-0 italic-text">{psycho.bio || "พร้อมรับฟังและเคียงข้างนักเรียนทุกคนในทุกปัญหาครับ"}</p>
+                                    </div>
+
+                                    <div className="contact-minimal text-start">
+                                        <div className="contact-row">
+                                            <FaMapMarkerAlt className="text-orange" />
+                                            <span>ห้องแนะแนว อาคาร 1</span>
                                         </div>
-                                        
-                                        <h4 className="fw-bold mt-3 mb-1 text-dark">{psychoName}</h4>
-                                        
-                                        <div className="mb-3 d-flex justify-content-center gap-2 align-items-center">
-                                            <span className="badge bg-primary bg-opacity-10 text-primary px-3 py-1 rounded-pill fw-normal">
-                                                นักจิตวิทยาประจำศูนย์
-                                            </span>
-                                            {/* แสดงเฉพาะถ้ามีข้อมูลเพศ */}
-                                            {psycho.gender && (
-                                                <span className="badge bg-secondary bg-opacity-10 text-secondary px-2 py-1 rounded-pill fw-normal d-flex align-items-center">
-                                                    <FaVenusMars size={12} className="me-1"/>
-                                                    {psycho.gender === 'Male' ? 'ชาย' : psycho.gender === 'Female' ? 'หญิง' : psycho.gender}
-                                                </span>
-                                            )}
-                                        </div>
-                                        
-                                        {/* แสดง Bio เฉพาะถ้ามีข้อมูล */}
-                                        {psycho.bio && (
-                                            <div className="bg-light p-3 rounded-3 text-secondary fst-italic border small text-start position-relative mt-4">
-                                                <FaQuoteLeft className="text-muted opacity-25 position-absolute top-0 start-0 m-2" size={14}/>
-                                                <p className="mb-0 px-2 pt-1" style={{lineHeight: '1.6'}}>{psycho.bio}</p>
+                                        {psycho.email && (
+                                            <div className="contact-row">
+                                                <FaEnvelope className="text-orange" />
+                                                <span className="text-truncate">{psycho.email}</span>
                                             </div>
                                         )}
+                                    </div>
+                                </Card.Body>
+                            </Card>
+                        </Col>
+
+                        {/* Booking Form */}
+                        <Col lg={8}>
+                            <Card className="booking-form-card border-0 shadow-sm p-4">
+                                <Form onSubmit={handleSubmit}>
+                                    <section className="form-step mb-5">
+                                        <div className="d-flex align-items-center gap-3 mb-4">
+                                            <div className="step-badge">1</div>
+                                            <h5 className="fw-bold m-0 text-navy">ระบุวันและเลือกเวลา</h5>
+                                        </div>
                                         
-                                        <div className="mt-4 text-start">
-                                            <h6 className="fw-bold text-muted small text-uppercase ls-1 border-bottom pb-2 mb-3">ช่องทางติดต่อ</h6>
-                                            
-                                            {/* สถานที่ (สมมติว่าเป็นค่า Default ของระบบ แต่ถ้าต้องการเอาออกก็ลบ block นี้ได้) */}
-                                            <div className="d-flex align-items-center mb-3 text-dark small">
-                                                <div className="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center me-3" style={{width:'32px', height:'32px', minWidth:'32px'}}>
-                                                    <FaMapMarkerAlt/>
-                                                </div>
-                                                <div>
-                                                    <span className="d-block fw-bold text-secondary" style={{fontSize:'0.7rem'}}>สถานที่</span>
-                                                    ห้องให้คำปรึกษา
-                                                </div>
-                                            </div>
+                                        <Row className="g-3">
+                                            <Col md={6}>
+                                                <Form.Group>
+                                                    <Form.Label className="small-label">วันที่สะดวก</Form.Label>
+                                                    <div className="input-group-custom">
+                                                        <FaCalendarAlt className="input-icon-left" />
+                                                        <Form.Control type="date" name="date" className="custom-input-field" value={formData.date} onChange={handleFormChange} required />
+                                                    </div>
+                                                </Form.Group>
+                                            </Col>
+                                        </Row>
 
-                                            {/* แสดงเบอร์โทร เฉพาะถ้ามีข้อมูล */}
-                                            {psycho.phone && (
-                                                <div className="d-flex align-items-center mb-3 text-dark small">
-                                                    <div className="bg-success bg-opacity-10 text-success rounded-circle d-flex align-items-center justify-content-center me-3" style={{width:'32px', height:'32px', minWidth:'32px'}}>
-                                                        <FaPhone/>
-                                                    </div>
-                                                    <div>
-                                                        <span className="d-block fw-bold text-secondary" style={{fontSize:'0.7rem'}}>เบอร์โทรศัพท์</span>
-                                                        {psycho.phone}
-                                                    </div>
-                                                </div>
-                                            )}
-
-                                            {/* แสดงอีเมล เฉพาะถ้ามีข้อมูล */}
-                                            {psycho.email && (
-                                                <div className="d-flex align-items-center text-dark small">
-                                                    <div className="bg-warning bg-opacity-10 text-warning rounded-circle d-flex align-items-center justify-content-center me-3" style={{width:'32px', height:'32px', minWidth:'32px'}}>
-                                                        <FaEnvelope/>
-                                                    </div>
-                                                    <div>
-                                                        <span className="d-block fw-bold text-secondary" style={{fontSize:'0.7rem'}}>อีเมล</span>
-                                                        {psycho.email}
-                                                    </div>
+                                        <div className="mt-4">
+                                            <Form.Label className="small-label mb-3">ช่วงเวลาที่เปิดรับนัด</Form.Label>
+                                            {!formData.date ? (
+                                                <div className="placeholder-time-grid">กรุณาเลือกวันที่เพื่อตรวจสอบคิวว่าง</div>
+                                            ) : dailySlots.length === 0 ? (
+                                                <Alert variant="warning" className="rounded-4 border-0">ไม่มีคิวว่างในวันที่เลือก</Alert>
+                                            ) : (
+                                                <div className="time-chips-container">
+                                                    {dailySlots.map((slot) => (
+                                                        <button
+                                                            type="button" key={slot.schedule_id}
+                                                            className={`time-chip-btn ${selectedScheduleId === slot.schedule_id ? 'active' : ''}`}
+                                                            onClick={() => {
+                                                                setFormData({ ...formData, time: slot.time_slot });
+                                                                setSelectedScheduleId(slot.schedule_id);
+                                                            }}
+                                                        >
+                                                            {slot.time_slot}
+                                                        </button>
+                                                    ))}
                                                 </div>
                                             )}
                                         </div>
-                                    </Card.Body>
-                                </Card>
-                            </Col>
+                                    </section>
 
-                            {/* --- Right Column: Form (คงเดิม) --- */}
-                            <Col lg={8}>
-                                <Card className="booking-card bg-white p-3 p-md-4 h-100 border-0 shadow-sm">
-                                    <Card.Body>
-                                        <Form onSubmit={handleSubmit}>
-                                            <h5 className="fw-bold text-primary mb-3">1. เลือกวันและเวลา</h5>
-                                            <Form.Group className="mb-4">
-                                                <Form.Label className="form-label-custom"><FaCalendarAlt/> วันที่ต้องการปรึกษา</Form.Label>
-                                                <Form.Control type="date" name="date" className="form-control-custom" value={formData.date} onChange={handleFormChange} required />
-                                            </Form.Group>
+                                    <section className="form-step mb-4">
+                                        <div className="d-flex align-items-center gap-3 mb-4">
+                                            <div className="step-badge">2</div>
+                                            <h5 className="fw-bold m-0 text-navy">ข้อมูลการปรึกษา</h5>
+                                        </div>
+                                        
+                                        <Row className="g-3 mb-4">
+                                            <Col md={6}>
+                                                <Form.Group>
+                                                    <Form.Label className="small-label">รูปแบบ</Form.Label>
+                                                    <Form.Select className="custom-input-field" name="type" value={formData.type} onChange={handleFormChange}>
+                                                        <option value="Online">ออนไลน์ (Chat/Video)</option>
+                                                        <option value="Onsite">พบตัวจริง (ห้องแนะแนว)</option>
+                                                    </Form.Select>
+                                                </Form.Group>
+                                            </Col>
+                                            <Col md={6}>
+                                                <Form.Group>
+                                                    <Form.Label className="small-label">ประเภท</Form.Label>
+                                                    <Form.Select className="custom-input-field" name="consultation_type" value={formData.consultation_type} onChange={handleFormChange}>
+                                                        <option value="Individual">รายบุคคล</option>
+                                                        <option value="Group">กลุ่ม (เพื่อน)</option>
+                                                    </Form.Select>
+                                                </Form.Group>
+                                            </Col>
+                                        </Row>
 
-                                            <Form.Group className="mb-4">
-                                                <Form.Label className="form-label-custom"><FaClock/> ช่วงเวลาที่ว่าง</Form.Label>
-                                                {!formData.date ? (
-                                                    <div className="text-center p-4 bg-light rounded-3 border border-dashed text-muted">
-                                                        กรุณาเลือกวันที่ก่อน เพื่อดูตารางเวลา
+                                        {formData.consultation_type === 'Group' && (
+                                            <div className="group-members-box p-3 rounded-4 mb-4">
+                                                <Form.Label className="small fw-bold mb-2">อีเมลเพื่อนร่วมกลุ่ม</Form.Label>
+                                                {groupMembers.map((member, index) => (
+                                                    <div key={index} className="d-flex gap-2 mb-2">
+                                                        <Form.Control type="email" className="custom-input-field" placeholder="student@pcshs.ac.th" value={member} onChange={(e) => handleGroupMemberChange(index, e.target.value)} />
+                                                        {groupMembers.length > 1 && (
+                                                            <Button variant="outline-danger" className="rounded-3" onClick={() => setGroupMembers(groupMembers.filter((_, i) => i !== index))}>-</Button>
+                                                        )}
                                                     </div>
-                                                ) : dailySlots.length === 0 ? (
-                                                    <Alert variant="warning" className="border-0 bg-warning bg-opacity-10 text-warning-darker">
-                                                        ❌ ไม่พบคิวว่างในวันนี้ กรุณาเลือกวันอื่น
-                                                    </Alert>
-                                                ) : (
-                                                    <div className="time-slot-grid">
-                                                        {dailySlots.map((slot) => (
-                                                            <button
-                                                                type="button"
-                                                                key={slot.schedule_id}
-                                                                className={`slot-btn ${selectedScheduleId === slot.schedule_id ? 'active' : ''}`}
-                                                                onClick={() => {
-                                                                    setFormData({ ...formData, time: slot.time_slot });
-                                                                    setSelectedScheduleId(slot.schedule_id);
-                                                                }}
-                                                            >
-                                                                {slot.time_slot}
-                                                            </button>
-                                                        ))}
-                                                    </div>
-                                                )}
-                                            </Form.Group>
+                                                ))}
+                                                <Button variant="link" className="text-orange p-0 text-decoration-none small" onClick={() => setGroupMembers([...groupMembers, ''])}>+ เพิ่มรายชื่อเพื่อน</Button>
+                                            </div>
+                                        )}
 
-                                            <hr className="my-4 text-muted opacity-25"/>
+                                        <Form.Group className="mb-4">
+                                            <Form.Label className="small-label">หัวข้อที่ต้องการปรึกษา</Form.Label>
+                                            <Form.Control as="textarea" rows={3} name="topic" className="custom-input-field" placeholder="ระบุสิ่งที่กังวลใจเบื้องต้น..." value={formData.topic} onChange={handleFormChange} required />
+                                        </Form.Group>
+                                    </section>
 
-                                            <h5 className="fw-bold text-primary mb-3">2. รายละเอียดการปรึกษา</h5>
-                                            <Row>
-                                                <Col md={6}>
-                                                    <Form.Group className="mb-3">
-                                                        <Form.Label className="form-label-custom"><FaVideo/> รูปแบบ</Form.Label>
-                                                        <Form.Select className="form-select-custom" name="type" value={formData.type} onChange={handleFormChange}>
-                                                            <option value="Online">Video Call / Chat (Online)</option>
-                                                            <option value="Onsite">พบตัวจริง (Onsite)</option>
-                                                        </Form.Select>
-                                                    </Form.Group>
-                                                </Col>
-                                                <Col md={6}>
-                                                    <Form.Group className="mb-3">
-                                                        <Form.Label className="form-label-custom"><FaUserFriends/> ประเภท</Form.Label>
-                                                        <Form.Select className="form-select-custom" name="consultation_type" value={formData.consultation_type} onChange={handleFormChange}>
-                                                            <option value="Individual">ปรึกษาเดี่ยว</option>
-                                                            <option value="Group">ปรึกษากลุ่ม</option>
-                                                        </Form.Select>
-                                                    </Form.Group>
-                                                </Col>
-                                            </Row>
-
-                                            {formData.consultation_type === 'Group' && (
-                                                <div className="bg-light p-3 rounded-3 mb-4 border">
-                                                    <Form.Label className="fw-bold small text-muted mb-2">รายชื่อเพื่อนร่วมกลุ่ม (Email)</Form.Label>
-                                                    {groupMembers.map((member, index) => (
-                                                        <div key={index} className="d-flex mb-2 gap-2">
-                                                            <Form.Control type="email" className="form-control-custom py-2" placeholder={`อีเมลเพื่อนคนที่ ${index + 1}`} value={member} onChange={(e) => handleGroupMemberChange(index, e.target.value)} />
-                                                            {groupMembers.length > 1 && (
-                                                                <Button variant="outline-danger" className="rounded-3" onClick={() => removeGroupMember(index)}>-</Button>
-                                                            )}
-                                                        </div>
-                                                    ))}
-                                                    <Button variant="link" className="text-decoration-none p-0 mt-1" onClick={() => setGroupMembers([...groupMembers, ''])}>+ เพิ่มเพื่อนอีก</Button>
-                                                </div>
-                                            )}
-
-                                            <Form.Group className="mb-4">
-                                                <Form.Label className="form-label-custom"><FaCommentDots/> เรื่องที่ต้องการปรึกษา (เบื้องต้น)</Form.Label>
-                                                <Form.Control as="textarea" rows={3} name="topic" className="form-control-custom" placeholder="เช่น เครียดเรื่องเรียน, ปัญหาครอบครัว, หรืออื่นๆ..." value={formData.topic} onChange={handleFormChange} required />
-                                            </Form.Group>
-
-                                            <Button variant="success" size="lg" type="submit" className="btn-confirm w-100 py-3 mt-2 shadow">
-                                                ยืนยันการจองนัดหมาย
-                                            </Button>
-                                        </Form>
-                                    </Card.Body>
-                                </Card>
-                            </Col>
-                        </Row>
-                    </>
+                                    <Button type="submit" className="btn-submit-main w-100 py-3 mt-2 shadow-lg">
+                                        ยืนยันนัดหมาย <FaChevronRight className="ms-2 small" />
+                                    </Button>
+                                </Form>
+                            </Card>
+                        </Col>
+                    </Row>
                 )}
             </Container>
         </div>

@@ -277,3 +277,61 @@
         margin-top: 15px;
     }
 }
+/* --- System Overview Section --- */
+.overview-card-bg {
+    background: rgba(255, 255, 255, 0.95) !important;
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.8) !important;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.05) !important;
+}
+
+.step-item {
+    padding: 10px;
+    transition: transform 0.3s ease;
+}
+
+.step-item:hover {
+    transform: translateY(-5px);
+}
+
+.step-icon-wrapper {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 20px;
+    position: relative;
+    z-index: 2;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+}
+
+/* สีพื้นหลังของไอคอนแต่ละขั้นตอน */
+.bg-soft-orange { 
+    background: #FFF3E0; 
+    color: var(--pcshs-orange); 
+}
+.bg-soft-blue { 
+    background: #E3F2FD; 
+    color: var(--pcshs-blue); 
+}
+.bg-soft-green { 
+    background: #E8F5E9; 
+    color: #2E7D32; 
+}
+
+/* เส้นเชื่อมระหว่างขั้นตอน */
+.step-connector {
+    position: absolute;
+    top: 40px;
+    right: -10px;
+    transform: translateY(-50%);
+    z-index: 1;
+}
+
+@media (max-width: 768px) {
+    .step-connector {
+        display: none;
+    }
+}

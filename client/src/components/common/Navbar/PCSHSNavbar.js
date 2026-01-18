@@ -63,7 +63,7 @@ const PCSHSNavbar = () => {
                         <Nav.Link onClick={() => navigate('/student/book')} className={`nav-link-custom ${isActive('/student/book')}`}>
                             <FaCalendarAlt className="me-1 mb-1"/> จองคิว
                         </Nav.Link>
-                        <Nav.Link onClick={() => navigate('/student/dashboard')} className={`nav-link-custom ${isActive('/')}`}>
+                        <Nav.Link onClick={() => navigate('/student/appointments')} className={`nav-link-custom ${isActive('/student/appointments')}`}>
                             <FaHistory className="me-1 mb-1"/> ข้อมูลการนัดหมาย
                         </Nav.Link>
                         
