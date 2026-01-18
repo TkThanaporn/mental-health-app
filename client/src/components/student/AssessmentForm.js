@@ -3,14 +3,13 @@ import axios from 'axios';
 import { Container, Button, Card, Row, Col, Modal } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import { 
-    FaClipboardCheck, FaInfoCircle, FaCheckCircle 
+    FaCheckCircle, FaAtom, FaInfoCircle, FaChevronRight, FaArrowLeft 
 } from 'react-icons/fa'; 
 
 // Import Navbar ตัวกลาง
 import PCSHSNavbar from '../common/Navbar/PCSHSNavbar';
 
 // Import CSS
-import './StudentDashboard.css'; 
 import './AssessmentForm.css';
 
 const PHQAQuestions = [
@@ -28,16 +27,13 @@ const PHQAQuestions = [
 const AssessmentForm = () => {
     const navigate = useNavigate();
     
-    // State สำหรับฟอร์ม
     const [answers, setAnswers] = useState(new Array(PHQAQuestions.length).fill(null));
     const [result, setResult] = useState(null);
     const [loading, setLoading] = useState(false);
     const [showResultModal, setShowResultModal] = useState(false);
     const [progress, setProgress] = useState(0);
 
-    // ไม่ต้องดึง user จาก token แล้ว เพราะ Navbar จัดการให้
-
-    // คำนวณ Progress Bar
+    // คำนวณ Progress Bar เมื่อมีการตอบคำถาม
     useEffect(() => {
         const answeredCount = answers.filter(a => a !== null).length;
         setProgress(Math.round((answeredCount / PHQAQuestions.length) * 100));
@@ -78,127 +74,119 @@ const AssessmentForm = () => {
         const isSelected = answers[questionIndex] === score;
         return (
             <div 
-                className={`option-btn ${isSelected ? 'active' : ''}`} 
+                className={`option-btn-new ${isSelected ? 'active' : ''}`} 
                 onClick={() => handleAnswerChange(questionIndex, score)}
-                data-score={score}
             >
-                <div className="score-circle">{score}</div>
-                <div className="option-label">{label}</div>
+                <div className="score-dot">{score}</div>
+                <div className="label-text">{label}</div>
             </div>
         );
     };
 
     return (
-        <div className="assessment-wrapper pcshs-dashboard">
-            {/* 1. ใช้ Navbar ตัวกลาง */}
+        <div className="assessment-page">
             <PCSHSNavbar />
+            
+            {/* Background Pattern */}
+            <div className="science-bg-pattern"></div>
 
-            {/* เพิ่มระยะห่างเพราะ Navbar เป็น fixed-top */}
-            <div style={{ marginTop: '100px' }}></div>
-
-            {/* 2. Header & Progress Section */}
-            <div className="header-section pb-5 pt-4">
-                <Container style={{maxWidth: '800px'}}>
-                    <div className="text-center mb-4">
-                        <div className="icon-box-header">
-                            <FaClipboardCheck />
-                        </div>
-                        <h2 className="fw-bold mb-2 text-dark">ประเมินสุขภาพใจ (PHQ-A)</h2>
-                        <p className="text-muted">
-                            โปรดตอบคำถามตามความรู้สึกจริงของน้องในช่วง <span className="text-primary fw-bold">2 สัปดาห์ที่ผ่านมา</span>
-                            <br/>ข้อมูลของน้องจะถูกเก็บเป็นความลับ
-                        </p>
+            <Container className="content-container py-5">
+                
+                {/* Header Style (ตามรูปตัวอย่างที่ 1) */}
+                <div className="header-style-custom mb-4">
+                    <div className="d-flex align-items-center gap-2 mb-1">
+                        <FaAtom className="atom-icon-orange spin-anim" />
+                        <span className="sub-title-orange">PCSHS STUDENT CARE</span>
                     </div>
+                    <h1 className="main-title-navy">แบบประเมินสุขภาพใจ (PHQ-A)</h1>
+                </div>
 
-                    <div className="px-md-5">
-                        <div className="d-flex justify-content-between small text-muted mb-2 fw-bold">
-                            <span>ความคืบหน้า</span>
-                            <span>{progress}%</span>
+                {/* Progress Card (ตามรูปตัวอย่างที่ 2) */}
+                <Card className="progress-card-refined shadow-sm border-0 mb-5">
+                    <Card.Body className="p-4 px-md-5">
+                        <div className="d-flex justify-content-between align-items-center mb-1">
+                            <div className="progress-label-group">
+                                <span className="text-uppercase fw-bold text-muted x-small-label">PROGRESS</span>
+                                <div className="d-flex align-items-baseline gap-2">
+                                    <h2 className="progress-percent m-0">{progress}%</h2>
+                                    <span className="text-muted fw-light">Completed</span>
+                                </div>
+                            </div>
+                            <div className="question-counter text-muted">
+                                {answers.filter(a => a !== null).length} / {PHQAQuestions.length} Questions
+                            </div>
                         </div>
-                        <div className="progress-container">
-                            <div className="custom-progress-bar h-100" style={{width: `${progress}%`}}></div>
+                        <div className="progress-bar-container-new">
+                            <div className="progress-bar-fill-new" style={{width: `${progress}%`}}></div>
                         </div>
-                    </div>
-                </Container>
-            </div>
+                    </Card.Body>
+                </Card>
+                {/* Questions List */}
+                <div className="questions-stack">
+                    {PHQAQuestions.map((question, index) => (
+                        <Card key={index} className={`question-item-card mb-4 ${answers[index] !== null ? 'answered' : ''}`}>
+                            <Card.Body className="p-4 p-md-5">
+                                <div className="q-index-tag">Question {index + 1}</div>
+                                <h4 className="question-text text-navy mb-4">{question}</h4>
+                                
+                                <Row className="g-3">
+                                    <Col xs={6} md={3}>{renderOptionBtn(index, 0, "ไม่มีเลย")}</Col>
+                                    <Col xs={6} md={3}>{renderOptionBtn(index, 1, "มีบางวัน")}</Col>
+                                    <Col xs={6} md={3}>{renderOptionBtn(index, 2, "บ่อยครั้ง")}</Col>
+                                    <Col xs={6} md={3}>{renderOptionBtn(index, 3, "แทบทุกวัน")}</Col>
+                                </Row>
+                            </Card.Body>
+                        </Card>
+                    ))}
+                </div>
 
-            {/* 3. Questions List */}
-            <Container className="py-5" style={{maxWidth: '800px'}}>
-                {PHQAQuestions.map((question, index) => (
-                    <Card key={index} className={`mb-4 question-card ${answers[index] !== null ? 'answered' : ''}`}>
-                        <Card.Body className="p-4">
-                            <h5 className="fw-bold text-dark mb-4 d-flex">
-                                <span className="me-3 text-secondary opacity-50">{index + 1}.</span>
-                                {question}
-                            </h5>
-                            
-                            <Row className="g-2 g-md-3">
-                                <Col xs={6} md={3}>{renderOptionBtn(index, 0, "ไม่มีเลย")}</Col>
-                                <Col xs={6} md={3}>{renderOptionBtn(index, 1, "มีบางวัน")}</Col>
-                                <Col xs={6} md={3}>{renderOptionBtn(index, 2, "บ่อยกว่า 7 วัน")}</Col>
-                                <Col xs={6} md={3}>{renderOptionBtn(index, 3, "แทบทุกวัน")}</Col>
-                            </Row>
-                        </Card.Body>
-                    </Card>
-                ))}
-
-                <div className="d-grid gap-2 mt-5 mb-5">
+                {/* Submit Section */}
+                <div className="submit-area text-center mt-5 mb-5">
                     <Button 
                         onClick={handleSubmit} 
-                        className="btn-hero-primary py-3 fs-5 border-0 shadow-lg"
+                        className="btn-grad-pcshs"
                         disabled={loading || answers.includes(null)}
-                        style={{ 
-                            background: 'linear-gradient(135deg, #F26522 0%, #FF8F5C 100%)',
-                            opacity: answers.includes(null) ? 0.6 : 1 
-                        }}
                     >
-                        {loading ? 'กำลังประมวลผล...' : 'ส่งแบบประเมิน'}
+                        {loading ? 'กำลังประมวลผล...' : 'ส่งแบบประเมินสุขภาพจิต'}
+                        <FaChevronRight className="ms-2 small" />
                     </Button>
                     {answers.includes(null) && (
-                        <div className="text-center text-muted small mt-2">
-                            <FaInfoCircle className="me-1"/> กรุณาตอบให้ครบทุกข้อเพื่อส่งแบบประเมิน
+                        <div className="mt-3 text-muted small fade-in">
+                            <FaInfoCircle className="me-1"/> โปรดตอบคำถามให้ครบทุกข้อเพื่อดูผลลัพธ์
                         </div>
                     )}
                 </div>
             </Container>
 
-            {/* 4. Result Modal */}
+            {/* Result Modal - สไตล์ Modern */}
             <Modal 
                 show={showResultModal} 
-                onHide={() => {
-                    setShowResultModal(false);
-                    navigate('/student/dashboard');
-                }}
+                onHide={() => navigate('/student/dashboard')}
                 centered
                 backdrop="static"
-                className="modal-custom"
+                className="modal-modern-science"
             >
                 <Modal.Body className="text-center p-5">
-                    <div className="mb-4 text-success">
-                        <FaCheckCircle size={80} style={{animation: 'float 3s ease-in-out infinite'}}/>
+                    <div className="success-icon-anim mb-4">
+                        <FaCheckCircle size={80} color="#28a745" />
                     </div>
-                    <h3 className="fw-bold mb-3">บันทึกผลเรียบร้อย</h3>
-                    <p className="text-muted mb-4">
-                        ขอบคุณที่ร่วมประเมินสุขภาพใจ<br/>
-                        ผลการประเมินเบื้องต้นของคุณคือ:
-                    </p>
+                    <h2 className="fw-bold text-navy mb-2">วิเคราะห์ผลสำเร็จ</h2>
+                    <p className="text-muted mb-4">ขอบคุณที่ให้ความสำคัญกับสุขภาพจิตของคุณ</p>
                     
-                    <div className="bg-light rounded-4 p-4 mb-4 border">
-                        <h1 className="display-4 fw-bold text-primary mb-0">{result?.score}</h1>
-                        <span className="text-secondary small">คะแนนรวม</span>
-                        <div className="mt-3">
-                            <span className="badge bg-primary px-3 py-2 rounded-pill fs-6 fw-normal">
-                                {result?.result}
-                            </span>
+                    <div className="result-score-container py-4 px-3 mb-4">
+                        <div className="small-label-caps">ผลคะแนนรวม</div>
+                        <div className="score-display">{result?.score}</div>
+                        <div className={`status-badge ${result?.result?.includes('ปกติ') ? 'bg-success' : 'bg-orange'}`}>
+                            {result?.result}
                         </div>
                     </div>
 
                     <Button 
-                        variant="outline-primary" 
-                        className="rounded-pill px-4 py-2"
+                        variant="dark" 
+                        className="w-100 py-3 rounded-4 fw-bold"
                         onClick={() => navigate('/student/dashboard')}
                     >
-                        กลับสู่หน้าหลัก
+                        กลับสู่หน้าแดชบอร์ด
                     </Button>
                 </Modal.Body>
             </Modal>
