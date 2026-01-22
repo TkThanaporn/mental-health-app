@@ -21,8 +21,10 @@ import StudentDashboard from './components/student/StudentDashboard';
 import AssessmentForm from './components/student/AssessmentForm'; 
 import AppointmentBooking from './components/student/AppointmentBooking';
 import StudentNews from './components/student/StudentNews'; 
-// ✅ Import Component นัดหมายเข้ามา
 import StudentAppointments from './components/student/StudentAppointments'; 
+
+// ✅ 1. Import AdminDashboard
+import AdminDashboard from './components/admin/AdminDashboard'; 
 
 import Profile from './components/common/Profile';
 
@@ -39,12 +41,22 @@ const App = () => {
           
           <Route path="/psychologist/schedule" element={<ScheduleManager />} />   
 
-          {/* ===== Shared Routes (ใช้ร่วมกันได้ทุก Role) ===== */}
+          {/* ===== Shared Routes ===== */}
           <Route
             path="/profile"
             element={
               <PrivateRoute allowedRoles={['Student', 'Psychologist', 'Admin']}>
                 <Profile />
+              </PrivateRoute>
+            }
+          />
+
+          {/* ✅ 2. เพิ่ม ADMIN ROUTES ตรงนี้ */}
+          <Route
+            path="/admin/*"
+            element={
+              <PrivateRoute allowedRoles={['Admin']}>
+                <AdminDashboard />
               </PrivateRoute>
             }
           />
@@ -58,7 +70,6 @@ const App = () => {
               </PrivateRoute>
             }
           />
-
           <Route
             path="/student/assessment"
             element={
@@ -67,7 +78,6 @@ const App = () => {
               </PrivateRoute>
             }
           />
-
           <Route
             path="/student/book"
             element={
@@ -76,7 +86,6 @@ const App = () => {
               </PrivateRoute>
             }
           />
-
           <Route
             path="/news"
             element={
@@ -85,8 +94,6 @@ const App = () => {
               </PrivateRoute>
             }
           />
-
-          {/* ✅ เพิ่ม Route: ประวัติการนัดหมาย (หน้าแยก) */}
           <Route
             path="/student/appointments"
             element={
@@ -105,7 +112,6 @@ const App = () => {
               </PrivateRoute>
             }
           />
-          
           <Route
             path="/psychologist/appointments"
             element={
@@ -114,7 +120,6 @@ const App = () => {
               </PrivateRoute>
             }
           />
-
           <Route
             path="/psychologist/news"
             element={

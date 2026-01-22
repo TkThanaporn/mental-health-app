@@ -1,0 +1,199 @@
+/* Layout หลัก */
+.dashboard-wrapper {
+    display: flex;
+    min-height: 100vh;
+    background-color: #f0f4f8;
+    font-family: 'Prompt', sans-serif;
+    overflow-x: hidden;
+}
+
+/* Sidebar */
+.pcshs-sidebar {
+    width: 280px;
+    background: linear-gradient(180deg, #003566 0%, #002147 100%);
+    color: white;
+    height: 100vh;
+    position: fixed;
+    left: 0;
+    top: 0;
+    z-index: 1000;
+}
+
+.pcshs-logo-glow {
+    width: 60px;
+    height: auto;
+    margin-bottom: 1rem;
+    filter: drop-shadow(0 0 8px rgba(255,255,255,0.3));
+}
+
+.logo-section {
+    padding: 2rem 1.5rem;
+    text-align: center;
+    background: rgba(255,255,255,0.03);
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.nav-item-custom {
+    padding: 12px 20px;
+    margin: 4px 12px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    color: rgba(255,255,255,0.7);
+    font-weight: 500;
+}
+
+.nav-item-custom:hover {
+    background: rgba(255,255,255,0.1);
+    color: white;
+    transform: translateX(5px);
+}
+
+.nav-item-custom.active {
+    background: #F25C05; /* Admin Orange Accent */
+    color: white;
+    box-shadow: 0 4px 15px rgba(242, 92, 5, 0.4);
+}
+
+.hover-danger:hover {
+    color: #ffcccc !important;
+}
+
+/* Main Content */
+.main-content {
+    flex: 1;
+    transition: margin-left 0.3s ease;
+    width: 100%;
+}
+
+.navbar-modern {
+    background: white;
+    min-height: 70px;
+}
+
+/* Hero Section */
+.hero-welcome {
+    background: linear-gradient(135deg, #003566 0%, #00509d 100%);
+    color: white;
+    position: relative;
+    overflow: hidden;
+}
+
+.hero-bg-pattern {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-image: radial-gradient(circle at 10% 20%, rgba(255,255,255,0.05) 0%, transparent 20%),
+                      radial-gradient(circle at 90% 80%, rgba(255,255,255,0.05) 0%, transparent 20%);
+    z-index: 0;
+}
+
+.hero-logo-container {
+    position: relative;
+    width: 200px;
+    height: 200px;
+}
+
+.hero-logo-img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    opacity: 0.9;
+    filter: drop-shadow(0 10px 20px rgba(0,0,0,0.3));
+    animation: float 6s ease-in-out infinite;
+}
+
+@keyframes float {
+    0% { transform: translateY(0px); }
+    50% { transform: translateY(-15px); }
+    100% { transform: translateY(0px); }
+}
+
+/* Stat Cards */
+.premium-stat-card {
+    border: none;
+    border-radius: 20px;
+    padding: 1.5rem;
+    height: 100%;
+    background: white;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.premium-stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 30px rgba(0,0,0,0.08);
+}
+
+.stat-bg-icon {
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    font-size: 5rem;
+    opacity: 0.05;
+    transform: rotate(15deg);
+}
+
+.stat-content {
+    position: relative;
+    z-index: 2;
+}
+
+.stat-top-label {
+    font-size: 0.9rem;
+    color: #64748b;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 5px;
+}
+
+.stat-value-huge {
+    font-size: 2.8rem;
+    font-weight: 800;
+    line-height: 1;
+    margin-bottom: 5px;
+    color: #334155;
+}
+
+.stat-unit-pill {
+    background: #f1f5f9;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    color: #64748b;
+    font-weight: 600;
+}
+
+/* Color Variants for Stats */
+.stat-navy { border-left: 6px solid #003566; }
+.stat-navy .stat-value-huge { color: #003566; }
+
+.stat-info { border-left: 6px solid #0ea5e9; }
+.stat-info .stat-value-huge { color: #0ea5e9; }
+
+.stat-success { border-left: 6px solid #10b981; }
+.stat-success .stat-value-huge { color: #10b981; }
+
+.stat-warning { border-left: 6px solid #f59e0b; }
+.stat-warning .stat-value-huge { color: #f59e0b; }
+
+.stat-danger { border-left: 6px solid #ef4444; }
+.stat-danger .stat-value-huge { color: #ef4444; }
+
+/* Utilities */
+.line-height-sm { line-height: 1.2; }
+.cursor-pointer { cursor: pointer; }
+.fw-title { font-family: 'Prompt', sans-serif; }
+
+.fade-in { animation: fadeIn 0.5s ease-out forwards; }
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
