@@ -109,11 +109,11 @@ const StudentDashboard = () => {
                                     <div className="step-icon-wrapper bg-soft-green mx-auto mb-3">
                                         <FaSmile size={28} />
                                     </div>
-                                    <h5 className="fw-bold">3. พูดคุยและติดตามผล</h5>
+                                    <h5 className="fw-bold">3. รับคำปรึกษา</h5>
                                     <p className="text-muted small px-3">
-                                        รับคำปรึกษาผ่านระบบแชทหรือวิดีโอคอลในพื้นที่ที่ปลอดภัยและเป็นส่วนตัว
+                                        รับคำปรึกษาผ่านระบบแชทหรือที่คลีนิกเป็นส่วนตัว
                                     </p>
-                                </div>
+                                </div>  
                             </Col>
                         </Row>
                     </Card.Body>
