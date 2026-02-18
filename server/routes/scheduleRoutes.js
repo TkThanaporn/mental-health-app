@@ -17,10 +17,10 @@ router.post('/', authMiddleware, authorizeRole(['Psychologist']), async (req, re
 
         console.log(`📅 Adding slots for Psych ${psychologist_id} on ${date}:`, time_slots);
 
-        // ✅ แก้ไข SQL: เพิ่ม is_available = 1 ให้ชัดเจน
         const sql = `INSERT INTO schedules (psychologist_id, date, time_slot, is_available) VALUES ?`;
         
-        // เตรียมข้อมูลสำหรับ Bulk Insert
+        // date ที่ส่งมาจาก Frontend เป็น string 'YYYY-MM-DD' อยู่แล้ว (จากที่แก้เมื่อกี้)
+        // สามารถบันทึกลง DB ได้เลย MySQL จะเข้าใจตรงกัน
         const values = time_slots.map(slot => [psychologist_id, date, slot, 1]);
 
         await db.query(sql, [values]);
@@ -36,14 +36,20 @@ router.post('/', authMiddleware, authorizeRole(['Psychologist']), async (req, re
 // ==========================================
 // 2. GET: ดึงตารางงานของฉัน (สำหรับนักจิตวิทยาดูเอง)
 // ==========================================
-// 🔴 แก้จาก '/my-slots' เป็น '/' เพื่อให้ตรงกับ Frontend
 router.get('/', authMiddleware, authorizeRole(['Psychologist']), async (req, res) => {
     try {
         const psychologist_id = req.user.id;
         
-        // ดึงตารางเวลาทั้งหมดของนักจิตคนนี้ (เรียงตามวันและเวลา)
+        // ✅ แก้ไขตรงนี้: ใช้ DATE_FORMAT เพื่อล็อควันที่ไม่ให้เพี้ยนเป็น UTC
+        // จะได้ค่าเป็น string เช่น "2026-02-21" เป๊ะๆ
         const sql = `
-            SELECT * FROM schedules 
+            SELECT 
+                schedule_id, 
+                psychologist_id, 
+                DATE_FORMAT(date, '%Y-%m-%d') as date, 
+                time_slot, 
+                is_available 
+            FROM schedules 
             WHERE psychologist_id = ? 
             ORDER BY date ASC, time_slot ASC
         `;
@@ -83,8 +89,12 @@ router.get('/psychologist/:id', async (req, res) => {
     try {
         const psychologist_id = req.params.id;
         
+        // ✅ แก้ไขตรงนี้ด้วย: เพื่อให้นักเรียนเห็นวันที่ถูกต้องเช่นกัน
         const sql = `
-            SELECT schedule_id, date, time_slot 
+            SELECT 
+                schedule_id, 
+                DATE_FORMAT(date, '%Y-%m-%d') as date, 
+                time_slot 
             FROM schedules 
             WHERE psychologist_id = ? AND is_available = 1
             ORDER BY date ASC, time_slot ASC

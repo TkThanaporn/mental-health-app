@@ -16,6 +16,7 @@ const ScheduleManager = () => {
     const [loading, setLoading] = useState(true);
     const [syncing, setSyncing] = useState(false);
 
+    // ใส่ Client ID ของคุณที่นี่
     const GOOGLE_CLIENT_ID = "236473618158-1epvinqshfo3r2p9tgk7uhc6df7hjigo.apps.googleusercontent.com"; 
 
     const availableTimeSlots = [
@@ -63,10 +64,25 @@ const ScheduleManager = () => {
         try {
             for (const slot of mySlots) {
                 const [startT, endT] = slot.time_slot.split('-');
-                const dateStr = new Date(slot.date).toISOString().split('T')[0]; 
                 
+                // --- แก้ไขตรงนี้ (FIXED DATE ISSUE) ---
+                // สร้าง Date object จากข้อมูล
+                const d = new Date(slot.date);
+                
+                // ดึง ปี-เดือน-วัน ตามเวลาท้องถิ่น (ไม่แปลงเป็น UTC)
+                // getMonth() เริ่มที่ 0 จึงต้อง +1
+                const dateStr = d.getFullYear() + '-' + 
+                                String(d.getMonth() + 1).padStart(2, '0') + '-' + 
+                                String(d.getDate()).padStart(2, '0');
+                // ------------------------------------
+                
+               // ... (ส่วนประกาศ dateStr ด้านบนเหมือนเดิม) ...
+
                 const event = {
-                    'summary': '🟢 เปิดคิวว่าง (Mental Health App)',
+                    // 🔴 แก้ไขบรรทัดนี้ครับ: ใส่ ${slot.time_slot} เข้าไปในข้อความ
+                    // ผลลัพธ์จะเป็น: "🟢 เปิดคิวว่าง 09:00-10:00 (Mental Health App)"
+                    'summary': `🟢 เปิดคิวว่าง ${slot.time_slot} (Mental Health App)`,
+                    
                     'description': 'ช่วงเวลาที่คุณเปิดให้บริการให้คำปรึกษาในระบบ',
                     'start': {
                         'dateTime': `${dateStr}T${startT.trim()}:00`,
