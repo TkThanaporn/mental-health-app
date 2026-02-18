@@ -58,31 +58,29 @@ const ScheduleManager = () => {
         tokenClient.requestAccessToken();
     };
 
-    const pushEventsToGoogle = async (accessToken) => {
+  const pushEventsToGoogle = async (accessToken) => {
         setSyncing(true);
         let successCount = 0;
+        let skippedCount = 0; // เพิ่มตัวนับจำนวนที่ข้าม (เพราะมีแล้ว)
+
         try {
             for (const slot of mySlots) {
                 const [startT, endT] = slot.time_slot.split('-');
                 
-                // --- แก้ไขตรงนี้ (FIXED DATE ISSUE) ---
-                // สร้าง Date object จากข้อมูล
+                // แก้ไขเรื่องวันที่
                 const d = new Date(slot.date);
-                
-                // ดึง ปี-เดือน-วัน ตามเวลาท้องถิ่น (ไม่แปลงเป็น UTC)
-                // getMonth() เริ่มที่ 0 จึงต้อง +1
                 const dateStr = d.getFullYear() + '-' + 
                                 String(d.getMonth() + 1).padStart(2, '0') + '-' + 
                                 String(d.getDate()).padStart(2, '0');
-                // ------------------------------------
-                
-               // ... (ส่วนประกาศ dateStr ด้านบนเหมือนเดิม) ...
+
+                // ✅ สร้าง ID เฉพาะตัว (Unique ID)
+                // กฎ Google: ห้ามมีขีด ห้ามตัวใหญ่ ใช้ได้แค่ 0-9 และ a-v
+                // เราเลยใช้คำว่า "pcshsapp" นำหน้า ตามด้วย id จากฐานข้อมูล
+                const eventId = `pcshsapp${slot.schedule_id}`; 
 
                 const event = {
-                    // 🔴 แก้ไขบรรทัดนี้ครับ: ใส่ ${slot.time_slot} เข้าไปในข้อความ
-                    // ผลลัพธ์จะเป็น: "🟢 เปิดคิวว่าง 09:00-10:00 (Mental Health App)"
+                    'id': eventId, // ✅ ใส่ ID เข้าไปที่นี่
                     'summary': `🟢 เปิดคิวว่าง ${slot.time_slot} (Mental Health App)`,
-                    
                     'description': 'ช่วงเวลาที่คุณเปิดให้บริการให้คำปรึกษาในระบบ',
                     'start': {
                         'dateTime': `${dateStr}T${startT.trim()}:00`,
@@ -92,10 +90,11 @@ const ScheduleManager = () => {
                         'dateTime': `${dateStr}T${endT.trim()}:00`,
                         'timeZone': 'Asia/Bangkok',
                     },
+                    // สี 10 = สีเขียว basil
                     'colorId': '10' 
                 };
 
-                await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events', {
+                const response = await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events', {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${accessToken}`,
@@ -103,12 +102,33 @@ const ScheduleManager = () => {
                     },
                     body: JSON.stringify(event),
                 });
-                successCount++;
+
+                if (response.ok) {
+                    successCount++;
+                } else {
+                    // ถ้า Error 409 แปลว่า ID นี้มีอยู่แล้ว (ซ้ำ)
+                    if (response.status === 409) {
+                        console.log(`Skipped duplicate: ${slot.time_slot}`);
+                        skippedCount++;
+                    } else {
+                        console.error("Sync Error:", await response.json());
+                    }
+                }
             }
-            setMessage({ type: 'success', text: `✅ ซิงค์สำเร็จ! เพิ่ม ${successCount} รายการลงปฏิทินเรียบร้อย` });
+
+            // แจ้งเตือนผลลัพธ์
+            if (successCount > 0 || skippedCount > 0) {
+                setMessage({ 
+                    type: 'success', 
+                    text: `✅ ซิงค์เสร็จสิ้น! (เพิ่มใหม่ ${successCount}, มีอยู่แล้ว ${skippedCount})` 
+                });
+            } else {
+                setMessage({ type: 'warning', text: '⚠️ ไม่มีการเปลี่ยนแปลง (ข้อมูลซิงค์ครบแล้ว)' });
+            }
+
         } catch (error) {
-            console.error("Google Sync Error:", error);
-            setMessage({ type: 'danger', text: '❌ เกิดข้อผิดพลาดในการซิงค์' });
+            console.error("Network Error:", error);
+            setMessage({ type: 'danger', text: '❌ เกิดข้อผิดพลาดของระบบ' });
         } finally {
             setSyncing(false);
         }
