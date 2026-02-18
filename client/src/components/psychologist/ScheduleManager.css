@@ -1,148 +1,231 @@
-/* =========================================
-   🔬 PREMIUM LABORATORY SCHEDULE THEME
-   ========================================= */
-@import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=Prompt:wght@400;500;600;700&display=swap');
+/* ScheduleManager.css */
+@import url('https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap');
 
 :root {
-    --primary-navy: #00234B;
-    --accent-orange: #F25C05;
-    --soft-blue: #F0F7FF;
-    --border-color: rgba(0, 35, 75, 0.08);
+  --pcshs-blue: #00234B;   /* น้ำเงินเข้มจุฬาภรณ์ */
+  --pcshs-orange: #F26522; /* แสดสดใส */
+  --pcshs-orange-hover: #D95214;
+  --bg-gray: #F4F6F9;
 }
 
-.schedule-pcshs-container {
-    font-family: 'Sarabun', sans-serif;
-    background: #F8FAFC;
-    min-height: 100vh;
-    padding-bottom: 50px;
-    background-image: 
-        radial-gradient(at 0% 0%, rgba(242, 92, 5, 0.03) 0, transparent 50%), 
-        radial-gradient(at 50% 0%, rgba(0, 35, 75, 0.02) 0, transparent 50%);
+
+body {
+  background-color: var(--bg-gray);
+  font-family: 'Prompt', sans-serif;
+  color: #333;
 }
 
-/* Header Section */
-.icon-box {
-    width: 60px;
-    height: 60px;
-    background: white;
-    border-radius: 18px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.5rem;
-    color: var(--accent-orange);
-    box-shadow: 0 10px 25px rgba(0, 35, 75, 0.05);
-}
-
-/* Glass Card */
+/* --- Card Styles --- */
 .glass-card-modern {
-    background: white;
-    border: 1px solid var(--border-color);
-    border-radius: 24px;
-    box-shadow: 0 4px 30px rgba(0, 35, 75, 0.03);
-    transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+  background: #ffffff;
+  border-radius: 16px;
+  border-top: 5px solid var(--pcshs-orange); /* แถบสีแสดด้านบน */
+  box-shadow: 0 10px 30px rgba(0, 35, 75, 0.08); /* เงาสีน้ำเงินจางๆ */
+  height: 100%;
+  overflow: hidden;
+}
+/* ScheduleManager.css */
+
+/* --- ธีมสีโรงเรียน PCSHS --- */
+:root {
+  --pcshs-blue: #00234B;   /* น้ำเงินเข้ม (ใช้เป็นสีกล่องไอคอน) */
+  --pcshs-orange: #F26522; /* แสด */
+  --text-dark: #1F2937;    /* สีตัวหนังสือเข้ม */
+  --text-grey: #6B7280;    /* สีตัวหนังสือรอง */
 }
 
-.glass-card-modern:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 20px 40px rgba(0, 35, 75, 0.06);
+/* --- New Header Style (ตามภาพอ้างอิง) --- */
+.header-banner {
+  display: flex;
+  align-items: center;
 }
 
+/* กล่องไอคอนสีน้ำเงินเข้มขอบมน */
+.header-icon-square {
+  width: 68px;
+  height: 68px;
+  background-color: var(--pcshs-blue); /* สีพื้นหลังน้ำเงินเข้ม */
+  border-radius: 18px; /* ความมนของขอบ */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 20px;
+  box-shadow: 0 4px 12px rgba(0, 35, 75, 0.2); /* เงาจางๆ */
+  flex-shrink: 0;
+}
+
+/* ข้อความหัวข้อ */
+.header-text-content h2 {
+  font-size: 2.2rem;     /* ขนาดตัวหนังสือใหญ่ */
+  font-weight: 800;      /* หนามาก */
+  color: var(--text-dark);
+  margin: 0;
+  line-height: 1.1;
+  letter-spacing: -1px;  /* บีบช่องไฟนิดหน่อยให้ดูแน่น */
+}
+
+/* ข้อความรอง (Subtitle) */
+.header-text-content p {
+  color: var(--text-grey);
+  margin: 5px 0 0 0;
+  font-size: 1.05rem;
+  font-weight: 400;
+}
+
+/* ปุ่มย้อนกลับ (ปรับให้เข้ากัน) */
+.btn-back-custom {
+  background-color: #fff;
+  border: 1px solid #e5e7eb;
+  color: var(--text-dark);
+  padding: 10px 20px;
+  border-radius: 12px;
+  font-weight: 600;
+  transition: all 0.2s;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+.btn-back-custom:hover {
+  background-color: #f9fafb;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.08);
+}
 .card-header-premium {
-    padding: 20px 25px;
-    border-bottom: 1px solid var(--border-color);
-    background: linear-gradient(to right, #ffffff, #fafafa);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+  background-color: #fff;
+  padding: 20px 25px;
+  border-bottom: 1px solid #eee;
 }
 
-/* Time Slot Buttons */
+.header-title {
+  color: var(--pcshs-blue);
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+/* --- Form Inputs --- */
+.modern-date-input {
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 10px;
+  color: var(--pcshs-blue);
+  font-weight: 600;
+  background-color: #fcfcfc;
+  transition: all 0.3s;
+}
+
+.modern-date-input:focus {
+  border-color: var(--pcshs-orange); /* โฟกัสเป็นสีแสด */
+  box-shadow: 0 0 0 3px rgba(242, 101, 34, 0.15);
+  background-color: #fff;
+}
+
+/* --- Time Slot Chips (ปุ่มเลือกเวลา) --- */
 .slot-grid-container {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(95px, 1fr));
+  gap: 12px;
 }
 
 .time-slot-chip {
-    background: #ffffff;
-    border: 1.5px solid #EDF2F7;
-    border-radius: 14px;
-    padding: 12px;
-    font-weight: 600;
-    color: #4A5568;
-    transition: all 0.2s ease;
+  background-color: #fff;
+  border: 1px solid #ddd;
+  color: #666;
+  padding: 12px 5px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+  overflow: hidden;
 }
 
 .time-slot-chip:hover {
-    border-color: var(--accent-orange);
-    background: #FFF9F5;
-    color: var(--accent-orange);
+  border-color: var(--pcshs-blue);
+  color: var(--pcshs-blue);
+  background-color: #f0f4f8;
 }
 
+/* สถานะถูกเลือก: เป็นสีน้ำเงิน ตัดด้วยขอบสีแสด */
 .time-slot-chip.selected {
-    background: var(--primary-navy);
-    color: white;
-    border-color: var(--primary-navy);
-    box-shadow: 0 8px 15px rgba(0, 35, 75, 0.15);
+  background-color: var(--pcshs-blue);
+  color: #fff;
+  border: 2px solid var(--pcshs-orange); /* ขอบสีแสด */
+  box-shadow: 0 4px 10px rgba(0, 35, 75, 0.3);
+  font-weight: 600;
 }
 
-/* Table styling */
-.premium-table thead th {
-    background: #F8FAFC;
-    color: #94A3B8;
-    font-weight: 700;
-    text-transform: uppercase;
-    font-size: 0.75rem;
-    letter-spacing: 1px;
-    padding: 15px 25px;
-    border: none;
+/* --- Buttons --- */
+/* ปุ่มบันทึก (สีแสด) */
+.btn-pcshs-save {
+  background: linear-gradient(135deg, var(--pcshs-orange) 0%, #FF8C00 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 12px;
+  font-weight: 600;
+  font-size: 1rem;
+  box-shadow: 0 4px 15px rgba(242, 101, 34, 0.3);
+  transition: transform 0.2s;
 }
 
-.premium-row td {
-    padding: 20px 25px;
-    vertical-align: middle;
-    border-bottom: 1px solid #F1F5F9;
+.btn-pcshs-save:hover {
+  background: var(--pcshs-orange-hover);
+  transform: translateY(-2px);
+  color: white;
+}
+
+/* ปุ่ม Sync (สีน้ำเงิน) */
+.btn-pcshs-sync {
+  background-color: #fff;
+  color: var(--pcshs-blue);
+  border: 1px solid var(--pcshs-blue);
+  border-radius: 50px;
+  padding: 6px 16px;
+  font-weight: 500;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+}
+
+.btn-pcshs-sync:hover {
+  background-color: var(--pcshs-blue);
+  color: #fff;
+}
+
+/* --- Table Styles --- */
+.pcshs-table thead th {
+  background-color: var(--pcshs-blue); /* หัวตารางสีน้ำเงินเข้ม */
+  color: #fff; /* ตัวหนังสือสีขาว */
+  font-weight: 500;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  padding: 12px 15px;
+  border: none;
+}
+
+.pcshs-table tbody td {
+  padding: 15px;
+  vertical-align: middle;
+  border-bottom: 1px solid #f0f0f0;
+  color: #333;
+}
+
+/* Highlight แถวที่เลือก */
+.table-active-row {
+  background-color: #fff4e6 !important; /* สีส้มจางๆ */
+  border-left: 4px solid var(--pcshs-orange);
 }
 
 .time-pill {
-    background: var(--soft-blue);
-    color: #0056b3;
-    padding: 6px 14px;
-    border-radius: 10px;
-    font-weight: 700;
-    font-size: 0.9rem;
+  background-color: #eef4fb; /* พื้นหลังสีฟ้าอ่อน */
+  color: var(--pcshs-blue);
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 0.85rem;
 }
 
-/* Buttons */
-.btn-premium-save {
-    background: var(--accent-orange);
-    border: none;
-    border-radius: 15px;
-    padding: 14px;
-    font-weight: 700;
-    box-shadow: 0 6px 20px rgba(242, 92, 5, 0.25);
-    transition: 0.3s;
-}
-
-.btn-premium-save:hover {
-    background: #D45004;
-    box-shadow: 0 8px 25px rgba(242, 92, 5, 0.35);
-    transform: translateY(-2px);
-}
-
-.btn-google-sync {
-    background: white;
-    border: 1px solid #E2E8F0;
-    border-radius: 50px;
-    padding: 8px 20px;
-    font-weight: 600;
-    color: #4A5568;
-    transition: 0.3s;
-}
-
-.btn-google-sync:hover {
-    background: #f8fafc;
-    border-color: #DB4437;
-    color: #DB4437;
+/* Checkbox Color */
+.form-check-input:checked {
+  background-color: var(--pcshs-orange);
+  border-color: var(--pcshs-orange);
 }
