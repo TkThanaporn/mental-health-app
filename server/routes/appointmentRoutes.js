@@ -31,13 +31,11 @@ router.get('/psychologist-history', authMiddleware, async (req, res) => {
         res.status(500).send('Server Error');
     }
 });
-// ==========================================
+/// ==========================================
 // 📌 POST: จองนัดหมาย (สำหรับนักเรียน)
 // ==========================================
 router.post('/', authMiddleware, async (req, res) => {
     const { schedule_id, psychologist_id, note, type, consultation_type } = req.body;
-    
-    // ดึง user_id จาก token (บางที token อาจเก็บเป็น id หรือ user_id)
     const student_id = req.user.id || req.user.user_id;
 
     if (!schedule_id || !psychologist_id) {
@@ -63,10 +61,11 @@ router.post('/', authMiddleware, async (req, res) => {
         const selectedSlot = slots[0];
 
         // 2. บันทึกการจอง
+        // ✅ แก้ไข: เพิ่ม schedule_id เข้าไปในวงเล็บคอลัมน์ และ VALUES
         const sql = `
             INSERT INTO appointments 
-            (student_id, psychologist_id, appointment_date, appointment_time, topic, type, consultation_type, status) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, 'Pending')
+            (student_id, psychologist_id, appointment_date, appointment_time, topic, type, consultation_type, status, schedule_id) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, 'Pending', ?)
         `;
 
         await connection.query(sql, [
@@ -76,7 +75,8 @@ router.post('/', authMiddleware, async (req, res) => {
             selectedSlot.time_slot,   
             note || '-',              
             type || 'Onsite',         
-            consultation_type || 'Individual' 
+            consultation_type || 'Individual',
+            schedule_id // <--- ✅ ใส่ค่า schedule_id ตรงนี้ (ตัวแปรสุดท้าย)
         ]);
 
         // 3. ตัดเวลาออกจากตาราง (ไม่ว่างแล้ว)
@@ -96,7 +96,6 @@ router.post('/', authMiddleware, async (req, res) => {
         if (connection) connection.release();
     }
 });
-
 // ==========================================
 // 📌 GET: ดูประวัติการจอง (สำหรับนักเรียน)
 // ==========================================

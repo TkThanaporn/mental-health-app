@@ -2,10 +2,10 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Card, Form, Button, Row, Col, Alert, Spinner, Table } from 'react-bootstrap';
-// เปลี่ยนไอคอนให้สื่อความหมาย (ใช้ CalendarCheck)
 import { 
     FaGoogle, FaTrash, FaClock, FaCheckCircle, 
-    FaPlusCircle, FaHistory, FaArrowLeft, FaCalendarCheck 
+    FaPlusCircle, FaHistory, FaArrowLeft, FaCalendarCheck,
+    FaLock, FaLockOpen, FaUserCheck 
 } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 
@@ -14,7 +14,7 @@ import './ScheduleManager.css';
 const ScheduleManager = () => {
     const navigate = useNavigate();
     
-    // --- (ส่วน State และ Logic เดิมทั้งหมด ไม่ต้องแก้) ---
+    // --- State ---
     const [selectedDate, setSelectedDate] = useState('');
     const [selectedSlots, setSelectedSlots] = useState([]);
     const [mySlots, setMySlots] = useState([]);
@@ -33,7 +33,7 @@ const ScheduleManager = () => {
 
     useEffect(() => { fetchMySlots(); }, []);
 
-    // --- (API Functions เดิม) ---
+    // --- API Functions ---
     const fetchMySlots = async () => {
         try {
             const token = localStorage.getItem('token');
@@ -43,17 +43,47 @@ const ScheduleManager = () => {
         } catch (err) { setLoading(false); }
     };
 
+    // เปลี่ยนสถานะ (ว่าง <-> ติดธุระ)
+    const handleToggleStatus = async (slot) => {
+        if (slot.appointment_id) return alert("รายการนี้ถูกจองโดยนักเรียนแล้ว ไม่สามารถปิดได้ครับ");
+
+        try {
+            const token = localStorage.getItem('token');
+            const newStatus = slot.is_available === 1 ? 0 : 1; // สลับค่า
+
+            await axios.put(`http://localhost:5000/api/schedule/${slot.schedule_id}/status`, 
+                { is_available: newStatus },
+                { headers: { 'x-auth-token': token } }
+            );
+
+            // อัปเดต UI ทันที
+            setMySlots(prev => prev.map(s => 
+                s.schedule_id === slot.schedule_id ? { ...s, is_available: newStatus } : s
+            ));
+        } catch (err) {
+            console.error(err);
+            alert("เกิดข้อผิดพลาดในการเปลี่ยนสถานะ");
+        }
+    };
+
     const toggleDeleteId = (id) => {
         setDeleteIds(prev => prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]);
     };
 
     const handleSelectAll = () => {
-        deleteIds.length === mySlots.length ? setDeleteIds([]) : setDeleteIds(mySlots.map(s => s.schedule_id));
+        const deletableSlots = mySlots.filter(s => !s.appointment_id).map(s => s.schedule_id);
+        
+        if (deleteIds.length === deletableSlots.length && deletableSlots.length > 0) {
+            setDeleteIds([]);
+        } else {
+            setDeleteIds(deletableSlots);
+        }
     };
 
     const handleBatchDelete = () => {
         if (deleteIds.length === 0) return alert("กรุณาเลือกรายการที่จะลบ");
         if (!window.confirm(`ยืนยันการลบ ${deleteIds.length} รายการ?`)) return;
+        
         const tokenClient = google.accounts.oauth2.initTokenClient({
             client_id: GOOGLE_CLIENT_ID,
             scope: 'https://www.googleapis.com/auth/calendar.events',
@@ -104,8 +134,6 @@ const ScheduleManager = () => {
         try {
             for (const slot of mySlots) {
                 const [startT, endT] = slot.time_slot.split('-');
-                
-                // แปลงวันที่
                 const d = new Date(slot.date);
                 const dateStr = d.getFullYear() + '-' + 
                                 String(d.getMonth() + 1).padStart(2, '0') + '-' + 
@@ -113,21 +141,22 @@ const ScheduleManager = () => {
                 
                 const eventId = `pcshsapp${slot.schedule_id}`;
                 
-                // ✅ LOGIC เปลี่ยนสีและข้อความตามสถานะ
                 let summaryText = "";
                 let colorId = "";
                 let description = "";
 
-                if (slot.is_available === 1) {
-                    // กรณีว่าง: สีเขียว (10)
-                    summaryText = `🟢 เปิดคิวว่าง ${slot.time_slot} (Mental Health App)`;
-                    colorId = "10"; // Green
-                    description = "ช่วงเวลาที่คุณเปิดให้บริการให้คำปรึกษาในระบบ";
+                if (slot.appointment_id) {
+                    summaryText = `🔴 จองแล้ว: ${slot.student_name} (${slot.time_slot})`;
+                    colorId = "11"; 
+                    description = `มีการจองโดยนักเรียน: ${slot.student_name}`;
+                } else if (slot.is_available === 0) {
+                    summaryText = `⛔ ติดธุระ/งดรับ (${slot.time_slot})`;
+                    colorId = "8"; 
+                    description = "ปิดรับคิวชั่วคราว (Psychologist Busy)";
                 } else {
-                    // กรณีถูกจองแล้ว: สีแดง (11)
-                    summaryText = `🔴 ถูกจองแล้ว ${slot.time_slot} (งดรับคิวเพิ่ม)`;
-                    colorId = "11"; // Red (Tomato)
-                    description = "เวลานี้มีนักเรียนจองเข้ามาแล้ว กรุณาตรวจสอบรายละเอียดในระบบ";
+                    summaryText = `🟢 เปิดคิวว่าง ${slot.time_slot}`;
+                    colorId = "10"; 
+                    description = "ช่วงเวลาที่คุณเปิดให้บริการให้คำปรึกษาในระบบ";
                 }
 
                 const event = {
@@ -145,9 +174,8 @@ const ScheduleManager = () => {
                     'colorId': colorId
                 };
 
-                // ✅ ใช้ PUT เพื่ออัปเดตข้อมูลทับอันเดิม (ถ้ามีอยู่แล้วจะเปลี่ยนสี ถ้าไม่มีจะ Error 404)
                 let response = await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events/${eventId}`, {
-                    method: 'PUT', // ลองแก้ไขก่อน
+                    method: 'PUT',
                     headers: {
                         'Authorization': `Bearer ${accessToken}`,
                         'Content-Type': 'application/json',
@@ -155,7 +183,6 @@ const ScheduleManager = () => {
                     body: JSON.stringify(event),
                 });
 
-                // ถ้า PUT ไม่ผ่าน (404) แปลว่ายังไม่มี Event นี้ -> ให้ POST (สร้างใหม่)
                 if (response.status === 404) {
                     response = await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events', {
                         method: 'POST',
@@ -167,19 +194,12 @@ const ScheduleManager = () => {
                     });
                 }
 
-                if (response.ok) {
-                    updatedCount++;
-                } else {
-                    console.error("Sync Error for ID " + eventId, await response.json());
-                    errorCount++;
-                }
+                if (response.ok) updatedCount++;
+                else errorCount++;
             }
 
-            if (updatedCount > 0) {
-                setMessage({ type: 'success', text: `✅ อัปเดตสถานะปฏิทินสำเร็จ ${updatedCount} รายการ` });
-            } else {
-                setMessage({ type: 'warning', text: '⚠️ ไม่มีการเปลี่ยนแปลงข้อมูล' });
-            }
+            if (updatedCount > 0) setMessage({ type: 'success', text: `✅ อัปเดตสถานะปฏิทินสำเร็จ ${updatedCount} รายการ` });
+            else setMessage({ type: 'warning', text: '⚠️ ไม่มีการเปลี่ยนแปลงข้อมูล' });
 
         } catch (error) {
             console.error("System Error:", error);
@@ -188,6 +208,7 @@ const ScheduleManager = () => {
             setSyncing(false);
         }
     };
+
     const toggleSlot = (slot) => setSelectedSlots(prev => prev.includes(slot) ? prev.filter(s => s !== slot) : [...prev, slot]);
 
     const handleSubmit = async (e) => {
@@ -206,11 +227,10 @@ const ScheduleManager = () => {
     return (
         <div className="container-fluid px-4 px-lg-5 py-5" style={{maxWidth: '1300px'}}>
             
-            {/* --- ส่วน Header ที่แก้ใหม่ (เหมือนภาพต้นแบบ) --- */}
+            {/* Header */}
             <div className="d-flex justify-content-between align-items-center mb-5">
                 <div className="header-banner">
                     <div className="header-icon-square">
-                        {/* ไอคอนสีขาว บนพื้นน้ำเงินเข้ม */}
                         <FaCalendarCheck size={32} color="#ffffff" />
                     </div>
                     <div className="header-text-content">
@@ -223,10 +243,8 @@ const ScheduleManager = () => {
                     <FaArrowLeft className="me-2" /> กลับหน้าหลัก
                 </Button>
             </div>
-            {/* ------------------------------------------- */}
 
             <Row className="g-4">
-                {/* ฝั่งซ้าย: Form */}
                 <Col lg={4}>
                     <Card className="glass-card-modern">
                         <div className="card-header-premium">
@@ -270,7 +288,6 @@ const ScheduleManager = () => {
                     </Card>
                 </Col>
 
-                {/* ฝั่งขวา: Table */}
                 <Col lg={8}>
                     <Card className="glass-card-modern">
                         <div className="card-header-premium d-flex justify-content-between align-items-center">
@@ -304,32 +321,76 @@ const ScheduleManager = () => {
                                             <th className="ps-4 text-center" style={{width: '60px'}}>
                                                 <Form.Check 
                                                     type="checkbox" 
-                                                    checked={deleteIds.length === mySlots.length && mySlots.length > 0}
+                                                    checked={deleteIds.length > 0 && deleteIds.length === mySlots.filter(s => !s.appointment_id).length}
                                                     onChange={handleSelectAll}
                                                 />
                                             </th>
                                             <th>วันที่ (Date)</th>
-                                            <th>เวลา (Time)</th>
+                                            <th>เวลา & สถานะ (Time & Status)</th>
+                                            <th className="text-end pe-4">จัดการ (Manage)</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {mySlots.map((slot) => (
-                                            <tr key={slot.schedule_id} className={deleteIds.includes(slot.schedule_id) ? 'table-active-row' : ''}>
-                                                <td className="ps-4 text-center">
-                                                    <Form.Check 
-                                                        type="checkbox"
-                                                        checked={deleteIds.includes(slot.schedule_id)}
-                                                        onChange={() => toggleDeleteId(slot.schedule_id)}
-                                                    />
-                                                </td>
-                                                <td className="fw-bold" style={{color: '#00234B'}}>
-                                                    {new Date(slot.date).toLocaleDateString('th-TH', { 
-                                                        day: 'numeric', month: 'long', year: 'numeric' 
-                                                    })}
-                                                </td>
-                                                <td><span className="time-pill">{slot.time_slot} น.</span></td>
-                                            </tr>
-                                        ))}
+                                        {mySlots.map((slot) => {
+                                            const isBooked = slot.appointment_id ? true : false;
+                                            const isClosed = !isBooked && slot.is_available === 0;
+
+                                            return (
+                                                <tr key={slot.schedule_id} className={deleteIds.includes(slot.schedule_id) ? 'table-active-row' : ''}>
+                                                    <td className="ps-4 text-center">
+                                                        {!isBooked && (
+                                                            <Form.Check 
+                                                                type="checkbox"
+                                                                checked={deleteIds.includes(slot.schedule_id)}
+                                                                onChange={() => toggleDeleteId(slot.schedule_id)}
+                                                            />
+                                                        )}
+                                                    </td>
+                                                    <td className="fw-bold" style={{color: '#00234B'}}>
+                                                        {new Date(slot.date).toLocaleDateString('th-TH', { 
+                                                            day: 'numeric', month: 'long', year: 'numeric' 
+                                                        })}
+                                                    </td>
+                                                    <td>
+                                                        <div className="d-flex align-items-center gap-2">
+                                                            <span className={`time-pill ${isBooked ? 'bg-danger text-white border-danger' : isClosed ? 'bg-secondary text-white border-secondary' : ''}`}>
+                                                                {slot.time_slot} น.
+                                                            </span>
+                                                            
+                                                            {isBooked ? (
+                                                                <small className="text-danger fw-bold d-flex align-items-center">
+                                                                    <FaUserCheck className="me-1"/> จองโดย: {slot.student_name}
+                                                                </small>
+                                                            ) : isClosed ? (
+                                                                <small className="text-muted d-flex align-items-center">
+                                                                    <FaLock className="me-1"/> ปิดรับ (ติดธุระ)
+                                                                </small>
+                                                            ) : (
+                                                                <small className="text-success d-none d-lg-block">
+                                                                    🟢 ว่าง
+                                                                </small>
+                                                            )}
+                                                        </div>
+                                                    </td>
+                                                    <td className="text-end pe-4">
+                                                        {!isBooked && (
+                                                            <Button 
+                                                                // ปรับสีปุ่ม: แดง=ล็อคอยู่, เขียว=ว่าง
+                                                                variant={isClosed ? "outline-danger" : "outline-success"}
+                                                                size="sm"
+                                                                className="rounded-circle btn-icon-only"
+                                                                onClick={() => handleToggleStatus(slot)}
+                                                                title={isClosed ? "เปิดรับคิว" : "ปิดรับชั่วคราว"}
+                                                                style={{width: '32px', height: '32px', padding: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center'}}
+                                                            >
+                                                                {/* ปรับไอคอน: แม่กุญแจล็อค=ปิด, แม่กุญแจเปิด=ว่าง */}
+                                                                {isClosed ? <FaLock size={14} /> : <FaLockOpen size={14} />}
+                                                            </Button>
+                                                        )}
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
                                     </tbody>
                                 </Table>
                             )}

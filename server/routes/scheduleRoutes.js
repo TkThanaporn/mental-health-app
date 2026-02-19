@@ -34,24 +34,27 @@ router.post('/', authMiddleware, authorizeRole(['Psychologist']), async (req, re
 });
 
 // ==========================================
-// 2. GET: ดึงตารางงานของฉัน (สำหรับนักจิตวิทยาดูเอง)
+// 2. GET: ดึงตารางงานของฉัน (Update: Join Appointments)
 // ==========================================
 router.get('/', authMiddleware, authorizeRole(['Psychologist']), async (req, res) => {
     try {
         const psychologist_id = req.user.id;
         
-        // ✅ แก้ไขตรงนี้: ใช้ DATE_FORMAT เพื่อล็อควันที่ไม่ให้เพี้ยนเป็น UTC
-        // จะได้ค่าเป็น string เช่น "2026-02-21" เป๊ะๆ
+        // ✅ JOIN กับตาราง appointments เพื่อเช็คว่ามีคนจองหรือยัง
         const sql = `
             SELECT 
-                schedule_id, 
-                psychologist_id, 
-                DATE_FORMAT(date, '%Y-%m-%d') as date, 
-                time_slot, 
-                is_available 
-            FROM schedules 
-            WHERE psychologist_id = ? 
-            ORDER BY date ASC, time_slot ASC
+                s.schedule_id, 
+                s.psychologist_id, 
+                DATE_FORMAT(s.date, '%Y-%m-%d') as date, 
+                s.time_slot, 
+                s.is_available,
+                a.appointment_id,     -- ถ้ามีค่า แปลว่าถูกจองแล้ว
+                u.fullname as student_name -- ชื่อคนจอง
+            FROM schedules s
+            LEFT JOIN appointments a ON s.schedule_id = a.schedule_id AND a.status != 'Cancelled'
+            LEFT JOIN users u ON a.student_id = u.user_id
+            WHERE s.psychologist_id = ? 
+            ORDER BY s.date ASC, s.time_slot ASC
         `;
         const [rows] = await db.query(sql, [psychologist_id]);
         
@@ -62,7 +65,6 @@ router.get('/', authMiddleware, authorizeRole(['Psychologist']), async (req, res
         res.status(500).send('Server Error');
     }
 });
-
 // ==========================================
 // 3. DELETE: ลบช่วงเวลา
 // ==========================================
@@ -109,5 +111,26 @@ router.get('/psychologist/:id', async (req, res) => {
         res.status(500).send('Server Error');
     }
 });
+// ==========================================
+// 5. PUT: เปลี่ยนสถานะ (ว่าง <-> ไม่ว่าง)
+// ==========================================
+router.put('/:id/status', authMiddleware, authorizeRole(['Psychologist']), async (req, res) => {
+    try {
+        const schedule_id = req.params.id;
+        const psychologist_id = req.user.id;
+        const { is_available } = req.body; // รับค่า 0 หรือ 1
+
+        // อัปเดตสถานะ
+        const sql = `UPDATE schedules SET is_available = ? WHERE schedule_id = ? AND psychologist_id = ?`;
+        await db.query(sql, [is_available, schedule_id, psychologist_id]);
+
+        res.json({ msg: 'อัปเดตสถานะเรียบร้อยแล้ว' });
+
+    } catch (err) {
+        console.error("❌ UPDATE STATUS ERROR:", err.message);
+        res.status(500).send('Server Error');
+    }
+});
+
 
 module.exports = router;
