@@ -13,7 +13,6 @@ import './AppointmentBooking.css';
 const AppointmentBooking = () => {
     const navigate = useNavigate();
     
-    // State (คงเดิมจาก Logic ของคุณ)
     const [psycho, setPsycho] = useState(null);
     const [availableSlots, setAvailableSlots] = useState([]); 
     const [dailySlots, setDailySlots] = useState([]); 
@@ -24,7 +23,6 @@ const AppointmentBooking = () => {
     const [message, setMessage] = useState(null);
     const [groupMembers, setGroupMembers] = useState(['']); 
 
-    // ... (useEffect และ Functions สำหรับดึงข้อมูล เหมือนเดิมทุกประการ) ...
     useEffect(() => {
         const checkPrerequisite = async () => {
             try {
@@ -44,15 +42,18 @@ const AppointmentBooking = () => {
 
     useEffect(() => { fetchPsychologistAndSchedule(); }, []);
 
+    // ✅ แก้ไข Logic การกรองวันที่ตรงนี้
     useEffect(() => {
         if (formData.date && availableSlots.length > 0) {
             const slotsForDate = availableSlots.filter(slot => {
-                const slotDateStr = new Date(slot.date).toISOString().split('T')[0];
-                return slotDateStr === formData.date;
+                // เพราะ Backend ส่งมาเป็น "2024-03-21" แล้ว เทียบตรงๆ ได้เลย
+                return slot.date === formData.date;
             });
             setDailySlots(slotsForDate);
             setFormData(prev => ({ ...prev, time: '' })); 
             setSelectedScheduleId(null); 
+        } else {
+            setDailySlots([]); // ถ้าไม่มีวันที่เลือก หรือไม่มีข้อมูล ให้เคลียร์ทิ้ง
         }
     }, [formData.date, availableSlots]);
 
@@ -65,6 +66,7 @@ const AppointmentBooking = () => {
             if (resPsycho.data.length > 0) {
                 const selectedPsycho = resPsycho.data[0];
                 setPsycho(selectedPsycho);
+                // ดึงตารางเวลาของนักจิตคนนี้
                 const resSchedule = await axios.get(`http://localhost:5000/api/schedule/psychologist/${selectedPsycho.user_id}`);
                 setAvailableSlots(resSchedule.data);
             }
@@ -105,13 +107,13 @@ const AppointmentBooking = () => {
 
     if (!psycho) return <div className="loader-container"><div className="spinner-science"></div></div>;
 
+    // --- ส่วน UI เหมือนเดิม ---
     return (
         <div className="booking-wrapper">
             <PCSHSNavbar />
             <div className="science-bg-grid"></div>
 
             <Container className="content-area py-5">
-                {/* Header Style ตามรูปภาพที่ส่งมา */}
                 <div className="header-style-custom mb-5">
                     <div className="d-flex align-items-center gap-2 mb-1">
                         <FaAtom className="text-orange atom-icon-spin" />
@@ -132,7 +134,6 @@ const AppointmentBooking = () => {
                     </Card>
                 ) : (
                     <Row className="g-4">
-                        {/* Profile Psychologist */}
                         <Col lg={4}>
                             <Card className="profile-glass-card border-0 shadow-sm sticky-top" style={{ top: '100px' }}>
                                 <div className="card-top-accent-orange"></div>
@@ -144,12 +145,10 @@ const AppointmentBooking = () => {
                                     <Badge bg="light" text="dark" className="border rounded-pill px-3 py-2 fw-normal mb-4">
                                         นักจิตวิทยาประจำศูนย์
                                     </Badge>
-                                    
                                     <div className="bio-box mb-4">
                                         <FaQuoteLeft className="quote-icon-small" />
                                         <p className="m-0 italic-text">{psycho.bio || "พร้อมรับฟังและเคียงข้างนักเรียนทุกคนในทุกปัญหาครับ"}</p>
                                     </div>
-
                                     <div className="contact-minimal text-start">
                                         <div className="contact-row">
                                             <FaMapMarkerAlt className="text-orange" />
@@ -166,7 +165,6 @@ const AppointmentBooking = () => {
                             </Card>
                         </Col>
 
-                        {/* Booking Form */}
                         <Col lg={8}>
                             <Card className="booking-form-card border-0 shadow-sm p-4">
                                 <Form onSubmit={handleSubmit}>
@@ -182,7 +180,16 @@ const AppointmentBooking = () => {
                                                     <Form.Label className="small-label">วันที่สะดวก</Form.Label>
                                                     <div className="input-group-custom">
                                                         <FaCalendarAlt className="input-icon-left" />
-                                                        <Form.Control type="date" name="date" className="custom-input-field" value={formData.date} onChange={handleFormChange} required />
+                                                        {/* ใส่ min date เป็นวันปัจจุบัน */}
+                                                        <Form.Control 
+                                                            type="date" 
+                                                            name="date" 
+                                                            className="custom-input-field" 
+                                                            value={formData.date} 
+                                                            onChange={handleFormChange} 
+                                                            min={new Date().toISOString().split('T')[0]}
+                                                            required 
+                                                        />
                                                     </div>
                                                 </Form.Group>
                                             </Col>
@@ -193,7 +200,10 @@ const AppointmentBooking = () => {
                                             {!formData.date ? (
                                                 <div className="placeholder-time-grid">กรุณาเลือกวันที่เพื่อตรวจสอบคิวว่าง</div>
                                             ) : dailySlots.length === 0 ? (
-                                                <Alert variant="warning" className="rounded-4 border-0">ไม่มีคิวว่างในวันที่เลือก</Alert>
+                                                <Alert variant="warning" className="rounded-4 border-0">
+                                                    <FaInfoCircle className="me-2"/> 
+                                                    ไม่มีคิวว่างในวันที่ {new Date(formData.date).toLocaleDateString('th-TH', {day: 'numeric', month: 'long', year: 'numeric'})}
+                                                </Alert>
                                             ) : (
                                                 <div className="time-chips-container">
                                                     {dailySlots.map((slot) => (
@@ -213,6 +223,7 @@ const AppointmentBooking = () => {
                                         </div>
                                     </section>
 
+                                    {/* (ส่วนฟอร์มอื่นๆ คงเดิม) */}
                                     <section className="form-step mb-4">
                                         <div className="d-flex align-items-center gap-3 mb-4">
                                             <div className="step-badge">2</div>

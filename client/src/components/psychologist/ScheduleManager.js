@@ -96,33 +96,98 @@ const ScheduleManager = () => {
         tokenClient.requestAccessToken();
     };
 
-    const pushEventsToGoogle = async (accessToken) => {
+   const pushEventsToGoogle = async (accessToken) => {
         setSyncing(true);
-        let successCount = 0;
+        let updatedCount = 0;
+        let errorCount = 0;
+
         try {
             for (const slot of mySlots) {
                 const [startT, endT] = slot.time_slot.split('-');
+                
+                // แปลงวันที่
                 const d = new Date(slot.date);
-                const dateStr = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+                const dateStr = d.getFullYear() + '-' + 
+                                String(d.getMonth() + 1).padStart(2, '0') + '-' + 
+                                String(d.getDate()).padStart(2, '0');
+                
+                const eventId = `pcshsapp${slot.schedule_id}`;
+                
+                // ✅ LOGIC เปลี่ยนสีและข้อความตามสถานะ
+                let summaryText = "";
+                let colorId = "";
+                let description = "";
+
+                if (slot.is_available === 1) {
+                    // กรณีว่าง: สีเขียว (10)
+                    summaryText = `🟢 เปิดคิวว่าง ${slot.time_slot} (Mental Health App)`;
+                    colorId = "10"; // Green
+                    description = "ช่วงเวลาที่คุณเปิดให้บริการให้คำปรึกษาในระบบ";
+                } else {
+                    // กรณีถูกจองแล้ว: สีแดง (11)
+                    summaryText = `🔴 ถูกจองแล้ว ${slot.time_slot} (งดรับคิวเพิ่ม)`;
+                    colorId = "11"; // Red (Tomato)
+                    description = "เวลานี้มีนักเรียนจองเข้ามาแล้ว กรุณาตรวจสอบรายละเอียดในระบบ";
+                }
+
                 const event = {
-                    'id': `pcshsapp${slot.schedule_id}`,
-                    'summary': `🔶 ปฏิบัติงาน ${slot.time_slot} (PCSHS Care)`,
-                    'start': { 'dateTime': `${dateStr}T${startT.trim()}:00`, 'timeZone': 'Asia/Bangkok' },
-                    'end': { 'dateTime': `${dateStr}T${endT.trim()}:00`, 'timeZone': 'Asia/Bangkok' },
-                    'colorId': '6'
+                    'id': eventId,
+                    'summary': summaryText,
+                    'description': description,
+                    'start': {
+                        'dateTime': `${dateStr}T${startT.trim()}:00`,
+                        'timeZone': 'Asia/Bangkok',
+                    },
+                    'end': {
+                        'dateTime': `${dateStr}T${endT.trim()}:00`,
+                        'timeZone': 'Asia/Bangkok',
+                    },
+                    'colorId': colorId
                 };
-                const res = await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events', {
-                    method: 'POST', headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+
+                // ✅ ใช้ PUT เพื่ออัปเดตข้อมูลทับอันเดิม (ถ้ามีอยู่แล้วจะเปลี่ยนสี ถ้าไม่มีจะ Error 404)
+                let response = await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events/${eventId}`, {
+                    method: 'PUT', // ลองแก้ไขก่อน
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`,
+                        'Content-Type': 'application/json',
+                    },
                     body: JSON.stringify(event),
                 });
-                if (res.ok) successCount++;
-            }
-            if (successCount > 0) setMessage({ type: 'success', text: `✅ Sync สำเร็จ ${successCount} รายการ` });
-            else setMessage({ type: 'warning', text: '⚠️ ข้อมูลเป็นปัจจุบันแล้ว' });
-        } catch (e) { setMessage({ type: 'danger', text: 'Sync Error' }); }
-        finally { setSyncing(false); }
-    };
 
+                // ถ้า PUT ไม่ผ่าน (404) แปลว่ายังไม่มี Event นี้ -> ให้ POST (สร้างใหม่)
+                if (response.status === 404) {
+                    response = await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${accessToken}`,
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(event),
+                    });
+                }
+
+                if (response.ok) {
+                    updatedCount++;
+                } else {
+                    console.error("Sync Error for ID " + eventId, await response.json());
+                    errorCount++;
+                }
+            }
+
+            if (updatedCount > 0) {
+                setMessage({ type: 'success', text: `✅ อัปเดตสถานะปฏิทินสำเร็จ ${updatedCount} รายการ` });
+            } else {
+                setMessage({ type: 'warning', text: '⚠️ ไม่มีการเปลี่ยนแปลงข้อมูล' });
+            }
+
+        } catch (error) {
+            console.error("System Error:", error);
+            setMessage({ type: 'danger', text: '❌ เกิดข้อผิดพลาดในการเชื่อมต่อ' });
+        } finally {
+            setSyncing(false);
+        }
+    };
     const toggleSlot = (slot) => setSelectedSlots(prev => prev.includes(slot) ? prev.filter(s => s !== slot) : [...prev, slot]);
 
     const handleSubmit = async (e) => {

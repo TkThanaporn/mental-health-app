@@ -89,7 +89,8 @@ router.get('/psychologist/:id', async (req, res) => {
     try {
         const psychologist_id = req.params.id;
         
-        // ✅ แก้ไขตรงนี้ด้วย: เพื่อให้นักเรียนเห็นวันที่ถูกต้องเช่นกัน
+        // ✅ ใช้ DATE_FORMAT เพื่อล็อควันที่ให้เป็น String (YYYY-MM-DD)
+        // เพื่อให้ Frontend รับค่าวันที่ที่ถูกต้อง 100% ไม่เพี้ยนตาม Timezone
         const sql = `
             SELECT 
                 schedule_id, 
