@@ -3,23 +3,18 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
 import { Container, Form, Button, Row, Col, InputGroup } from 'react-bootstrap';
-import { FaEnvelope, FaLock, FaUser, FaGraduationCap, FaHome } from 'react-icons/fa';
+// ✅ เอา FaGraduationCap และ FaHome ออกจาก import เพราะไม่ได้ใช้แล้ว
+import { FaEnvelope, FaLock, FaUser } from 'react-icons/fa';
 
-// --- ส่วนจัดการรูปภาพ ---
-// 1. ตรวจสอบว่าคุณมีไฟล์โลโก้ (image_1.png) วางอยู่ที่ src/assets/pcshs_logo.png หรือไม่
-// 2. ถ้ามีแล้ว ให้เอา comment (//) หน้าบรรทัดข้างล่างนี้ออก เพื่อนำเข้ารูปภาพ
 import pcshsLogo from '../../assets/pcshs_logo.png'; 
-// ----------------------
 
 const Register = () => {
-    // กำหนดค่าเริ่มต้น (เริ่มที่ ม.1)
+    // ✅ เอา education_level และ dormitory ออกจาก State เริ่มต้น
     const [formData, setFormData] = useState({ 
         email: '', 
         password: '', 
         role: 'Student', 
-        fullname: '', 
-        education_level: 'ม.1', 
-        dormitory: '' 
+        fullname: '' 
     });
     
     const [showPassword, setShowPassword] = useState(false);
@@ -27,11 +22,11 @@ const Register = () => {
 
     // Theme สีโรงเรียนวิทยาศาสตร์จุฬาภรณราชวิทยาลัย (PCSHS) - น้ำเงิน/แสด
     const themeColors = {
-        primaryBlue: '#002147', // น้ำเงินเข้มกรมท่า
-        secondaryBlue: '#1B3F8B', // น้ำเงินสว่างสำหรับไล่เฉด
-        primaryOrange: '#F26522', // สีแสดประจำโรงเรียน
+        primaryBlue: '#002147', 
+        secondaryBlue: '#1B3F8B', 
+        primaryOrange: '#F26522', 
         textDark: '#002147',      
-        textGold: '#FFD700'       // สีทอง
+        textGold: '#FFD700'       
     };
 
     const onChange = e => setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -58,19 +53,19 @@ const Register = () => {
     return (
         <div style={{ 
             minHeight: '100vh', 
-            background: '#f0f2f5', // สีพื้นหลังรวม
+            background: '#f0f2f5', 
             display: 'flex', 
             alignItems: 'center', 
             justifyContent: 'center',
             padding: '20px'
         }}>
-            {/* Main Card Container - กรอบใหญ่ */}
+            {/* Main Card Container */}
             <div className="shadow-lg overflow-hidden bg-white" 
                  style={{ 
                      borderRadius: '20px', 
-                     maxWidth: '1200px', // ความกว้างสูงสุด
+                     maxWidth: '1200px', 
                      width: '100%', 
-                     minHeight: '650px', // ความสูงขั้นต่ำเพื่อให้ดูโปร่ง
+                     minHeight: '650px', 
                      display: 'flex'
                  }}>
                 <Row className="g-0 w-100">
@@ -115,35 +110,6 @@ const Register = () => {
                                     </InputGroup>
                                 </Form.Group>
 
-                                {/* Row for Education Level & Dormitory */}
-                                <Row>
-                                    <Col md={6}>
-                                        {/* Education Level (ม.1 - ม.6) */}
-                                        <Form.Group className="mb-3">
-                                            <InputGroup size="lg">
-                                                <InputGroup.Text style={iconStyle}><FaGraduationCap className="text-muted" /></InputGroup.Text>
-                                                <Form.Select name="education_level" value={formData.education_level} onChange={onChange} required style={inputStyle} className="py-3">
-                                                    <option value="ม.1">มัธยมศึกษาปีที่ 1</option>
-                                                    <option value="ม.2">มัธยมศึกษาปีที่ 2</option>
-                                                    <option value="ม.3">มัธยมศึกษาปีที่ 3</option>
-                                                    <option value="ม.4">มัธยมศึกษาปีที่ 4</option>
-                                                    <option value="ม.5">มัธยมศึกษาปีที่ 5</option>
-                                                    <option value="ม.6">มัธยมศึกษาปีที่ 6</option>
-                                                </Form.Select>
-                                            </InputGroup>
-                                        </Form.Group>
-                                    </Col>
-                                    <Col md={6}>
-                                        {/* Dormitory */}
-                                        <Form.Group className="mb-3">
-                                            <InputGroup size="lg">
-                                                <InputGroup.Text style={iconStyle}><FaHome className="text-muted" /></InputGroup.Text>
-                                                <Form.Control type="text" name="dormitory" placeholder="ชื่อหอพัก" value={formData.dormitory} onChange={onChange} required style={inputStyle} className="py-3" />
-                                            </InputGroup>
-                                        </Form.Group>
-                                    </Col>
-                                </Row>
-
                                 {/* Checkbox Show Password */}
                                 <div className="mb-4 d-flex align-items-center">
                                     <Form.Check 
@@ -157,14 +123,14 @@ const Register = () => {
                                     />
                                 </div>
 
-                                {/* Submit Button (สีแสด) */}
+                                {/* Submit Button */}
                                 <Button 
                                     type="submit" 
                                     className="w-100 py-3 fw-bold text-white border-0"
                                     style={{ 
                                         backgroundColor: themeColors.primaryOrange, 
                                         borderRadius: '30px',
-                                        boxShadow: '0 4px 15px rgba(242, 101, 34, 0.4)', // เงาสีแสด
+                                        boxShadow: '0 4px 15px rgba(242, 101, 34, 0.4)', 
                                         fontSize: '1.2rem'
                                     }}
                                 >
@@ -181,23 +147,15 @@ const Register = () => {
                     {/* ================= RIGHT SIDE: PCSHS BRANDING ================= */}
                     <Col lg={6} className="text-white d-flex flex-column align-items-center justify-content-center p-5"
                          style={{ 
-                             // พื้นหลังไล่เฉดสีน้ำเงินกรมท่า
                              background: `linear-gradient(135deg, ${themeColors.primaryBlue} 0%, ${themeColors.secondaryBlue} 100%)` 
                          }}>
                         
-                        {/* Logo Container - วงกลมพื้นขาว */}
                         <div className="mb-4 p-3 bg-white rounded-circle shadow-lg" style={{ width: '180px', height: '180px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            
-                            {/* --- ส่วนแสดงรูปภาพโลโก้ --- */}
-                            {/* ถ้า import รูปภาพด้านบนแล้ว ให้เอา comment ออก เพื่อแสดงรูป */}
                             <img 
                                 src={pcshsLogo} 
                                 alt="PCSHS Logo" 
                                 style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} 
                             /> 
-                           
-                            
-                            
                         </div>
 
                         <h2 className="fw-bold mb-2" style={{ color: themeColors.textGold, fontSize: '2.5rem' }}>PCSHS HeartCare</h2>

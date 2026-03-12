@@ -88,5 +88,19 @@ router.get('/student/:studentId', authMiddleware, authorizeRole(['Psychologist']
         res.status(500).send('Server Error');
     }
 });
-
+// ==========================================
+// 4. GET: ดึงผลประเมินทั้งหมด (สำหรับหน้า Dashboard นักจิตวิทยา)
+// ==========================================
+router.get('/all', authMiddleware, authorizeRole(['Psychologist']), async (req, res) => {
+    try {
+        // ดึงผลการประเมินทั้งหมดจากฐานข้อมูล
+        const sql = `SELECT * FROM assessments`;
+        const [results] = await db.query(sql);
+        
+        res.json(results);
+    } catch (err) {
+        console.error("❌ FETCH ALL ASSESSMENTS ERROR:", err.message);
+        res.status(500).send('Server Error');
+    }
+});
 module.exports = router;

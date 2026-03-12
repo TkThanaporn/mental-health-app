@@ -1,190 +1,172 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Container, Card, Form, Button, Row, Col, Alert, Image } from 'react-bootstrap';
+import { Modal, Form, Button, Row, Col, Alert, Spinner } from 'react-bootstrap';
+import { FaUserCircle, FaPhoneAlt, FaGraduationCap, FaHome, FaGenderless, FaSave } from 'react-icons/fa';
+import './Profile.css'; 
 
-const Profile = () => {
+const Profile = ({ show, handleClose }) => {
     const [formData, setFormData] = useState({
-        fullname: '',
-        email: '',
-        phone: '',
-        gender: '',
-        bio: '',
-        role: ''
+        fullname: '', email: '', phone: '', gender: '', role: '', grade: '', dormitory: ''
     });
-    const [currentImage, setCurrentImage] = useState(null); // รูปปัจจุบันที่โชว์
-    const [selectedFile, setSelectedFile] = useState(null); // ไฟล์ใหม่ที่เลือก
     const [loading, setLoading] = useState(true);
+    const [isSaving, setIsSaving] = useState(false);
     const [message, setMessage] = useState(null);
 
     useEffect(() => {
-        const fetchProfile = async () => {
-            try {
-                const token = localStorage.getItem('token');
-                const res = await axios.get('http://localhost:5000/api/profile/me', {
-                    headers: { 'x-auth-token': token }
-                });
-                setFormData(res.data);
-                setCurrentImage(res.data.profile_image); // เก็บ URL รูปเดิม
-                setLoading(false);
-            } catch (err) {
-                console.error(err);
-                setMessage({ type: 'danger', text: 'ไม่สามารถดึงข้อมูลโปรไฟล์ได้' });
-                setLoading(false);
-            }
-        };
-        fetchProfile();
-    }, []);
+        if (show) {
+            fetchProfile();
+        }
+    }, [show]);
 
-    const handleChange = (e) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
-    };
-
-    // เมื่อเลือกไฟล์
-    const handleFileChange = (e) => {
-        setSelectedFile(e.target.files[0]);
+    const fetchProfile = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const res = await axios.get('http://localhost:5000/api/profile/me', {
+                headers: { 'x-auth-token': token }
+            });
+            setFormData(res.data);
+            setLoading(false);
+        } catch (err) {
+            setMessage({ type: 'danger', text: 'ไม่สามารถโหลดข้อมูลได้' });
+            setLoading(false);
+        }
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        
-        // สร้าง FormData เพื่อส่งไฟล์
-        const data = new FormData();
-        data.append('fullname', formData.fullname);
-        data.append('phone', formData.phone || '');
-        data.append('gender', formData.gender || '');
-        data.append('bio', formData.bio || '');
-
-        // ถ้ามีการเลือกไฟล์ใหม่ ให้ใส่เข้าไปด้วย
-        if (selectedFile) {
-            data.append('profile_image', selectedFile);
-        }
-
+        setIsSaving(true);
         try {
             const token = localStorage.getItem('token');
-            await axios.put('http://localhost:5000/api/profile/me', data, {
-                headers: { 
-                    'x-auth-token': token,
-                    'Content-Type': 'multipart/form-data' // สำคัญมาก!
-                }
+            await axios.put('http://localhost:5000/api/profile/me', formData, {
+                headers: { 'x-auth-token': token, 'Content-Type': 'application/json' }
             });
-            setMessage({ type: 'success', text: '✅ บันทึกข้อมูลเรียบร้อยแล้ว!' });
-            
-            // รีเฟรชหน้านี้ใหม่เพื่อให้เห็นรูปใหม่
-            setTimeout(() => window.location.reload(), 1500);
-
+            setMessage({ type: 'success', text: '✨ บันทึกการเปลี่ยนแปลงสำเร็จ!' });
+            setTimeout(() => {
+                setMessage(null);
+                handleClose();
+                window.location.reload();
+            }, 1500);
         } catch (err) {
-            console.error(err);
             setMessage({ type: 'danger', text: 'เกิดข้อผิดพลาดในการบันทึก' });
+            setIsSaving(false);
         }
     };
 
-    if (loading) return <Container className="mt-5"><p>กำลังโหลด...</p></Container>;
-
-    // ✅ แก้ไข: เปลี่ยน Link Placeholder เป็น placehold.co (เสถียรกว่า)
-    const displayImage = currentImage || "https://placehold.co/150?text=User";
-
     return (
-        <Container className="my-5">
-            <Row className="justify-content-center">
-                <Col md={8}>
-                    <Card className="shadow-sm border-0">
-                        <Card.Header className="bg-primary text-white">
-                            <h4 className="mb-0">👤 แก้ไขโปรไฟล์ส่วนตัว</h4>
-                        </Card.Header>
-                        <Card.Body className="p-4">
-                            
-                            {message && <Alert variant={message.type}>{message.text}</Alert>}
+        <Modal show={show} onHide={handleClose} centered size="lg" className="profile-modal-premium">
+            <Modal.Header closeButton className="border-0 pb-0">
+                <Modal.Title className="fw-bold px-2" style={{ color: '#002d56' }}>
+                    <FaUserCircle className="me-2 mb-1"/> แก้ไขโปรไฟล์ส่วนตัว
+                </Modal.Title>
+            </Modal.Header>
+            <Modal.Body className="p-4 pt-2">
+                {loading ? (
+                    <div className="text-center p-5"><Spinner animation="border" variant="primary" /></div>
+                ) : (
+                    <Form onSubmit={handleSubmit}>
+                        {message && <Alert variant={message.type} className="rounded-4 text-center mb-4 border-0 shadow-sm">{message.text}</Alert>}
 
-                            <div className="text-center mb-4">
-                                {formData.role === 'Psychologist' ? (
-                                    <Image 
-                                        src={displayImage} 
-                                        roundedCircle 
-                                        style={{ width: '120px', height: '120px', objectFit: 'cover', border: '3px solid #eee' }} 
+                        <div className="avatar-preview-section text-center mb-4">
+                            <div className="avatar-placeholder-circle shadow-sm">🎓</div>
+                            <h5 className="mt-3 fw-bold text-navy mb-1">{formData.fullname}</h5>
+                            <div className="badge bg-soft-orange text-orange rounded-pill px-3 py-2">{formData.role}</div>
+                        </div>
+
+                        <Row className="g-4">
+                            <Col md={7}>
+                                <Form.Group>
+                                    <Form.Label className="label-custom">ชื่อ-นามสกุล</Form.Label>
+                                    <Form.Control 
+                                        className="input-custom shadow-none"
+                                        type="text" 
+                                        value={formData.fullname || ''} 
+                                        onChange={(e) => setFormData({...formData, fullname: e.target.value})} 
+                                        required 
                                     />
-                                ) : (
-                                    <div className="bg-light rounded-circle d-inline-flex align-items-center justify-content-center" style={{width: '100px', height: '100px'}}>
-                                        <span className="h1 mb-0">🎓</span>
-                                    </div>
-                                )}
-                                
-                                <h3 className="mt-2">{formData.fullname}</h3>
-                                <div className="text-muted small">{formData.email}</div>
-                                <div className="badge bg-info text-dark mt-1">{formData.role}</div>
-                            </div>
-
-                            <Form onSubmit={handleSubmit}>
-                                <Row>
-                                    <Col md={6}>
-                                        <Form.Group className="mb-3">
-                                            <Form.Label>ชื่อ-นามสกุล</Form.Label>
-                                            {/* ✅ แก้ไข: เพิ่ม || '' เพื่อกันค่า null */}
-                                            <Form.Control type="text" name="fullname" value={formData.fullname || ''} onChange={handleChange} required />
-                                        </Form.Group>
-                                    </Col>
-                                    <Col md={6}>
-                                        <Form.Group className="mb-3">
-                                            <Form.Label>เบอร์โทรศัพท์</Form.Label>
-                                            {/* ✅ แก้ไข: เพิ่ม || '' เพื่อกันค่า null */}
-                                            <Form.Control type="text" name="phone" value={formData.phone || ''} onChange={handleChange} placeholder="08x-xxx-xxxx" />
-                                        </Form.Group>
-                                    </Col>
-                                </Row>
-
-                                <Row>
-                                    <Col md={6}>
-                                        <Form.Group className="mb-3">
-                                            <Form.Label>เพศ</Form.Label>
-                                            {/* ✅ แก้ไข: เพิ่ม || '' เพื่อกันค่า null */}
-                                            <Form.Select name="gender" value={formData.gender || ''} onChange={handleChange}>
-                                                <option value="">-- ระบุ --</option>
-                                                <option value="Male">ชาย</option>
-                                                <option value="Female">หญิง</option>
-                                                <option value="LGBTQ+">LGBTQ+</option>
-                                                <option value="Other">ไม่ระบุ</option>
-                                            </Form.Select>
-                                        </Form.Group>
-                                    </Col>
-                                    
-                                    {/* ✅ แสดงปุ่มอัปโหลดรูปเฉพาะ 'Psychologist' */}
-                                    {formData.role === 'Psychologist' && (
-                                        <Col md={6}>
-                                            <Form.Group className="mb-3">
-                                                <Form.Label>รูปโปรไฟล์ (อัปโหลดไฟล์)</Form.Label>
-                                                <Form.Control 
-                                                    type="file" 
-                                                    name="profile_image" 
-                                                    onChange={handleFileChange} 
-                                                    accept="image/*"
-                                                />
-                                                <Form.Text className="text-muted">
-                                                    *เฉพาะนักจิตวิทยา (รองรับ .jpg, .png)
-                                                </Form.Text>
-                                            </Form.Group>
-                                        </Col>
-                                    )}
-                                </Row>
-
-                                <Form.Group className="mb-4">
-                                    <Form.Label>แนะนำตัว / สิ่งที่อยากบอก (Bio)</Form.Label>
-                                    {/* ✅ แก้ไข: เพิ่ม || '' เพื่อกันค่า null */}
-                                    <Form.Control as="textarea" rows={3} name="bio" value={formData.bio || ''} onChange={handleChange} placeholder="เขียนแนะนำตัวสั้นๆ หรือสิ่งที่สนใจ..." />
                                 </Form.Group>
+                            </Col>
+                            <Col md={5}>
+                                <Form.Group>
+                                    <Form.Label className="label-custom">เบอร์โทรศัพท์</Form.Label>
+                                    <Form.Control 
+                                        className="input-custom shadow-none"
+                                        type="text" 
+                                        value={formData.phone || ''} 
+                                        onChange={(e) => setFormData({...formData, phone: e.target.value})} 
+                                        placeholder="08x-xxx-xxxx"
+                                    />
+                                </Form.Group>
+                            </Col>
 
-                                <div className="d-grid gap-2">
-                                    <Button variant="success" size="lg" type="submit">
-                                        💾 บันทึกการเปลี่ยนแปลง
-                                    </Button>
-                                    <Button variant="outline-secondary" href={formData.role === 'Student' ? "/student/dashboard" : "/psychologist/dashboard"}>
-                                        กลับหน้าหลัก
-                                    </Button>
-                                </div>
-                            </Form>
-                        </Card.Body>
-                    </Card>
-                </Col>
-            </Row>
-        </Container>
+                            {formData.role === 'Student' && (
+                                <Col md={12}>
+                                    <div className="info-box-premium p-4 rounded-4">
+                                        <h6 className="fw-bold mb-3" style={{ color: '#f26522' }}>
+                                            <FaGraduationCap className="me-2"/> ข้อมูลการเรียนและหอพัก
+                                        </h6>
+                                        <Row className="g-3">
+                                            <Col md={6}>
+                                                <Form.Label className="label-custom small">ระดับชั้น</Form.Label>
+                                                <Form.Select 
+                                                    className="input-custom border-0 shadow-sm"
+                                                    value={formData.grade || ''} 
+                                                    onChange={(e) => setFormData({...formData, grade: e.target.value})}
+                                                >
+                                                    <option value="">-- ระบุชั้นเรียน --</option>
+                                                    {[1, 2, 3, 4, 5, 6].map(i => (
+                                                        <option key={i} value={`มัธยมศึกษาปีที่ ${i}`}>มัธยมศึกษาปีที่ {i}</option>
+                                                    ))}
+                                                </Form.Select>
+                                            </Col>
+                                            <Col md={6}>
+                                                <Form.Label className="label-custom small">หอพัก</Form.Label>
+                                                <Form.Control 
+                                                    className="input-custom border-0 shadow-sm"
+                                                    type="text" 
+                                                    placeholder="ชื่อหอพัก หรือ ไป-กลับ" 
+                                                    value={formData.dormitory || ''} 
+                                                    onChange={(e) => setFormData({...formData, dormitory: e.target.value})} 
+                                                />
+                                            </Col>
+                                        </Row>
+                                    </div>
+                                </Col>
+                            )}
+
+                            <Col md={12}>
+                                <Form.Group>
+                                    <Form.Label className="label-custom"><FaGenderless className="me-1"/> เพศ</Form.Label>
+                                    <Form.Select 
+                                        className="input-custom shadow-none"
+                                        value={formData.gender || ''} 
+                                        onChange={(e) => setFormData({...formData, gender: e.target.value})}
+                                    >
+                                        <option value="">-- ระบุเพศ --</option>
+                                        <option value="Male">ชาย</option>
+                                        <option value="Female">หญิง</option>
+                                        <option value="LGBTQ+">LGBTQ+</option>
+                                        <option value="Other">ไม่ระบุ</option>
+                                    </Form.Select>
+                                </Form.Group>
+                            </Col>
+                        </Row>
+
+                        <div className="d-flex justify-content-end gap-3 mt-5">
+                            <Button variant="light" onClick={handleClose} className="rounded-pill px-4 fw-bold text-secondary border-0">
+                                ยกเลิก
+                            </Button>
+                            <Button 
+                                type="submit" 
+                                className="btn-save-premium rounded-pill px-5 shadow-sm border-0"
+                                disabled={isSaving}
+                            >
+                                {isSaving ? <Spinner size="sm" /> : <><FaSave className="me-2"/> บันทึกข้อมูล</>}
+                            </Button>
+                        </div>
+                    </Form>
+                )}
+            </Modal.Body>
+        </Modal>
     );
 };
 
