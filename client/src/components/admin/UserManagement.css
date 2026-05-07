@@ -1,0 +1,610 @@
+/* UserManagement.css */
+
+:root {
+    --pcshs-blue-deep: #00234B;
+    --pcshs-blue-royal: #003566;
+    --pcshs-orange: #F25C05;
+    --pcshs-text-muted: #64748b;
+    --pcshs-border: #e2e8f0;
+}
+
+/* =========================================
+   🧪 SCIENTIFIC PREMIUM DASHBOARD
+   ========================================= */
+
+.pcshs-archive-container {
+    position: relative;
+    background-image: 
+        radial-gradient(circle at 10% 20%, rgba(0, 35, 75, 0.03) 0%, transparent 20%),
+        radial-gradient(circle at 90% 80%, rgba(242, 101, 34, 0.03) 0%, transparent 20%),
+        linear-gradient(0deg, rgba(240, 244, 248, 0.8) 0%, rgba(240, 244, 248, 0.8) 100%),
+        url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%2300234B' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    background-attachment: fixed;
+    min-height: 90vh;
+    padding-bottom: 2rem;
+}
+
+.archive-header .brand-icon-box {
+    width: 50px; height: 50px;
+    background: linear-gradient(135deg, var(--pcshs-blue-deep), var(--pcshs-blue-royal));
+    color: white;
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.5rem;
+    box-shadow: 0 4px 12px rgba(0, 35, 75, 0.2);
+}
+
+.glass-panel {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    box-shadow: 0 8px 32px rgba(0, 35, 75, 0.05);
+    border-radius: 20px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+/* --- Modern Filter Bar --- */
+.filter-header-modern {
+    background: linear-gradient(90deg, var(--pcshs-blue-deep) 0%, var(--pcshs-blue-royal) 100%);
+    color: white;
+    padding: 1rem 1.5rem;
+    display: flex; align-items: center;
+    font-weight: 600; letter-spacing: 0.5px;
+}
+
+.modern-label {
+    font-size: 0.8rem; font-weight: 700;
+    color: var(--pcshs-blue-deep);
+    margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.5px;
+}
+
+.modern-input-group .input-group-text {
+    background: #fff; border: none;
+    border-radius: 50px 0 0 50px;
+    padding-left: 1.2rem;
+    color: var(--pcshs-text-muted);
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+}
+
+.modern-input-group .form-control {
+    border: none; background: #fff;
+    border-radius: 0 50px 50px 0;
+    padding: 0.7rem 1rem; font-size: 0.95rem;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+    transition: all 0.3s;
+}
+
+.modern-input-group .form-control:focus {
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.02), 0 0 0 3px rgba(0, 35, 75, 0.1);
+}
+
+/* --- 📋 NEW: Sleek Data Table (ตารางแบบใหม่ สวย คลีน ไม่มีรูป) --- */
+.modern-data-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.modern-data-table thead {
+    background: #f8fafc;
+    border-bottom: 2px solid var(--pcshs-border);
+}
+
+.modern-data-table th {
+    color: var(--pcshs-text-muted);
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    padding: 1.2rem 1.5rem;
+    white-space: nowrap;
+}
+
+.modern-data-table tbody tr {
+    background: transparent;
+    border-bottom: 1px solid var(--pcshs-border);
+    transition: all 0.2s ease;
+}
+
+/* Hover Effect โคตรพรีเมียม (เปลี่ยนสีพื้นหลังและเพิ่มเส้นขีดซ้ายมือ) */
+.modern-data-table tbody tr:hover {
+    background: #f1f5f9;
+    box-shadow: inset 4px 0 0 var(--pcshs-orange);
+}
+
+.modern-data-table td {
+    padding: 1.2rem 1.5rem;
+    vertical-align: middle;
+}
+
+/* ลบเส้นขอบแถวสุดท้าย */
+.modern-data-table tbody tr:last-child {
+    border-bottom: none;
+}
+
+/* Typography ในตาราง */
+.user-name-bold {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--pcshs-blue-deep);
+    margin-bottom: 4px;
+}
+
+.id-badge-minimal {
+    background: #e2e8f0;
+    color: #475569;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 6px;
+    display: inline-block;
+    letter-spacing: 0.5px;
+}
+
+.contact-text {
+    font-size: 0.9rem;
+    color: #334155;
+    font-weight: 500;
+}
+
+.contact-sub-text {
+    font-size: 0.8rem;
+    color: #94a3b8;
+    margin-top: 4px;
+}
+
+.date-text-minimal {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #475569;
+}
+
+/* Glowing Status Chips */
+.status-chip {
+    padding: 6px 16px; border-radius: 30px;
+    font-size: 0.75rem; font-weight: 700;
+    display: inline-flex; align-items: center;
+}
+.status-chip::before { content: ''; width: 8px; height: 8px; border-radius: 50%; margin-right: 8px; }
+
+.chip-comp { background: #ecfdf5; color: #047857; border: 1px solid #6ee7b7; } /* Student */
+.chip-comp::before { background: #10b981; box-shadow: 0 0 8px #10b981; }
+
+.chip-conf { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; } /* Psychologist */
+.chip-conf::before { background: #3b82f6; box-shadow: 0 0 8px #3b82f6; }
+
+.chip-can { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; } /* Admin */
+.chip-can::before { background: #ef4444; box-shadow: 0 0 8px #ef4444; }
+
+/* ปุ่มหลัก */
+.btn-pcshs-glow {
+    background: linear-gradient(135deg, var(--pcshs-blue-deep), var(--pcshs-blue-royal));
+    color: white; border: none; box-shadow: 0 4px 15px rgba(0, 35, 75, 0.2);
+    transition: all 0.3s;
+}
+.btn-pcshs-glow:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0, 35, 75, 0.3); color: white; }
+
+/* ปุ่ม Action ลบ */
+.btn-action-minimal {
+    background: transparent;
+    color: #94a3b8;
+    border: 1px solid transparent;
+    width: 38px; height: 38px;
+    border-radius: 8px;
+    transition: all 0.2s;
+    display: flex; align-items: center; justify-content: center;
+}
+
+.btn-action-minimal:hover {
+    background: #fee2e2;
+    color: #ef4444;
+    border-color: #fca5a5;
+    transform: scale(1.05);
+}/* UserManagement.css */
+
+:root {
+    --pcshs-blue-deep: #00234B;
+    --pcshs-blue-royal: #003566;
+    --pcshs-orange: #F25C05;
+    --pcshs-text-muted: #64748b;
+    --pcshs-border: #e2e8f0;
+}
+
+/* =========================================
+   🧪 SCIENTIFIC PREMIUM DASHBOARD
+   ========================================= */
+
+.pcshs-archive-container {
+    position: relative;
+    background-image: 
+        radial-gradient(circle at 10% 20%, rgba(0, 35, 75, 0.03) 0%, transparent 20%),
+        radial-gradient(circle at 90% 80%, rgba(242, 101, 34, 0.03) 0%, transparent 20%),
+        linear-gradient(0deg, rgba(240, 244, 248, 0.8) 0%, rgba(240, 244, 248, 0.8) 100%),
+        url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%2300234B' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    background-attachment: fixed;
+    min-height: 90vh;
+    padding-bottom: 2rem;
+}
+
+.archive-header .brand-icon-box {
+    width: 50px; height: 50px;
+    background: linear-gradient(135deg, var(--pcshs-blue-deep), var(--pcshs-blue-royal));
+    color: white;
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.5rem;
+    box-shadow: 0 4px 12px rgba(0, 35, 75, 0.2);
+}
+
+.glass-panel {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    box-shadow: 0 8px 32px rgba(0, 35, 75, 0.05);
+    border-radius: 20px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+/* --- Modern Filter Bar --- */
+.filter-header-modern {
+    background: linear-gradient(90deg, var(--pcshs-blue-deep) 0%, var(--pcshs-blue-royal) 100%);
+    color: white;
+    padding: 1rem 1.5rem;
+    display: flex; align-items: center;
+    font-weight: 600; letter-spacing: 0.5px;
+}
+
+.modern-label {
+    font-size: 0.8rem; font-weight: 700;
+    color: var(--pcshs-blue-deep);
+    margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.5px;
+}
+
+.modern-input-group .input-group-text {
+    background: #fff; border: none;
+    border-radius: 50px 0 0 50px;
+    padding-left: 1.2rem;
+    color: var(--pcshs-text-muted);
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+}
+
+.modern-input-group .form-control {
+    border: none; background: #fff;
+    border-radius: 0 50px 50px 0;
+    padding: 0.7rem 1rem; font-size: 0.95rem;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+    transition: all 0.3s;
+}
+
+.modern-input-group .form-control:focus {
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.02), 0 0 0 3px rgba(0, 35, 75, 0.1);
+}
+
+/* --- 📋 NEW: Sleek Data Table (ตารางแบบใหม่ สวย คลีน ไม่มีรูป) --- */
+.modern-data-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.modern-data-table thead {
+    background: #f8fafc;
+    border-bottom: 2px solid var(--pcshs-border);
+}
+
+.modern-data-table th {
+    color: var(--pcshs-text-muted);
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    padding: 1.2rem 1.5rem;
+    white-space: nowrap;
+}
+
+.modern-data-table tbody tr {
+    background: transparent;
+    border-bottom: 1px solid var(--pcshs-border);
+    transition: all 0.2s ease;
+}
+
+/* Hover Effect โคตรพรีเมียม (เปลี่ยนสีพื้นหลังและเพิ่มเส้นขีดซ้ายมือ) */
+.modern-data-table tbody tr:hover {
+    background: #f1f5f9;
+    box-shadow: inset 4px 0 0 var(--pcshs-orange);
+}
+
+.modern-data-table td {
+    padding: 1.2rem 1.5rem;
+    vertical-align: middle;
+}
+
+/* ลบเส้นขอบแถวสุดท้าย */
+.modern-data-table tbody tr:last-child {
+    border-bottom: none;
+}
+
+/* Typography ในตาราง */
+.user-name-bold {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--pcshs-blue-deep);
+    margin-bottom: 4px;
+}
+
+.id-badge-minimal {
+    background: #e2e8f0;
+    color: #475569;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 6px;
+    display: inline-block;
+    letter-spacing: 0.5px;
+}
+
+.contact-text {
+    font-size: 0.9rem;
+    color: #334155;
+    font-weight: 500;
+}
+
+.contact-sub-text {
+    font-size: 0.8rem;
+    color: #94a3b8;
+    margin-top: 4px;
+}
+
+.date-text-minimal {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #475569;
+}
+
+/* Glowing Status Chips */
+.status-chip {
+    padding: 6px 16px; border-radius: 30px;
+    font-size: 0.75rem; font-weight: 700;
+    display: inline-flex; align-items: center;
+}
+.status-chip::before { content: ''; width: 8px; height: 8px; border-radius: 50%; margin-right: 8px; }
+
+.chip-comp { background: #ecfdf5; color: #047857; border: 1px solid #6ee7b7; } /* Student */
+.chip-comp::before { background: #10b981; box-shadow: 0 0 8px #10b981; }
+
+.chip-conf { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; } /* Psychologist */
+.chip-conf::before { background: #3b82f6; box-shadow: 0 0 8px #3b82f6; }
+
+.chip-can { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; } /* Admin */
+.chip-can::before { background: #ef4444; box-shadow: 0 0 8px #ef4444; }
+
+/* ปุ่มหลัก */
+.btn-pcshs-glow {
+    background: linear-gradient(135deg, var(--pcshs-blue-deep), var(--pcshs-blue-royal));
+    color: white; border: none; box-shadow: 0 4px 15px rgba(0, 35, 75, 0.2);
+    transition: all 0.3s;
+}
+.btn-pcshs-glow:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0, 35, 75, 0.3); color: white; }
+
+/* ปุ่ม Action ลบ */
+.btn-action-minimal {
+    background: transparent;
+    color: #94a3b8;
+    border: 1px solid transparent;
+    width: 38px; height: 38px;
+    border-radius: 8px;
+    transition: all 0.2s;
+    display: flex; align-items: center; justify-content: center;
+}
+
+.btn-action-minimal:hover {
+    background: #fee2e2;
+    color: #ef4444;
+    border-color: #fca5a5;
+    transform: scale(1.05);
+}/* UserManagement.css */
+
+:root {
+    --pcshs-blue-deep: #00234B;
+    --pcshs-blue-royal: #003566;
+    --pcshs-orange: #F25C05;
+    --pcshs-text-muted: #64748b;
+    --pcshs-border: #e2e8f0;
+}
+
+/* =========================================
+   🧪 SCIENTIFIC PREMIUM DASHBOARD
+   ========================================= */
+
+.pcshs-archive-container {
+    position: relative;
+    background-image: 
+        radial-gradient(circle at 10% 20%, rgba(0, 35, 75, 0.03) 0%, transparent 20%),
+        radial-gradient(circle at 90% 80%, rgba(242, 101, 34, 0.03) 0%, transparent 20%),
+        linear-gradient(0deg, rgba(240, 244, 248, 0.8) 0%, rgba(240, 244, 248, 0.8) 100%),
+        url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%2300234B' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    background-attachment: fixed;
+    min-height: 90vh;
+    padding-bottom: 2rem;
+}
+
+.archive-header .brand-icon-box {
+    width: 50px; height: 50px;
+    background: linear-gradient(135deg, var(--pcshs-blue-deep), var(--pcshs-blue-royal));
+    color: white;
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.5rem;
+    box-shadow: 0 4px 12px rgba(0, 35, 75, 0.2);
+}
+
+.glass-panel {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    box-shadow: 0 8px 32px rgba(0, 35, 75, 0.05);
+    border-radius: 20px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+/* --- Modern Filter Bar --- */
+.filter-header-modern {
+    background: linear-gradient(90deg, var(--pcshs-blue-deep) 0%, var(--pcshs-blue-royal) 100%);
+    color: white;
+    padding: 1rem 1.5rem;
+    display: flex; align-items: center;
+    font-weight: 600; letter-spacing: 0.5px;
+}
+
+.modern-label {
+    font-size: 0.8rem; font-weight: 700;
+    color: var(--pcshs-blue-deep);
+    margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.5px;
+}
+
+.modern-input-group .input-group-text {
+    background: #fff; border: none;
+    border-radius: 50px 0 0 50px;
+    padding-left: 1.2rem;
+    color: var(--pcshs-text-muted);
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+}
+
+.modern-input-group .form-control {
+    border: none; background: #fff;
+    border-radius: 0 50px 50px 0;
+    padding: 0.7rem 1rem; font-size: 0.95rem;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+    transition: all 0.3s;
+}
+
+.modern-input-group .form-control:focus {
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.02), 0 0 0 3px rgba(0, 35, 75, 0.1);
+}
+
+/* --- 📋 NEW: Sleek Data Table (ตารางแบบใหม่ สวย คลีน ไม่มีรูป) --- */
+.modern-data-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.modern-data-table thead {
+    background: #f8fafc;
+    border-bottom: 2px solid var(--pcshs-border);
+}
+
+.modern-data-table th {
+    color: var(--pcshs-text-muted);
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    padding: 1.2rem 1.5rem;
+    white-space: nowrap;
+}
+
+.modern-data-table tbody tr {
+    background: transparent;
+    border-bottom: 1px solid var(--pcshs-border);
+    transition: all 0.2s ease;
+}
+
+/* Hover Effect โคตรพรีเมียม (เปลี่ยนสีพื้นหลังและเพิ่มเส้นขีดซ้ายมือ) */
+.modern-data-table tbody tr:hover {
+    background: #f1f5f9;
+    box-shadow: inset 4px 0 0 var(--pcshs-orange);
+}
+
+.modern-data-table td {
+    padding: 1.2rem 1.5rem;
+    vertical-align: middle;
+}
+
+/* ลบเส้นขอบแถวสุดท้าย */
+.modern-data-table tbody tr:last-child {
+    border-bottom: none;
+}
+
+/* Typography ในตาราง */
+.user-name-bold {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--pcshs-blue-deep);
+    margin-bottom: 4px;
+}
+
+.id-badge-minimal {
+    background: #e2e8f0;
+    color: #475569;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 6px;
+    display: inline-block;
+    letter-spacing: 0.5px;
+}
+
+.contact-text {
+    font-size: 0.9rem;
+    color: #334155;
+    font-weight: 500;
+}
+
+.contact-sub-text {
+    font-size: 0.8rem;
+    color: #94a3b8;
+    margin-top: 4px;
+}
+
+.date-text-minimal {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #475569;
+}
+
+/* Glowing Status Chips */
+.status-chip {
+    padding: 6px 16px; border-radius: 30px;
+    font-size: 0.75rem; font-weight: 700;
+    display: inline-flex; align-items: center;
+}
+.status-chip::before { content: ''; width: 8px; height: 8px; border-radius: 50%; margin-right: 8px; }
+
+.chip-comp { background: #ecfdf5; color: #047857; border: 1px solid #6ee7b7; } /* Student */
+.chip-comp::before { background: #10b981; box-shadow: 0 0 8px #10b981; }
+
+.chip-conf { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; } /* Psychologist */
+.chip-conf::before { background: #3b82f6; box-shadow: 0 0 8px #3b82f6; }
+
+.chip-can { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; } /* Admin */
+.chip-can::before { background: #ef4444; box-shadow: 0 0 8px #ef4444; }
+
+/* ปุ่มหลัก */
+.btn-pcshs-glow {
+    background: linear-gradient(135deg, var(--pcshs-blue-deep), var(--pcshs-blue-royal));
+    color: white; border: none; box-shadow: 0 4px 15px rgba(0, 35, 75, 0.2);
+    transition: all 0.3s;
+}
+.btn-pcshs-glow:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0, 35, 75, 0.3); color: white; }
+
+/* ปุ่ม Action ลบ */
+.btn-action-minimal {
+    background: transparent;
+    color: #94a3b8;
+    border: 1px solid transparent;
+    width: 38px; height: 38px;
+    border-radius: 8px;
+    transition: all 0.2s;
+    display: flex; align-items: center; justify-content: center;
+}
+
+.btn-action-minimal:hover {
+    background: #fee2e2;
+    color: #ef4444;
+    border-color: #fca5a5;
+    transform: scale(1.05);
+}

@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Table, Button, Form, Modal, InputGroup, Card, Row, Col, Badge, Image, Spinner } from 'react-bootstrap';
-import { FaSearch, FaUserPlus, FaTrash, FaUserCircle, FaEllipsisV } from 'react-icons/fa';
+import { Button, Form, Modal, InputGroup, Row, Col, Spinner } from 'react-bootstrap';
+import { FaSearch, FaUserPlus, FaTrash, FaFolderOpen, FaEnvelope, FaLock, FaUserAlt, FaPhone, FaUsersCog, FaIdCard } from 'react-icons/fa';
+
+import './UserManagement.css';
 
 const UserManagement = () => {
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
 
-    // Modal State
     const [showModal, setShowModal] = useState(false);
     const [newUser, setNewUser] = useState({ 
         fullname: '', 
@@ -54,7 +55,7 @@ const UserManagement = () => {
     };
 
     const handleDeleteUser = async (id) => {
-        if (!window.confirm('ยืนยันการลบผู้ใช้งานนี้?')) return;
+        if (!window.confirm('ยืนยันการลบผู้ใช้งานนี้? ข้อมูลที่เกี่ยวข้องจะถูกลบด้วย')) return;
         try {
             const token = localStorage.getItem('token');
             await axios.delete(`http://localhost:5000/api/admin/users/${id}`, { 
@@ -66,140 +67,199 @@ const UserManagement = () => {
         }
     };
 
-    // Filter Users Logic (ป้องกัน Error toLowerCase)
     const filteredUsers = users.filter(u => 
         (u.fullname || "").toLowerCase().includes(searchTerm.toLowerCase()) || 
         (u.email || "").toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    if (loading) return <div className="text-center p-5"><Spinner animation="border" variant="primary"/></div>;
+    const getRoleChipClass = (role) => {
+        if (role === 'Admin') return 'chip-can'; 
+        if (role === 'Psychologist') return 'chip-conf'; 
+        return 'chip-comp'; 
+    };
+
+    if (loading) return (
+        <div className="d-flex flex-column align-items-center justify-content-center" style={{ minHeight: '60vh' }}>
+            <Spinner animation="border" style={{ color: '#003566' }} />
+            <p className="mt-3 text-muted fw-semibold">กำลังเชื่อมต่อคลังข้อมูลผู้ใช้งาน...</p>
+        </div>
+    );
 
     return (
-        <div className="fade-in">
-            <div className="d-flex flex-column flex-md-row justify-content-between align-items-center mb-4">
-                <div>
-                    <h4 className="fw-bold mb-1" style={{color: '#003566'}}>จัดการข้อมูลผู้ใช้งาน</h4>
-                    <p className="text-muted m-0 small">รายชื่อนักเรียน บุคลากร และผู้ดูแลระบบทั้งหมด</p>
+        <div className="pcshs-archive-container fade-in py-4 px-3 px-md-4">
+            
+            {/* --- Archive Header --- */}
+            <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3 archive-header">
+                <div className="d-flex align-items-center">
+                    <div className="brand-icon-box me-3">
+                        <FaUsersCog />
+                    </div>
+                    <div>
+                        <h3 className="fw-bold mb-1 text-dark" style={{ letterSpacing: '-0.5px' }}>บัญชีผู้ใช้งานระบบ</h3>
+                        <p className="text-muted m-0 small fw-semibold">จัดการและควบคุมสิทธิ์การเข้าถึงระบบทั้งหมด</p>
+                    </div>
                 </div>
-                <Button 
-                    className="btn-pcshs shadow-sm mt-3 mt-md-0" 
-                    onClick={() => setShowModal(true)}
-                    style={{background: '#003566', border: 'none'}}
-                >
+                <Button className="btn-pcshs-glow rounded-pill px-4 py-2 fw-semibold d-flex align-items-center" onClick={() => setShowModal(true)}>
                     <FaUserPlus className="me-2"/> เพิ่มผู้ใช้ใหม่
                 </Button>
             </div>
 
-            <Card className="border-0 shadow-sm" style={{borderRadius: '16px'}}>
-                <Card.Body className="p-0">
-                    <div className="p-3 border-bottom bg-light d-flex align-items-center" style={{borderTopLeftRadius: '16px', borderTopRightRadius: '16px'}}>
-                        <InputGroup style={{maxWidth: '300px'}}>
-                            <InputGroup.Text className="bg-white border-end-0 text-muted"><FaSearch /></InputGroup.Text>
-                            <Form.Control 
-                                placeholder="ค้นหาชื่อ หรือ อีเมล..." 
-                                className="border-start-0 shadow-none" 
-                                value={searchTerm} 
-                                onChange={e => setSearchTerm(e.target.value)}
-                            />
-                        </InputGroup>
-                        <div className="ms-auto text-muted small">
-                            ทั้งหมด {filteredUsers.length} คน
-                        </div>
-                    </div>
+            {/* --- Glassmorphism Panel (ครอบตัวกรองและตาราง) --- */}
+            <div className="glass-panel mb-4 shadow-sm">
+                
+                {/* Header ของ Panel */}
+                <div className="filter-header-modern justify-content-between">
+                    <span><FaSearch className="me-2"/> ฐานข้อมูลผู้ใช้</span>
+                    <span className="badge bg-white text-dark rounded-pill px-3 py-2 shadow-sm">
+                        ทั้งหมด <span style={{color: '#F25C05'}}>{filteredUsers.length}</span> รายการ
+                    </span>
+                </div>
 
-                    <div className="table-responsive">
-                        <Table hover className="mb-0 align-middle">
-                            <thead className="bg-light text-muted text-uppercase small">
-                                <tr>
-                                    <th className="ps-4 py-3">ชื่อ-นามสกุล</th>
-                                    <th>ข้อมูลติดต่อ</th>
-                                    <th>บทบาท</th>
-                                    <th>วันที่เข้าร่วม</th>
-                                    <th className="text-end pe-4">จัดการ</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {filteredUsers.map(u => (
-                                    <tr key={u.user_id}>
-                                        <td className="ps-4">
-                                            <div className="d-flex align-items-center">
-                                                {u.profile_image ? (
-                                                    <Image src={u.profile_image} roundedCircle width={40} height={40} className="me-3 border" style={{objectFit:'cover'}} />
-                                                ) : (
-                                                    <div className="bg-light rounded-circle d-flex align-items-center justify-content-center me-3" style={{width:40, height:40}}>
-                                                        <FaUserCircle size={24} className="text-secondary"/>
-                                                    </div>
-                                                )}
-                                                <div>
-                                                    <div className="fw-bold text-dark">{u.fullname}</div>
-                                                    <div className="small text-muted">ID: {u.user_id}</div>
+                {/* ช่องค้นหา */}
+                <div className="p-3 bg-white border-bottom">
+                    <Row>
+                        <Col md={12} lg={6}>
+                            <InputGroup className="modern-input-group shadow-sm border rounded-pill">
+                                <InputGroup.Text><FaSearch /></InputGroup.Text>
+                                <Form.Control 
+                                    placeholder="ค้นหาจากชื่อ-นามสกุล หรือ อีเมล..." 
+                                    value={searchTerm} 
+                                    onChange={e => setSearchTerm(e.target.value)}
+                                />
+                            </InputGroup>
+                        </Col>
+                    </Row>
+                </div>
+
+                {/* --- SLEEK DATA TABLE --- */}
+                <div className="table-responsive bg-white">
+                    <table className="modern-data-table">
+                        <thead>
+                            <tr>
+                                <th className="ps-4">ชื่อผู้ใช้งาน (Account Name)</th>
+                                <th>ข้อมูลการติดต่อ (Contact)</th>
+                                <th>สิทธิ์การใช้งาน (Role)</th>
+                                <th>วันที่ลงทะเบียน (Joined Date)</th>
+                                <th className="text-center pe-4">จัดการ (Action)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {filteredUsers.length > 0 ? (
+                                filteredUsers.map(u => {
+                                    const dateObj = new Date(u.created_at);
+                                    const formattedDate = dateObj.toLocaleDateString('th-TH', { 
+                                        day: '2-digit', month: 'short', year: 'numeric' 
+                                    });
+
+                                    return (
+                                        <tr key={u.user_id}>
+                                            <td className="ps-4">
+                                                <div className="user-name-bold">{u.fullname}</div>
+                                                <div className="id-badge-minimal">
+                                                    <FaIdCard className="me-1 text-muted"/> ID: {u.user_id}
                                                 </div>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <div className="text-dark">{u.email}</div>
-                                            <small className="text-muted">{u.phone || '-'}</small>
-                                        </td>
-                                        <td>
-                                            <Badge 
-                                                bg={u.role === 'Admin' ? 'danger' : u.role === 'Psychologist' ? 'info' : 'success'} 
-                                                className="fw-normal px-3 py-2 rounded-pill"
-                                            >
-                                                {u.role}
-                                            </Badge>
-                                        </td>
-                                        <td className="text-muted small">
-                                            {new Date(u.created_at).toLocaleDateString('th-TH')}
-                                        </td>
-                                        <td className="text-end pe-4">
-                                            <Button variant="light" size="sm" className="text-danger rounded-circle hover-danger" onClick={() => handleDeleteUser(u.user_id)}>
-                                                <FaTrash />
-                                            </Button>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </Table>
-                    </div>
-                </Card.Body>
-            </Card>
+                                            </td>
+                                            <td>
+                                                <div className="contact-text d-flex align-items-center">
+                                                    <FaEnvelope className="text-muted me-2"/> {u.email}
+                                                </div>
+                                                <div className="contact-sub-text d-flex align-items-center">
+                                                    <FaPhone className="me-2"/> {u.phone || 'ไม่ได้ระบุเบอร์โทรศัพท์'}
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div className={`status-chip ${getRoleChipClass(u.role)}`}>
+                                                    {u.role === 'Admin' ? 'System Admin' : u.role === 'Psychologist' ? 'Psychologist' : 'Student Account'}
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div className="date-text-minimal">
+                                                    {formattedDate}
+                                                </div>
+                                            </td>
+                                            <td className="text-center pe-4">
+                                                <div className="d-flex justify-content-center">
+                                                    <button 
+                                                        className="btn-action-minimal"
+                                                        onClick={() => handleDeleteUser(u.user_id)}
+                                                        title="ลบผู้ใช้งาน"
+                                                    >
+                                                        <FaTrash />
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    );
+                                })
+                            ) : (
+                                <tr>
+                                    <td colSpan="5">
+                                        <div className="text-center py-5">
+                                            <FaFolderOpen size={50} className="mb-3" style={{ opacity: 0.15, color: '#00234B' }} />
+                                            <h6 className="fw-bold text-dark">ไม่พบข้อมูลผู้ใช้งาน</h6>
+                                            <p className="text-muted small mb-0">ระบบค้นหาไม่พบรายชื่อที่ตรงกับคำที่คุณพิมพ์</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
 
-            {/* Modal Add User */}
-            <Modal show={showModal} onHide={() => setShowModal(false)} centered backdrop="static">
-                <Modal.Header closeButton className="border-0 pb-0">
-                    <Modal.Title className="fw-bold" style={{color: '#003566'}}>เพิ่มผู้ใช้งานใหม่</Modal.Title>
+            {/* --- Modal Add User --- */}
+            <Modal show={showModal} onHide={() => setShowModal(false)} centered backdrop="static" size="lg">
+                <Modal.Header closeButton className="border-0 pt-4 px-4 pb-0">
+                    <Modal.Title className="fw-bold" style={{color: '#00234B'}}>
+                        <FaUsersCog className="me-2 text-muted"/> สร้างบัญชีใหม่
+                    </Modal.Title>
                 </Modal.Header>
                 <Form onSubmit={handleAddUser}>
-                    <Modal.Body className="pt-4">
-                        <Row>
-                            <Col md={12}>
-                                <Form.Group className="mb-3">
-                                    <Form.Label className="small fw-bold text-muted">ชื่อ-นามสกุล</Form.Label>
-                                    <Form.Control type="text" required value={newUser.fullname} onChange={e => setNewUser({...newUser, fullname: e.target.value})} placeholder="ระบุชื่อจริง นามสกุลจริง"/>
-                                </Form.Group>
-                            </Col>
-                            <Col md={12}>
-                                <Form.Group className="mb-3">
-                                    <Form.Label className="small fw-bold text-muted">อีเมล (สำหรับเข้าระบบ)</Form.Label>
-                                    <Form.Control type="email" required value={newUser.email} onChange={e => setNewUser({...newUser, email: e.target.value})} placeholder="example@pcshs.ac.th"/>
+                    <Modal.Body className="p-4">
+                        <div className="mb-4 small text-primary p-3 rounded bg-primary bg-opacity-10 border border-primary border-opacity-25">
+                            กรุณากรอกข้อมูลให้ครบถ้วน ข้อมูลรหัสผ่านจะถูกเข้ารหัสผ่านระบบรักษาความปลอดภัย
+                        </div>
+                        <Row className="g-3">
+                            <Col md={6}>
+                                <Form.Group>
+                                    <Form.Label className="modern-label">ชื่อ-นามสกุล <span className="text-danger">*</span></Form.Label>
+                                    <InputGroup className="modern-input-group shadow-sm border rounded-pill">
+                                        <InputGroup.Text><FaUserAlt /></InputGroup.Text>
+                                        <Form.Control type="text" required value={newUser.fullname} onChange={e => setNewUser({...newUser, fullname: e.target.value})} placeholder="ระบุชื่อและนามสกุล"/>
+                                    </InputGroup>
                                 </Form.Group>
                             </Col>
                             <Col md={6}>
-                                <Form.Group className="mb-3">
-                                    <Form.Label className="small fw-bold text-muted">รหัสผ่าน</Form.Label>
-                                    <Form.Control type="password" required value={newUser.password} onChange={e => setNewUser({...newUser, password: e.target.value})} />
+                                <Form.Group>
+                                    <Form.Label className="modern-label">อีเมล <span className="text-danger">*</span></Form.Label>
+                                    <InputGroup className="modern-input-group shadow-sm border rounded-pill">
+                                        <InputGroup.Text><FaEnvelope /></InputGroup.Text>
+                                        <Form.Control type="email" required value={newUser.email} onChange={e => setNewUser({...newUser, email: e.target.value})} placeholder="example@pcshs.ac.th"/>
+                                    </InputGroup>
                                 </Form.Group>
                             </Col>
                             <Col md={6}>
-                                <Form.Group className="mb-3">
-                                    <Form.Label className="small fw-bold text-muted">เบอร์โทรศัพท์</Form.Label>
-                                    <Form.Control type="text" value={newUser.phone} onChange={e => setNewUser({...newUser, phone: e.target.value})} />
+                                <Form.Group>
+                                    <Form.Label className="modern-label">รหัสผ่าน <span className="text-danger">*</span></Form.Label>
+                                    <InputGroup className="modern-input-group shadow-sm border rounded-pill">
+                                        <InputGroup.Text><FaLock /></InputGroup.Text>
+                                        <Form.Control type="password" required value={newUser.password} onChange={e => setNewUser({...newUser, password: e.target.value})} placeholder="ตั้งรหัสผ่านเริ่มต้น" />
+                                    </InputGroup>
                                 </Form.Group>
                             </Col>
                             <Col md={6}>
-                                <Form.Group className="mb-3">
-                                    <Form.Label className="small fw-bold text-muted">บทบาท (Role)</Form.Label>
-                                    <Form.Select value={newUser.role} onChange={e => setNewUser({...newUser, role: e.target.value})}>
+                                <Form.Group>
+                                    <Form.Label className="modern-label">เบอร์โทรศัพท์</Form.Label>
+                                    <InputGroup className="modern-input-group shadow-sm border rounded-pill">
+                                        <InputGroup.Text><FaPhone /></InputGroup.Text>
+                                        <Form.Control type="text" value={newUser.phone} onChange={e => setNewUser({...newUser, phone: e.target.value})} placeholder="08X-XXX-XXXX"/>
+                                    </InputGroup>
+                                </Form.Group>
+                            </Col>
+                            <Col md={6}>
+                                <Form.Group>
+                                    <Form.Label className="modern-label">บทบาท (Role) <span className="text-danger">*</span></Form.Label>
+                                    <Form.Select className="shadow-sm border rounded-pill px-3 py-2 text-muted" value={newUser.role} onChange={e => setNewUser({...newUser, role: e.target.value})}>
                                         <option value="Student">Student (นักเรียน)</option>
                                         <option value="Psychologist">Psychologist (นักจิตฯ)</option>
                                         <option value="Admin">Admin (ผู้ดูแลระบบ)</option>
@@ -207,9 +267,9 @@ const UserManagement = () => {
                                 </Form.Group>
                             </Col>
                             <Col md={6}>
-                                <Form.Group className="mb-3">
-                                    <Form.Label className="small fw-bold text-muted">เพศสภาพ</Form.Label>
-                                    <Form.Select value={newUser.gender} onChange={e => setNewUser({...newUser, gender: e.target.value})}>
+                                <Form.Group>
+                                    <Form.Label className="modern-label">เพศสภาพ <span className="text-danger">*</span></Form.Label>
+                                    <Form.Select className="shadow-sm border rounded-pill px-3 py-2 text-muted" value={newUser.gender} onChange={e => setNewUser({...newUser, gender: e.target.value})}>
                                         <option value="Male">ชาย</option>
                                         <option value="Female">หญิง</option>
                                         <option value="LGBTQ+">LGBTQ+</option>
@@ -219,9 +279,11 @@ const UserManagement = () => {
                             </Col>
                         </Row>
                     </Modal.Body>
-                    <Modal.Footer className="border-0 pt-0">
-                        <Button variant="light" onClick={() => setShowModal(false)}>ยกเลิก</Button>
-                        <Button type="submit" style={{backgroundColor: '#003566', border: 'none'}} className="px-4">บันทึกข้อมูล</Button>
+                    <Modal.Footer className="border-0 px-4 pb-4 pt-0">
+                        <Button variant="light" className="px-4 fw-semibold rounded-pill shadow-sm" onClick={() => setShowModal(false)}>ยกเลิก</Button>
+                        <Button type="submit" className="btn-pcshs-glow px-4 fw-semibold rounded-pill">
+                            บันทึกข้อมูล
+                        </Button>
                     </Modal.Footer>
                 </Form>
             </Modal>

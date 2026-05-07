@@ -33,6 +33,7 @@ app.use('/api/psychologists', require('./routes/psychologistRoutes'));
 app.use('/api/profile', require('./routes/profileRoutes'));
 app.use('/api/news', require('./routes/newsRoutes'));
 app.use('/api/schedule', require('./routes/scheduleRoutes'));
+app.use('/api/admin', require('./routes/adminRoutes'));
 
 // ==========================================
 // 3. สร้าง HTTP Server และเชื่อม Socket.io
