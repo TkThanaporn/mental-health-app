@@ -86,14 +86,59 @@ router.post('/users', authMiddleware, authorizeRole(['Admin']), async (req, res)
 });
 
 // ==========================================
-// 4. ❌ ลบผู้ใช้งาน
+// 4. ✏️ แก้ไขข้อมูลผู้ใช้งาน (Update User) - เพิ่มใหม่!
+// ==========================================
+router.put('/users/:id', authMiddleware, authorizeRole(['Admin']), async (req, res) => {
+    const { fullname, email, role, phone, gender } = req.body;
+    const userId = req.params.id;
+
+    try {
+        // 1. ตรวจสอบว่าผู้ใช้มีตัวตนจริงไหม
+        const [user] = await db.query("SELECT * FROM users WHERE user_id = ?", [userId]);
+        if (user.length === 0) {
+            return res.status(404).json({ msg: 'ไม่พบผู้ใช้งานที่ต้องการแก้ไข' });
+        }
+
+        // 2. ตรวจสอบว่าอีเมลใหม่ไปซ้ำกับคนอื่นไหม (ถ้ามีการเปลี่ยนอีเมล)
+        const [existingEmail] = await db.query("SELECT user_id FROM users WHERE email = ? AND user_id != ?", [email, userId]);
+        if (existingEmail.length > 0) {
+            return res.status(400).json({ msg: 'อีเมลนี้ถูกใช้งานโดยผู้ใช้รายอื่นแล้ว' });
+        }
+
+        // 3. อัปเดตข้อมูล (ไม่รวมรหัสผ่าน เพื่อความปลอดภัย)
+        const sql = `
+            UPDATE users 
+            SET fullname = ?, email = ?, role = ?, phone = ?, gender = ?
+            WHERE user_id = ?
+        `;
+        await db.query(sql, [fullname, email, role, phone || null, gender || 'Other', userId]);
+
+        res.json({ msg: 'อัปเดตข้อมูลผู้ใช้งานสำเร็จ' });
+    } catch (err) {
+        console.error("Update Error:", err);
+        res.status(500).json({ msg: 'Server Error: ไม่สามารถแก้ไขข้อมูลได้' });
+    }
+});
+
+// ==========================================
+// 5. ❌ ลบผู้ใช้งาน (ปรับปรุงจากเดิม)
 // ==========================================
 router.delete('/users/:id', authMiddleware, authorizeRole(['Admin']), async (req, res) => {
     try {
-        await db.query("DELETE FROM users WHERE user_id = ?", [req.params.id]);
+        const userId = req.params.id;
+        
+        // ตรวจสอบก่อนว่ามี user นี้ไหม
+        const [user] = await db.query("SELECT * FROM users WHERE user_id = ?", [userId]);
+        if (user.length === 0) {
+            return res.status(404).json({ msg: 'ไม่พบผู้ใช้งานที่ต้องการลบ' });
+        }
+
+        // ทำการลบ
+        await db.query("DELETE FROM users WHERE user_id = ?", [userId]);
         res.json({ msg: 'ลบผู้ใช้งานสำเร็จ' });
     } catch (err) {
-        res.status(500).json({ msg: 'Server Error' });
+        console.error("Delete Error:", err);
+        res.status(500).json({ msg: 'Server Error: ไม่สามารถลบผู้ใช้งานได้ (อาจมีข้อมูลที่เกี่ยวข้องอยู่ในตารางอื่น)' });
     }
 });
 

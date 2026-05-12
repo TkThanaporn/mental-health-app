@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Button, Form, Modal, InputGroup, Row, Col, Spinner } from 'react-bootstrap';
-import { FaSearch, FaUserPlus, FaTrash, FaFolderOpen, FaEnvelope, FaLock, FaUserAlt, FaPhone, FaUsersCog, FaIdCard } from 'react-icons/fa';
+// เพิ่ม FaEdit เข้ามาใน import
+import { FaSearch, FaUserPlus, FaTrash, FaFolderOpen, FaEnvelope, FaLock, FaUserAlt, FaPhone, FaUsersCog, FaIdCard, FaEdit } from 'react-icons/fa';
 
 import './UserManagement.css';
 
@@ -10,6 +11,7 @@ const UserManagement = () => {
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
 
+    // State สำหรับการเพิ่มผู้ใช้งาน
     const [showModal, setShowModal] = useState(false);
     const [newUser, setNewUser] = useState({ 
         fullname: '', 
@@ -18,6 +20,17 @@ const UserManagement = () => {
         role: 'Student', 
         phone: '', 
         gender: 'Male' 
+    });
+
+    // 🌟 ส่วนที่เพิ่มใหม่: State สำหรับการแก้ไขผู้ใช้งาน
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [editUser, setEditUser] = useState({
+        user_id: '',
+        fullname: '', 
+        email: '', 
+        role: 'Student', 
+        phone: '', 
+        gender: 'Male'
     });
 
     useEffect(() => {
@@ -51,6 +64,36 @@ const UserManagement = () => {
             fetchUsers();
         } catch (err) { 
             alert('❌ ' + (err.response?.data?.msg || 'Error')); 
+        }
+    };
+
+    // 🌟 ส่วนที่เพิ่มใหม่: ฟังก์ชันสำหรับเปิด Modal แก้ไขและดึงข้อมูลเดิมมาแสดง
+    const handleOpenEditModal = (user) => {
+        setEditUser({
+            user_id: user.user_id,
+            fullname: user.fullname || '',
+            email: user.email || '',
+            role: user.role || 'Student',
+            phone: user.phone || '',
+            gender: user.gender || 'Male'
+        });
+        setShowEditModal(true);
+    };
+
+    // 🌟 ส่วนที่เพิ่มใหม่: ฟังก์ชันสำหรับบันทึกการแก้ไข
+    const handleUpdateUser = async (e) => {
+        e.preventDefault();
+        try {
+            const token = localStorage.getItem('token');
+            // ส่ง Request ไปที่ API เพื่ออัปเดตข้อมูล (สมมติว่า Backend ใช้ PUT /api/admin/users/:id)
+            await axios.put(`http://localhost:5000/api/admin/users/${editUser.user_id}`, editUser, { 
+                headers: { 'x-auth-token': token } 
+            });
+            alert('✅ อัปเดตข้อมูลผู้ใช้งานสำเร็จ');
+            setShowEditModal(false);
+            fetchUsers();
+        } catch (err) { 
+            alert('❌ แก้ไขไม่สำเร็จ: ' + (err.response?.data?.msg || 'Error')); 
         }
     };
 
@@ -104,7 +147,7 @@ const UserManagement = () => {
                 </Button>
             </div>
 
-            {/* --- Glassmorphism Panel (ครอบตัวกรองและตาราง) --- */}
+            {/* --- Glassmorphism Panel --- */}
             <div className="glass-panel mb-4 shadow-sm">
                 
                 {/* Header ของ Panel */}
@@ -179,12 +222,21 @@ const UserManagement = () => {
                                             </td>
                                             <td className="text-center pe-4">
                                                 <div className="d-flex justify-content-center">
+                                                    {/* 🌟 ปุ่มแก้ไข (เพิ่มใหม่) */}
+                                                    <button 
+                                                        className="btn-action-minimal me-2"
+                                                        onClick={() => handleOpenEditModal(u)}
+                                                        title="แก้ไขผู้ใช้งาน"
+                                                    >
+                                                        <FaEdit className="text-primary" />
+                                                    </button>
+                                                    {/* ปุ่มลบ (เดิม) */}
                                                     <button 
                                                         className="btn-action-minimal"
                                                         onClick={() => handleDeleteUser(u.user_id)}
                                                         title="ลบผู้ใช้งาน"
                                                     >
-                                                        <FaTrash />
+                                                        <FaTrash className="text-danger" />
                                                     </button>
                                                 </div>
                                             </td>
@@ -207,7 +259,7 @@ const UserManagement = () => {
                 </div>
             </div>
 
-            {/* --- Modal Add User --- */}
+            {/* --- Modal Add User (ของเดิม) --- */}
             <Modal show={showModal} onHide={() => setShowModal(false)} centered backdrop="static" size="lg">
                 <Modal.Header closeButton className="border-0 pt-4 px-4 pb-0">
                     <Modal.Title className="fw-bold" style={{color: '#00234B'}}>
@@ -220,6 +272,7 @@ const UserManagement = () => {
                             กรุณากรอกข้อมูลให้ครบถ้วน ข้อมูลรหัสผ่านจะถูกเข้ารหัสผ่านระบบรักษาความปลอดภัย
                         </div>
                         <Row className="g-3">
+                            {/* ... (ฟอร์ม Add เดิม) ... */}
                             <Col md={6}>
                                 <Form.Group>
                                     <Form.Label className="modern-label">ชื่อ-นามสกุล <span className="text-danger">*</span></Form.Label>
@@ -287,6 +340,77 @@ const UserManagement = () => {
                     </Modal.Footer>
                 </Form>
             </Modal>
+
+            {/* 🌟 --- Modal Edit User (ส่วนที่เพิ่มใหม่) --- */}
+            <Modal show={showEditModal} onHide={() => setShowEditModal(false)} centered backdrop="static" size="lg">
+                <Modal.Header closeButton className="border-0 pt-4 px-4 pb-0">
+                    <Modal.Title className="fw-bold" style={{color: '#00234B'}}>
+                        <FaEdit className="me-2 text-muted"/> แก้ไขข้อมูลผู้ใช้งาน
+                    </Modal.Title>
+                </Modal.Header>
+                <Form onSubmit={handleUpdateUser}>
+                    <Modal.Body className="p-4">
+                        <Row className="g-3">
+                            <Col md={6}>
+                                <Form.Group>
+                                    <Form.Label className="modern-label">ชื่อ-นามสกุล <span className="text-danger">*</span></Form.Label>
+                                    <InputGroup className="modern-input-group shadow-sm border rounded-pill">
+                                        <InputGroup.Text><FaUserAlt /></InputGroup.Text>
+                                        <Form.Control type="text" required value={editUser.fullname} onChange={e => setEditUser({...editUser, fullname: e.target.value})} placeholder="ระบุชื่อและนามสกุล"/>
+                                    </InputGroup>
+                                </Form.Group>
+                            </Col>
+                            <Col md={6}>
+                                <Form.Group>
+                                    <Form.Label className="modern-label">อีเมล <span className="text-danger">*</span></Form.Label>
+                                    <InputGroup className="modern-input-group shadow-sm border rounded-pill">
+                                        <InputGroup.Text><FaEnvelope /></InputGroup.Text>
+                                        <Form.Control type="email" required value={editUser.email} onChange={e => setEditUser({...editUser, email: e.target.value})} placeholder="example@pcshs.ac.th"/>
+                                    </InputGroup>
+                                </Form.Group>
+                            </Col>
+                            {/* หมายเหตุ: นำฟิลด์รหัสผ่านออกในโหมดแก้ไข เพื่อป้องกันการเผลอบันทึกทับรหัสผ่านเดิมโดยไม่ตั้งใจ */}
+                            <Col md={6}>
+                                <Form.Group>
+                                    <Form.Label className="modern-label">เบอร์โทรศัพท์</Form.Label>
+                                    <InputGroup className="modern-input-group shadow-sm border rounded-pill">
+                                        <InputGroup.Text><FaPhone /></InputGroup.Text>
+                                        <Form.Control type="text" value={editUser.phone} onChange={e => setEditUser({...editUser, phone: e.target.value})} placeholder="08X-XXX-XXXX"/>
+                                    </InputGroup>
+                                </Form.Group>
+                            </Col>
+                            <Col md={6}>
+                                <Form.Group>
+                                    <Form.Label className="modern-label">บทบาท (Role) <span className="text-danger">*</span></Form.Label>
+                                    <Form.Select className="shadow-sm border rounded-pill px-3 py-2 text-muted" value={editUser.role} onChange={e => setEditUser({...editUser, role: e.target.value})}>
+                                        <option value="Student">Student (นักเรียน)</option>
+                                        <option value="Psychologist">Psychologist (นักจิตฯ)</option>
+                                        <option value="Admin">Admin (ผู้ดูแลระบบ)</option>
+                                    </Form.Select>
+                                </Form.Group>
+                            </Col>
+                            <Col md={6}>
+                                <Form.Group>
+                                    <Form.Label className="modern-label">เพศสภาพ <span className="text-danger">*</span></Form.Label>
+                                    <Form.Select className="shadow-sm border rounded-pill px-3 py-2 text-muted" value={editUser.gender} onChange={e => setEditUser({...editUser, gender: e.target.value})}>
+                                        <option value="Male">ชาย</option>
+                                        <option value="Female">หญิง</option>
+                                        <option value="LGBTQ+">LGBTQ+</option>
+                                        <option value="Other">ไม่ระบุ</option>
+                                    </Form.Select>
+                                </Form.Group>
+                            </Col>
+                        </Row>
+                    </Modal.Body>
+                    <Modal.Footer className="border-0 px-4 pb-4 pt-0">
+                        <Button variant="light" className="px-4 fw-semibold rounded-pill shadow-sm" onClick={() => setShowEditModal(false)}>ยกเลิก</Button>
+                        <Button type="submit" className="btn-pcshs-glow px-4 fw-semibold rounded-pill">
+                            บันทึกการแก้ไข
+                        </Button>
+                    </Modal.Footer>
+                </Form>
+            </Modal>
+
         </div>
     );
 };
