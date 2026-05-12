@@ -81,7 +81,7 @@ const AdminDashboard = () => {
         setShowMobileMenu(false);
     };
 
-    // --- Sidebar Component ---
+    // --- Sidebar Component ---//
     const SidebarContent = () => (
         <div className="d-flex flex-column h-100">
             <div className="logo-section">
