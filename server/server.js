@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const http = require('http'); 
-const { Server } = require("socket.io"); // ใช้ destructuring แบบนี้จะชัดเจนกว่า
+const { Server } = require("socket.io"); 
 require('dotenv').config();
 const db = require('./config/db');
 const path = require('path'); 
@@ -56,7 +56,6 @@ io.on('connection', (socket) => {
 
     // เมื่อ User เข้าห้องแชท
     socket.on('join_room', (roomID) => {
-        // frontend ส่งมาเป็น "appt-12" หรือ "12" ก็ได้ แต่เราจะ join ตามนั้นเลย
         socket.join(roomID);
         console.log(`📁 User ${socket.id} joined room: ${roomID}`);
     });
@@ -64,29 +63,28 @@ io.on('connection', (socket) => {
     // เมื่อมีการส่งข้อความ
     socket.on('send_message', async (data) => {
         // Data format จาก Frontend: 
-        // { room: "appt-12", author: "Name", authorId: 1, message: "Hello", time: "..." }
+        // { room: "appt-12", author: "Name", authorId: 1, receiverId: 2, message: "Hello", time: "..." }
         
         console.log("📩 Received:", data);
 
-        // 1. ส่งข้อความหาทุกคนในห้อง (Real-time) ยกเว้นคนส่งเอง (ใช้ broadcast) หรือส่งทุกคน (ใช้ io)
-        // ใช้ to(data.room) เพื่อส่งเข้าห้องที่ระบุ
+        // 1. ส่งข้อความหาทุกคนในห้อง
         socket.to(data.room).emit('receive_message', data);
         
         // 2. บันทึกลง Database
         try {
-            // ต้องแยก ID ออกจาก prefix "appt-" ถ้ามี
             let apptId = data.room;
             if (typeof apptId === 'string' && apptId.includes('-')) {
                 apptId = apptId.split('-')[1];
             }
 
+            // ✅ เพิ่ม receiver_id ตามโครงสร้างฐานข้อมูลใหม่ (ป้องกัน Error NOT NULL)
             const sql = `
-                INSERT INTO chat_messages (appointment_id, sender_id, message_text) 
-                VALUES (?, ?, ?)
+                INSERT INTO chat_messages (appointment_id, sender_id, receiver_id, message_text) 
+                VALUES (?, ?, ?, ?)
             `;
             
-            // Map ข้อมูลให้ตรงกับตาราง
-            await db.query(sql, [apptId, data.authorId, data.message]);
+            // ✅ ดึง data.receiverId มาบันทึกด้วย
+            await db.query(sql, [apptId, data.authorId, data.receiverId, data.message]);
             
             console.log("💾 Message saved to DB");
         } catch (err) {

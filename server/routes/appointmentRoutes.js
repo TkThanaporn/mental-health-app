@@ -1,42 +1,47 @@
+// server/routes/appointmentRoutes.js
 const express = require('express');
 const router = express.Router();
 const db = require('../config/db'); // Import Pool
 const { authMiddleware } = require('../middleware/auth');
 
-
-
-// ✅ ย้ายมาไว้ด้านบนสุดของไฟล์ (ก่อน Route ที่มี /:id)
+// ==========================================
+// 1. GET: ดูประวัตินัดหมาย (สำหรับนักจิตวิทยา)
+// ==========================================
 router.get('/psychologist-history', authMiddleware, async (req, res) => {
     try {
-        const psychologist_id = req.user.id || req.user.user_id; 
+        const psychologist_user_id = req.user.id || req.user.user_id; 
+        
+        // ✅ JOIN ตาราง schedules เพื่อดึงวันที่และเวลา
         const sql = `
             SELECT 
                 a.appointment_id, 
-                a.appointment_date AS date, 
-                a.appointment_time AS time_slot, 
+                s.date AS date, 
+                CONCAT(DATE_FORMAT(s.start_time, '%H:%i'), '-', DATE_FORMAT(s.end_time, '%H:%i')) AS time_slot, 
                 a.status, 
                 a.topic,
                 u.fullname AS student_name,
                 u.email AS student_email,
                 u.phone AS student_phone
             FROM appointments a
-            JOIN users u ON a.student_id = u.user_id
-            WHERE a.psychologist_id = ?
-            ORDER BY a.appointment_date DESC, a.appointment_time ASC
+            JOIN users u ON a.student_user_id = u.user_id
+            JOIN schedules s ON a.schedule_id = s.schedule_id
+            WHERE a.psychologist_user_id = ?
+            ORDER BY s.date DESC, s.start_time ASC
         `;
-        const [rows] = await db.query(sql, [psychologist_id]);
+        const [rows] = await db.query(sql, [psychologist_user_id]);
         res.json(rows);
     } catch (err) {
         console.error("❌ FETCH HISTORY ERROR:", err.message);
         res.status(500).send('Server Error');
     }
 });
-/// ==========================================
-// 📌 POST: จองนัดหมาย (สำหรับนักเรียน)
+
+// ==========================================
+// 2. POST: จองนัดหมาย (สำหรับนักเรียน)
 // ==========================================
 router.post('/', authMiddleware, async (req, res) => {
     const { schedule_id, psychologist_id, note, type, consultation_type } = req.body;
-    const student_id = req.user.id || req.user.user_id;
+    const student_user_id = req.user.id || req.user.user_id;
 
     if (!schedule_id || !psychologist_id) {
         return res.status(400).json({ msg: 'ข้อมูลไม่ครบถ้วน' });
@@ -57,26 +62,22 @@ router.post('/', authMiddleware, async (req, res) => {
             await connection.rollback();
             return res.status(400).json({ msg: 'เวลานี้ถูกจองไปแล้ว หรือไม่ว่างครับ' });
         }
-        
-        const selectedSlot = slots[0];
 
-        // 2. บันทึกการจอง
-        // ✅ แก้ไข: เพิ่ม schedule_id เข้าไปในวงเล็บคอลัมน์ และ VALUES
+        // 2. บันทึกการจอง (ตัด appointment_date/time ออก เพราะอิงตาม schedule_id แล้ว)
+        // ✅ ปรับ ENUM ให้เป็นตัวพิมพ์เล็กตาม DB (online, individual, pending)
         const sql = `
             INSERT INTO appointments 
-            (student_id, psychologist_id, appointment_date, appointment_time, topic, type, consultation_type, status, schedule_id) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, 'Pending', ?)
+            (student_user_id, psychologist_user_id, schedule_id, topic, type, consultation_type, status) 
+            VALUES (?, ?, ?, ?, ?, ?, 'pending')
         `;
 
         await connection.query(sql, [
-            student_id, 
+            student_user_id, 
             psychologist_id, 
-            selectedSlot.date,        
-            selectedSlot.time_slot,   
+            schedule_id,
             note || '-',              
-            type || 'Onsite',         
-            consultation_type || 'Individual',
-            schedule_id // <--- ✅ ใส่ค่า schedule_id ตรงนี้ (ตัวแปรสุดท้าย)
+            (type || 'online').toLowerCase(),        
+            (consultation_type || 'individual').toLowerCase()
         ]);
 
         // 3. ตัดเวลาออกจากตาราง (ไม่ว่างแล้ว)
@@ -96,21 +97,27 @@ router.post('/', authMiddleware, async (req, res) => {
         if (connection) connection.release();
     }
 });
+
 // ==========================================
-// 📌 GET: ดูประวัติการจอง (สำหรับนักเรียน)
+// 3. GET: ดูประวัติการจอง (สำหรับนักเรียน)
 // ==========================================
 router.get('/my-appointments', authMiddleware, async (req, res) => {
     try {
-        // ✅ แก้ไข: ใช้ u.fullname และ u.user_id
+        const student_user_id = req.user.id || req.user.user_id;
+        // ✅ JOIN ตาราง schedules
         const sql = `
-            SELECT a.*, u.fullname AS psychologist_name
+            SELECT 
+                a.*, 
+                u.fullname AS psychologist_name,
+                s.date AS appointment_date,
+                s.start_time AS appointment_time
             FROM appointments a
-            JOIN users u ON a.psychologist_id = u.user_id
-            WHERE a.student_id = ?
-            ORDER BY a.appointment_date DESC, a.appointment_time ASC
+            JOIN users u ON a.psychologist_user_id = u.user_id
+            JOIN schedules s ON a.schedule_id = s.schedule_id
+            WHERE a.student_user_id = ?
+            ORDER BY s.date DESC, s.start_time ASC
         `;
-        const student_id = req.user.id || req.user.user_id;
-        const [rows] = await db.query(sql, [student_id]);
+        const [rows] = await db.query(sql, [student_user_id]);
         res.json(rows);
     } catch (err) {
         console.error("Fetch Student History Error:", err);
@@ -119,20 +126,26 @@ router.get('/my-appointments', authMiddleware, async (req, res) => {
 });
 
 // ==========================================
-// 📌 GET: ดูรายการนัดหมายทั้งหมด (สำหรับนักจิตวิทยา)
+// 4. GET: ดูรายการนัดหมายทั้งหมด (สำหรับนักจิตวิทยา)
 // ==========================================
 router.get('/psychologist-appointments', authMiddleware, async (req, res) => {
     try {
-        // ✅ แก้ไข: ใช้ u.fullname และ u.user_id
+        const psychologist_user_id = req.user.id || req.user.user_id;
+        // ✅ JOIN ตาราง schedules
         const sql = `
-            SELECT a.*, u.fullname AS student_name, u.email AS student_email
+            SELECT 
+                a.*, 
+                u.fullname AS student_name, 
+                u.email AS student_email,
+                s.date AS appointment_date,
+                s.start_time AS appointment_time
             FROM appointments a
-            JOIN users u ON a.student_id = u.user_id
-            WHERE a.psychologist_id = ? 
-            ORDER BY a.appointment_date DESC, a.appointment_time ASC
+            JOIN users u ON a.student_user_id = u.user_id
+            JOIN schedules s ON a.schedule_id = s.schedule_id
+            WHERE a.psychologist_user_id = ? 
+            ORDER BY s.date DESC, s.start_time ASC
         `;
-        const psychologist_id = req.user.id || req.user.user_id;
-        const [rows] = await db.query(sql, [psychologist_id]);
+        const [rows] = await db.query(sql, [psychologist_user_id]);
         res.json(rows);
     } catch (err) {
         console.error("Fetch Psych Appointments Error:", err);
@@ -141,21 +154,24 @@ router.get('/psychologist-appointments', authMiddleware, async (req, res) => {
 });
 
 // ==========================================
-// 📌 PUT: อัปเดตสถานะ (กดอนุมัติ / เสร็จสิ้น / ยกเลิก)
+// 5. PUT: อัปเดตสถานะ (กดอนุมัติ / เสร็จสิ้น / ยกเลิก)
 // ==========================================
 router.put('/status/:id', authMiddleware, async (req, res) => {
     const { status } = req.body; 
     const appointmentId = req.params.id;
 
-    const validStatuses = ['Confirmed', 'Completed', 'Cancelled'];
-    if (!validStatuses.includes(status)) {
+    // ✅ ปรับ Array ให้เป็นตัวพิมพ์เล็ก
+    const validStatuses = ['confirmed', 'completed', 'cancelled', 'pending'];
+    const dbStatus = status.toLowerCase(); // แปลงสิ่งที่ Frontend ส่งมาให้เป็นตัวเล็ก
+
+    if (!validStatuses.includes(dbStatus)) {
         return res.status(400).json({ msg: 'สถานะไม่ถูกต้อง' });
     }
 
     try {
         await db.query(
             'UPDATE appointments SET status = ? WHERE appointment_id = ?', 
-            [status, appointmentId]
+            [dbStatus, appointmentId]
         );
         res.json({ msg: `อัปเดตสถานะเป็น ${status} เรียบร้อย!` });
     } catch (err) {
@@ -164,41 +180,50 @@ router.put('/status/:id', authMiddleware, async (req, res) => {
     }
 });
 
-
-// 📌 POST: จบงาน + บันทึกผล + นัดติดตามอาการ (Follow-up)
+// ==========================================
+// 6. POST: จบงาน + บันทึกผล + นัดติดตามอาการ (Follow-up)
 // ==========================================
 router.post('/complete/:id', authMiddleware, async (req, res) => {
     const appointmentId = req.params.id;
+    // เปลี่ยนตัวแปรที่รับมาให้เป็น student_user_id
     const { result_summary, follow_up_date, follow_up_time, student_id } = req.body;
-    const psychologist_id = req.user.id || req.user.user_id;
+    const student_user_id = student_id; // Mapping ข้อมูล
+    const psychologist_user_id = req.user.id || req.user.user_id;
 
     let connection;
     try {
         connection = await db.getConnection();
         await connection.beginTransaction();
 
-        // 1. อัปเดตงานเดิมเป็น Completed + บันทึกผล
-        // ⚠️ อย่าลืม: ต้องรัน SQL เพิ่มคอลัมน์ result_summary ใน Database ก่อนนะครับ
+        // 1. อัปเดตงานเดิมเป็น completed + บันทึกผล
         await connection.query(
             'UPDATE appointments SET status = ?, result_summary = ? WHERE appointment_id = ?',
-            ['Completed', result_summary, appointmentId]
+            ['completed', result_summary, appointmentId]
         );
 
-        // 2. ถ้ามีการนัดต่อ (Follow-up) ให้สร้างนัดหมายใหม่ทันที
+        // 2. ถ้ามีการนัดต่อ (Follow-up)
         if (follow_up_date && follow_up_time) {
+            // ✅ สร้างตารางเวลา (Schedule) สำหรับ Follow-up ก่อน เพราะระบบบังคับให้ต้องมี schedule_id
+            const [schedResult] = await connection.query(
+                'INSERT INTO schedules (psychologist_user_id, date, start_time, end_time, is_available) VALUES (?, ?, ?, ?, 0)',
+                [psychologist_user_id, follow_up_date, follow_up_time, follow_up_time] // อนุโลมใช้เวลาเริ่ม-จบเท่ากัน
+            );
+            const new_schedule_id = schedResult.insertId;
+
+            // ✅ สร้างนัดหมายใหม่
             const sqlFollowUp = `
                 INSERT INTO appointments 
-                (student_id, psychologist_id, appointment_date, appointment_time, topic, type, status) 
+                (student_user_id, psychologist_user_id, schedule_id, topic, type, consultation_type, status) 
                 VALUES (?, ?, ?, ?, ?, ?, ?)
             `;
             await connection.query(sqlFollowUp, [
-                student_id,
-                psychologist_id,
-                follow_up_date,
-                follow_up_time,
+                student_user_id,
+                psychologist_user_id,
+                new_schedule_id,
                 'นัดติดตามอาการ (Follow-up)',
-                'Online', 
-                'Confirmed' 
+                'online', 
+                'individual',
+                'confirmed' 
             ]);
         }
 
@@ -214,6 +239,4 @@ router.post('/complete/:id', authMiddleware, async (req, res) => {
     }
 });
 
-
 module.exports = router;
-

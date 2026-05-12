@@ -1,3 +1,4 @@
+// server/routes/assessmentRoutes.js
 const express = require('express');
 const router = express.Router();
 const db = require('../config/db');
@@ -16,12 +17,12 @@ const interpretPHQA = (score) => {
 // 1. POST: ส่งแบบประเมิน (สำหรับนักเรียน)
 // ==========================================
 router.post('/', authMiddleware, authorizeRole(['Student']), async (req, res) => {
-    // Frontend ส่ง type และ answers มา
+    // Frontend ส่ง type และ answers (เช่น [1, 2, 0, 3, ...]) มา
     const { type, answers } = req.body; 
-    const student_id = req.user.id; 
+    const student_user_id = req.user.id; 
 
     // Validation เบื้องต้น
-    if (!Array.isArray(answers)) {
+    if (!Array.isArray(answers) || answers.length === 0) {
         return res.status(400).json({ msg: 'Invalid assessment data.' });
     }
 
@@ -32,15 +33,29 @@ router.post('/', authMiddleware, authorizeRole(['Student']), async (req, res) =>
         // 2. แปลผลคะแนน
         const stress_level = interpretPHQA(totalScore);
 
-        // 3. บันทึกผลลงในตาราง assessments (ใช้ชื่อตารางตัวพิมพ์เล็กให้ตรงกับ DB)
-        // หมายเหตุ: ตรวจสอบว่าใน DB มีคอลัมน์ชื่อ stress_level หรือ result_level (โค้ดนี้ใช้ stress_level ตาม SQL ขั้นตอนแรก)
-        const sql = `INSERT INTO assessments (student_id, score, stress_level) VALUES (?, ?, ?)`;
+        // 3. เตรียมคำตอบรายข้อ (ถ้าส่งมาไม่ถึง 9 ข้อ ก็ให้เป็น 0 ไว้ก่อน)
+        const q = [0, 0, 0, 0, 0, 0, 0, 0, 0];
+        answers.forEach((val, index) => {
+            if (index < 9) q[index] = val;
+        });
+
+        // 4. บันทึกผลลงตาราง assessments ตามโครงสร้าง DB ใหม่
+        const sql = `
+            INSERT INTO assessments 
+            (student_user_id, question1, question2, question3, question4, question5, question6, question7, question8, question9, score, stress_level) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `;
         
-        await db.execute(sql, [student_id, totalScore, stress_level]);
+        await db.execute(sql, [
+            student_user_id, 
+            q[0], q[1], q[2], q[3], q[4], q[5], q[6], q[7], q[8], 
+            totalScore, 
+            stress_level
+        ]);
 
-        console.log(`✅ Assessment saved: Student ${student_id} Score ${totalScore}`);
+        console.log(`✅ Assessment saved: Student ${student_user_id} Score ${totalScore}`);
 
-        // 4. ส่งผลลัพธ์กลับไปให้ Frontend
+        // 5. ส่งผลลัพธ์กลับไปให้ Frontend
         res.status(201).json({ score: totalScore, result: stress_level, msg: 'Assessment submitted successfully.' });
         
     } catch (err) {
@@ -54,10 +69,10 @@ router.post('/', authMiddleware, authorizeRole(['Student']), async (req, res) =>
 // ==========================================
 router.get('/latest', authMiddleware, authorizeRole(['Student']), async (req, res) => {
     try {
-        const student_id = req.user.id;
+        const student_user_id = req.user.id;
         // ดึงอันล่าสุด (เรียงตามเวลา)
-        const sql = `SELECT * FROM assessments WHERE student_id = ? ORDER BY created_at DESC LIMIT 1`;
-        const [result] = await db.query(sql, [student_id]);
+        const sql = `SELECT * FROM assessments WHERE student_user_id = ? ORDER BY created_at DESC LIMIT 1`;
+        const [result] = await db.query(sql, [student_user_id]);
         
         res.json(result[0] || null); // ส่งคืนอันล่าสุด หรือ null ถ้าไม่เคยทำ
     } catch (err) {
@@ -68,13 +83,13 @@ router.get('/latest', authMiddleware, authorizeRole(['Student']), async (req, re
 
 // ==========================================
 // 3. GET: ดึงผลประเมินของนักเรียน (สำหรับนักจิตวิทยา)
-// *Route นี้จำเป็นสำหรับปุ่ม "📄 ดูผลประเมิน" ที่เราเพิ่งทำไป
+// *Route นี้จำเป็นสำหรับปุ่ม "📄 ดูผลประเมิน" 
 // ==========================================
 router.get('/student/:studentId', authMiddleware, authorizeRole(['Psychologist']), async (req, res) => {
     try {
         const { studentId } = req.params;
         
-        const sql = `SELECT * FROM assessments WHERE student_id = ? ORDER BY created_at DESC LIMIT 1`;
+        const sql = `SELECT * FROM assessments WHERE student_user_id = ? ORDER BY created_at DESC LIMIT 1`;
         const [result] = await db.query(sql, [studentId]);
 
         if (result.length === 0) {
@@ -88,13 +103,19 @@ router.get('/student/:studentId', authMiddleware, authorizeRole(['Psychologist']
         res.status(500).send('Server Error');
     }
 });
+
 // ==========================================
 // 4. GET: ดึงผลประเมินทั้งหมด (สำหรับหน้า Dashboard นักจิตวิทยา)
 // ==========================================
 router.get('/all', authMiddleware, authorizeRole(['Psychologist']), async (req, res) => {
     try {
-        // ดึงผลการประเมินทั้งหมดจากฐานข้อมูล
-        const sql = `SELECT * FROM assessments`;
+        // JOIN กับตาราง users เพื่อให้นักจิตวิทยาเห็นชื่อนักเรียนด้วย
+        const sql = `
+            SELECT a.*, u.fullname AS student_name 
+            FROM assessments a
+            JOIN users u ON a.student_user_id = u.user_id
+            ORDER BY a.created_at DESC
+        `;
         const [results] = await db.query(sql);
         
         res.json(results);
@@ -103,4 +124,5 @@ router.get('/all', authMiddleware, authorizeRole(['Psychologist']), async (req, 
         res.status(500).send('Server Error');
     }
 });
+
 module.exports = router;

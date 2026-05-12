@@ -1,36 +1,36 @@
+// server/routes/adminRoutes.js
 const express = require('express');
 const router = express.Router();
 const db = require('../config/db');
-const bcrypt = require('bcrypt'); 
+const bcrypt = require('bcryptjs'); // ✅ เปลี่ยนเป็น bcryptjs ให้เหมือน authRoutes
 const { authMiddleware, authorizeRole } = require('../middleware/auth');
 
 // ==========================================
-// 1. 📊 API สำหรับ AdminDashboard (แก้ให้ตรงกับ Frontend)
+// 1. 📊 API สำหรับ AdminDashboard
 // ==========================================
 router.get('/summary', authMiddleware, authorizeRole(['Admin']), async (req, res) => {
     try {
-        // 1. นับจำนวนนักเรียน (total_students)
+        // 1. นับจำนวนนักเรียน
         const [students] = await db.query("SELECT COUNT(*) as count FROM users WHERE role = 'Student'");
         
-        // 2. นับจำนวนนักจิตวิทยา (pending_psychologists - หรือนับทั้งหมดไปก่อน)
+        // 2. นับจำนวนนักจิตวิทยา
         const [psychologists] = await db.query("SELECT COUNT(*) as count FROM users WHERE role = 'Psychologist'");
 
-        // 3. นับจำนวนนัดหมาย (confirmed_appointments)
-        // (ใช้ try-catch กัน Error กรณีที่ยังไม่มีตาราง appointments)
+        // 3. นับจำนวนนัดหมาย (เลือกเฉพาะที่ status เป็น 'confirmed' ตาม ENUM ใหม่)
         let confirmedAppointments = 0;
         try {
-            const [appt] = await db.query("SELECT COUNT(*) as count FROM appointments"); // หรือ WHERE status = 'Confirmed'
+            const [appt] = await db.query("SELECT COUNT(*) as count FROM appointments WHERE status = 'confirmed'");
             confirmedAppointments = appt[0].count;
         } catch (e) { console.log("Appointments table not ready"); }
 
-        // 4. แบบประเมิน (pending_assessments)
+        // 4. แบบประเมิน
         let pendingAssessments = 0;
         try {
             const [assess] = await db.query("SELECT COUNT(*) as count FROM assessments"); 
             pendingAssessments = assess[0].count;
         } catch (e) { console.log("Assessments table not ready"); }
 
-        // ส่งข้อมูลกลับไปตามชื่อที่ Frontend รอรับ (total_students, etc.)
+        // ส่งข้อมูลกลับไปตามชื่อที่ Frontend รอรับ
         res.json({
             total_students: students[0].count,
             pending_assessments: pendingAssessments,
@@ -71,11 +71,12 @@ router.post('/users', authMiddleware, authorizeRole(['Admin']), async (req, res)
         if (existing.length > 0) return res.status(400).json({ msg: 'อีเมลนี้มีอยู่ในระบบแล้ว' });
 
         const salt = await bcrypt.genSalt(10);
-        const password_hash = await bcrypt.hash(password, salt);
+        const hashed_password = await bcrypt.hash(password, salt);
         const profile_image = `https://ui-avatars.com/api/?name=${encodeURIComponent(fullname)}&background=random&color=fff`;
 
-        const sql = `INSERT INTO users (fullname, email, password_hash, role, phone, gender, profile_image, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`;
-        await db.query(sql, [fullname, email, password_hash, role, phone || null, gender || 'Other', profile_image]);
+        // ✅ เปลี่ยน password_hash เป็น password ให้ตรงกับตาราง users ล่าสุด
+        const sql = `INSERT INTO users (fullname, email, password, role, phone, gender, profile_image, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`;
+        await db.query(sql, [fullname, email, hashed_password, role, phone || null, gender || 'Other', profile_image]);
 
         res.json({ msg: 'เพิ่มผู้ใช้งานสำเร็จ' });
     } catch (err) {

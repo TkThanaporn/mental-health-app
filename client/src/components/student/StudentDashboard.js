@@ -9,17 +9,23 @@ import {
     FaMapMarkerAlt, FaEnvelope, FaFacebookSquare, FaGlobe
 } from 'react-icons/fa';
 
+// Import CSS และ Logo (แก้ไข Path ให้ตรงกับโปรเจกต์ของคุณ)
 import './StudentDashboard.css';
 import pcshsLogo from '../../assets/pcshs_logo.png';
 
-// Import Navbar ตัวกลาง
+// Import Navbar
 import PCSHSNavbar from '../common/Navbar/PCSHSNavbar';
 
 const StudentDashboard = () => {
     const navigate = useNavigate();
     const [currentUserName, setCurrentUserName] = useState("นักเรียน");
+    const [newsList, setNewsList] = useState([]);
+
+    // ตั้งค่า URL ของ Backend (ปรับตามจริง หรือดึงจาก .env)
+    const API_BASE_URL = 'http://localhost:5000';
 
     useEffect(() => {
+        // --- 1. ดึงข้อมูลผู้ใช้จาก Token ---
         const token = localStorage.getItem('token');
         if (token) {
             try {
@@ -30,7 +36,55 @@ const StudentDashboard = () => {
                 console.error("Token Error", e);
             }
         }
+
+        // --- 2. ดึงข้อมูลข่าวสารจาก API ---
+        const fetchNews = async () => {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/news`); 
+                if (response.ok) {
+                    const data = await response.json();
+                    setNewsList(data);
+                } else {
+                    throw new Error("Failed to fetch news");
+                }
+            } catch (error) {
+                console.error("Error fetching news:", error);
+                // ข้อมูลจำลองพร้อมรูปภาพ (Mock Data) กรณีเชื่อมต่อ API ไม่ได้หรือไม่มีข้อมูล
+                setNewsList([
+                    { 
+                        id: 1, 
+                        title: 'เทคนิคการจัดการความเครียดก่อนสอบ', 
+                        category: 'Stress', 
+                        summary: 'วิธีง่ายๆ ในการผ่อนคลายสมองเมื่อต้องอ่านหนังสือหนักๆ ลองทำตาม 5 วิธีนี้...', 
+                        image_url: 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?auto=format&fit=crop&q=80&w=500', 
+                    },
+                    { 
+                        id: 2, 
+                        title: 'นอนไม่หลับทำอย่างไร?', 
+                        category: 'Sleep', 
+                        summary: 'ปรับเปลี่ยนพฤติกรรมเล็กน้อย เพื่อการนอนหลับที่มีคุณภาพมากขึ้น ตื่นมาสดใสกว่าเดิม...', 
+                        image_url: 'https://images.unsplash.com/photo-1541480601022-2308c0f02487?auto=format&fit=crop&q=80&w=500', 
+                    },
+                    { 
+                        id: 3, 
+                        title: 'วิธีสร้างพลังบวกในวันที่แย่', 
+                        category: 'Mood', 
+                        summary: 'มองโลกในมุมใหม่ เพื่อใจที่สดใสกว่าเดิม แม้ในวันที่รู้สึกเหนื่อยล้า...', 
+                        image_url: 'https://images.unsplash.com/photo-1490730141103-6cac27aaab94?auto=format&fit=crop&q=80&w=500', 
+                    }
+                ]);
+            }
+        };
+
+        fetchNews();
     }, []);
+
+    // ฟังก์ชันจัดการ URL รูปภาพให้สมบูรณ์
+    const getImageUrl = (url) => {
+        if (!url) return null;
+        if (url.startsWith('http')) return url; // ถ้าเป็น Link ภายนอกอยู่แล้ว ให้ใช้ได้เลย
+        return `${API_BASE_URL}${url}`; // ถ้าเป็น Path สัมพัทธ์ ให้เติม Base URL ด้านหน้า
+    };
 
     return (
         <div className="pcshs-dashboard d-flex flex-column min-vh-100">
@@ -49,13 +103,10 @@ const StudentDashboard = () => {
                             <p className="lead text-muted mb-4" style={{maxWidth: '90%'}}>
                                 เราพร้อมรับฟังและสนับสนุนทางจิตวิทยา เพื่อให้นักเรียนก้าวข้ามทุกความท้าทายในรั้ววิทยาศาสตร์ได้อย่างมีความสุข
                             </p>
-                            <div className="d-flex gap-3">
-                                <Button onClick={() => navigate('/student/assessment')} className="btn-hero-primary">
-                                    <FaHeartbeat className="me-2"/> เริ่มประเมินสุขภาพใจ
-                                </Button>
-                            </div>
+                            <Button onClick={() => navigate('/student/assessment')} className="btn-hero-primary shadow-sm">
+                                <FaHeartbeat className="me-2"/> เริ่มประเมินสุขภาพใจ
+                            </Button>
                         </Col>
-
                         <Col lg={5} md={6} className="text-center mb-4 mb-md-0 fade-in-up delay-100">
                             <img src={pcshsLogo} alt="PCSHS Logo" className="school-logo img-fluid floating-animation" />
                         </Col>
@@ -64,7 +115,6 @@ const StudentDashboard = () => {
             </section>
 
             {/* --- Content Section --- */}
-            {/* เพิ่ม flex-grow-1 เพื่อดัน Footer ลงล่างสุดเสมอถ้าเนื้อหาน้อย */}
             <Container className="py-5 content-wrapper position-relative flex-grow-1" style={{ zIndex: 5 }}>
                 
                 {/* System Overview */}
@@ -111,7 +161,7 @@ const StudentDashboard = () => {
                                     </div>
                                     <h5 className="fw-bold">3. รับคำปรึกษา</h5>
                                     <p className="text-muted small px-3">
-                                        รับคำปรึกษาผ่านระบบแชทหรือที่คลีนิกเป็นส่วนตัว
+                                        รับคำปรึกษาผ่านระบบแชทหรือที่คลินิกเป็นส่วนตัว
                                     </p>
                                 </div>  
                             </Col>
@@ -122,7 +172,7 @@ const StudentDashboard = () => {
                 {/* --- Main Menu Cards --- */}
                 <Row className="g-4 mb-5 justify-content-center">
                     <Col md={4}>
-                         <Card className="h-100 menu-card rounded-4" onClick={() => navigate('/student/assessment')}>
+                         <Card className="h-100 menu-card rounded-4 shadow-sm" onClick={() => navigate('/student/assessment')} style={{cursor: 'pointer'}}>
                             <Card.Body className="p-4 d-flex align-items-center">
                                 <div className="icon-box bg-orange-light me-3">
                                     <FaClipboardList />
@@ -137,7 +187,7 @@ const StudentDashboard = () => {
                     </Col>
                     
                     <Col md={4}>
-                        <Card className="h-100 menu-card rounded-4" onClick={() => navigate('/student/book')}>
+                        <Card className="h-100 menu-card rounded-4 shadow-sm" onClick={() => navigate('/student/book')} style={{cursor: 'pointer'}}>
                             <Card.Body className="p-4 d-flex align-items-center">
                                 <div className="icon-box bg-blue-light me-3">
                                     <FaUserMd />
@@ -152,7 +202,7 @@ const StudentDashboard = () => {
                     </Col>
 
                     <Col md={4}>
-                        <Card className="h-100 menu-card rounded-4" onClick={() => navigate('/student/appointments')}>
+                        <Card className="h-100 menu-card rounded-4 shadow-sm" onClick={() => navigate('/student/appointments')} style={{cursor: 'pointer'}}>
                             <Card.Body className="p-4 d-flex align-items-center">
                                 <div className="icon-box bg-green-light me-3" style={{backgroundColor: '#e6f9f0', color: '#00b074'}}>
                                     <FaHistory />
@@ -167,7 +217,7 @@ const StudentDashboard = () => {
                     </Col>
                 </Row>
 
-                {/* --- Self-Care Highlights --- */}
+                {/* --- Self-Care Highlights (ดึงจาก API + รูปภาพ) --- */}
                 <div className="mb-5">
                     <div className="d-flex justify-content-between align-items-center mb-4">
                         <h4 className="fw-bold m-0 text-dark">
@@ -177,58 +227,57 @@ const StudentDashboard = () => {
                         <div 
                             className="text-primary fw-bold" 
                             style={{ cursor: 'pointer', fontSize: '0.9rem' }}
-                            onClick={() => navigate('/student/news')}
+                            onClick={() => navigate('/news')}
                         >
                             ดูทั้งหมด <FaChevronRight size={12}/>
                         </div>
                     </div>
                     
                     <Row className="g-4">
-                        <Col md={4}>
-                            <Card className="border-0 shadow-sm h-100 rounded-4 article-card hover-lift" onClick={() => navigate('/student/news')}>
-                                <div className="p-3 pb-0">
-                                    <div className="rounded-3 bg-light d-flex align-items-center justify-content-center text-secondary" style={{height: '140px'}}>
-                                        <FaBrain size={40} className="opacity-50"/>
-                                    </div>
-                                </div>
-                                <Card.Body>
-                                    <Badge bg="info" className="mb-2 text-dark bg-opacity-25">Stress</Badge>
-                                    <h5 className="fw-bold mb-2">เทคนิคการจัดการความเครียดก่อนสอบ</h5>
-                                    <p className="text-muted small">วิธีง่ายๆ ในการผ่อนคลายสมองเมื่อต้องอ่านหนังสือหนักๆ...</p>
-                                    <Button variant="link" className="p-0 text-decoration-none fw-bold small">อ่านต่อ <FaChevronRight size={10}/></Button>
-                                </Card.Body>
-                            </Card>
-                        </Col>
-                        <Col md={4}>
-                            <Card className="border-0 shadow-sm h-100 rounded-4 article-card hover-lift" onClick={() => navigate('/student/news')}>
-                                <div className="p-3 pb-0">
-                                    <div className="rounded-3 bg-light d-flex align-items-center justify-content-center text-secondary" style={{height: '140px'}}>
-                                        <FaBed size={40} className="opacity-50"/>
-                                    </div>
-                                </div>
-                                <Card.Body>
-                                    <Badge bg="success" className="mb-2 text-dark bg-opacity-25">Sleep</Badge>
-                                    <h5 className="fw-bold mb-2">นอนไม่หลับทำอย่างไร?</h5>
-                                    <p className="text-muted small">ปรับเปลี่ยนพฤติกรรมเล็กน้อย เพื่อการนอนหลับที่มีคุณภาพมากขึ้น...</p>
-                                    <Button variant="link" className="p-0 text-decoration-none fw-bold small">อ่านต่อ <FaChevronRight size={10}/></Button>
-                                </Card.Body>
-                            </Card>
-                        </Col>
-                        <Col md={4}>
-                            <Card className="border-0 shadow-sm h-100 rounded-4 article-card hover-lift" onClick={() => navigate('/student/news')}>
-                                <div className="p-3 pb-0">
-                                    <div className="rounded-3 bg-light d-flex align-items-center justify-content-center text-secondary" style={{height: '140px'}}>
-                                        <FaSmile size={40} className="opacity-50"/>
-                                    </div>
-                                </div>
-                                <Card.Body>
-                                    <Badge bg="warning" className="mb-2 text-dark bg-opacity-25">Mood</Badge>
-                                    <h5 className="fw-bold mb-2">วิธีสร้างพลังบวกในวันที่แย่</h5>
-                                    <p className="text-muted small">มองโลกในมุมใหม่ เพื่อใจที่สดใสกว่าเดิม...</p>
-                                    <Button variant="link" className="p-0 text-decoration-none fw-bold small">อ่านต่อ <FaChevronRight size={10}/></Button>
-                                </Card.Body>
-                            </Card>
-                        </Col>
+                        {newsList.length > 0 ? (
+                            newsList.slice(0, 3).map((item) => (
+                                <Col md={4} key={item.id}>
+                                    <Card 
+                                        className="border-0 shadow-sm h-100 rounded-4 article-card hover-lift overflow-hidden" 
+                                        onClick={() => navigate(`/student/news/${item.id}`)}
+                                        style={{cursor: 'pointer'}}
+                                    >
+                                        <div style={{height: '180px', position: 'relative', overflow: 'hidden'}}>
+                                            {item.image_url || item.imageUrl ? (
+                                                <Card.Img 
+                                                    variant="top" 
+                                                    src={getImageUrl(item.image_url || item.imageUrl)} 
+                                                    className="h-100 w-100 object-fit-cover"
+                                                    style={{ transition: 'transform 0.3s ease' }}
+                                                    alt={item.title}
+                                                />
+                                            ) : (
+                                                <div className="h-100 w-100 bg-light d-flex align-items-center justify-content-center text-secondary">
+                                                    <FaBookOpen size={40} className="opacity-25" />
+                                                </div>
+                                            )}
+                                        </div>
+                                        <Card.Body className="d-flex flex-column">
+                                            <div>
+                                                <Badge bg="info" className="mb-2 text-dark bg-opacity-25">{item.category || 'ความรู้'}</Badge>
+                                                <h5 className="fw-bold mb-2 text-truncate-2" style={{display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden'}}>{item.title}</h5>
+                                                <p className="text-muted small text-truncate-2" style={{display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden'}}>{item.summary}</p>
+                                            </div>
+                                            <div className="mt-auto pt-2">
+                                                <Button variant="link" className="p-0 text-decoration-none fw-bold small text-primary">
+                                                    อ่านต่อ <FaChevronRight size={10}/>
+                                                </Button>
+                                            </div>
+                                        </Card.Body>
+                                    </Card>
+                                </Col>
+                            ))
+                        ) : (
+                            <Col className="text-center py-5">
+                                <div className="spinner-border text-primary" role="status"></div>
+                                <p className="mt-2 text-muted">กำลังโหลดบทความน่าสนใจ...</p>
+                            </Col>
+                        )}
                     </Row>
                 </div>
 
@@ -253,15 +302,13 @@ const StudentDashboard = () => {
             </Container>
 
             {/* =========================================
-               [NEW] PCSHS FOOTER
-               ธีมสีน้ำเงินเข้ม (Brand Color) + ส้ม
+               PCSHS FOOTER
                ========================================= */}
             <footer style={{ backgroundColor: '#002d56', color: '#ecf0f1' }} className="pt-5 pb-3 mt-auto">
                 <Container>
                     <Row className="g-4 mb-4">
                         <Col md={5}>
                             <div className="d-flex align-items-center mb-3">
-                                {/* ใส่ Logo เล็กๆ ขาวดำ หรือ Filter ขาว ตรงนี้ได้ */}
                                 <div style={{width: 40, height: 40, backgroundColor: 'white', borderRadius: '50%', padding: 5, marginRight: 10}}>
                                     <img src={pcshsLogo} alt="Logo" style={{width:'100%', height:'100%', objectFit:'contain'}} />
                                 </div>

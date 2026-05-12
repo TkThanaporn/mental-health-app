@@ -5,17 +5,17 @@ import { Form, Button, Spinner } from 'react-bootstrap';
 import { FaPaperPlane } from 'react-icons/fa';
 import './ChatRoom.css';
 
-// ⚠️ ตรวจสอบ URL Backend ให้ถูกต้อง (ถ้ารันคนละ Port ต้องเปลี่ยนตรงนี้)
+// ⚠️ ตรวจสอบ URL Backend ให้ถูกต้อง
 const socket = io.connect("http://localhost:5000");
 
-const ChatRoom = ({ roomID, userId, username, otherName, onClose }) => {
+// ✅ เพิ่ม receiverId เข้ามาใน props เพื่อใช้บันทึกลงฐานข้อมูล
+const ChatRoom = ({ roomID, userId, username, otherName, receiverId, onClose }) => {
     const [currentMessage, setCurrentMessage] = useState("");
     const [messageList, setMessageList] = useState([]);
     const [loading, setLoading] = useState(true);
     const scrollRef = useRef(null);
 
     useEffect(() => {
-        // ถ้าไม่มี roomID ให้หยุดโหลดทันที
         if (!roomID) {
             setLoading(false);
             return;
@@ -41,13 +41,11 @@ const ChatRoom = ({ roomID, userId, username, otherName, onClose }) => {
 
     const fetchHistory = async () => {
         try {
-            // ป้องกัน Error กรณี roomID ไม่ใช่รูปแบบ "text-id"
             let appointmentId = roomID;
             if (roomID.includes('-')) {
                 appointmentId = roomID.split('-')[1];
             }
 
-            // ถ้าไม่มี ID ให้หยุด
             if (!appointmentId) {
                 setLoading(false);
                 return;
@@ -67,7 +65,6 @@ const ChatRoom = ({ roomID, userId, username, otherName, onClose }) => {
         } catch (err) {
             console.error("❌ Error fetching chat history:", err);
         } finally {
-            // ✅ สำคัญ: ไม่ว่าจะ error หรือสำเร็จ ต้องสั่งปิด Loading เสมอ
             setLoading(false);
             scrollToBottom();
         }
@@ -77,7 +74,14 @@ const ChatRoom = ({ roomID, userId, username, otherName, onClose }) => {
         e.preventDefault();
         
         if (currentMessage.trim() !== "") {
-            const messageData = {
+            // สกัดเอาเฉพาะตัวเลข ID ของการนัดหมายออกมา
+            let appointmentId = roomID;
+            if (roomID.includes('-')) {
+                appointmentId = roomID.split('-')[1];
+            }
+
+            // 1. ข้อมูลสำหรับส่งให้ Socket (แสดงผลหน้าจอทันที)
+            const socketPayload = {
                 room: roomID,
                 author: username || "Me",
                 authorId: parseInt(userId),
@@ -85,10 +89,30 @@ const ChatRoom = ({ roomID, userId, username, otherName, onClose }) => {
                 time: new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }),
             };
 
-            await socket.emit("send_message", messageData);
-            setMessageList((list) => [...list, messageData]);
-            setCurrentMessage("");
-            scrollToBottom();
+            // 2. ข้อมูลสำหรับบันทึกลง Database ผ่าน API (ให้ตรงกับ req.body ของ backend)
+            const dbPayload = {
+                appointment_id: appointmentId,
+                sender_id: userId,
+                receiver_id: receiverId || 1, // ⚠️ fallback ไว้ที่ 1 กันพัง แต่ของจริงต้องรับจาก props
+                message_text: currentMessage
+            };
+
+            try {
+                // ส่งผ่าน Socket ให้เพื่อนเห็นทันที
+                await socket.emit("send_message", socketPayload);
+                
+                // เรียกใช้ API POST เพื่อบันทึกลงฐานข้อมูล
+                await axios.post('http://localhost:5000/api/chat', dbPayload);
+
+                // อัปเดตหน้าจอของตัวเอง
+                setMessageList((list) => [...list, socketPayload]);
+                setCurrentMessage("");
+                scrollToBottom();
+
+            } catch (err) {
+                console.error("❌ Error sending message:", err);
+                alert("เกิดข้อผิดพลาดในการส่งข้อความ (บันทึกลงฐานข้อมูลไม่สำเร็จ)");
+            }
         }
     };
 
