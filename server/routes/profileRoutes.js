@@ -16,21 +16,20 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage: storage });
 
-// --- 2. GET: ดึงข้อมูลโปรไฟล์ (JOIN 2 ตาราง) ---
+// ==========================================
+// 2. GET: ดึงข้อมูลโปรไฟล์ (ดึงจากตาราง users ที่เดียว)
+// ==========================================
 router.get('/me', authMiddleware, async (req, res) => {
     try {
         const user_id = req.user.id;
         
-        // ✅ ใช้ LEFT JOIN ดึงข้อมูลจากตาราง profile ด้วย
-        // สังเกต: เราดึง phone_number จากตาราง profile มาเป็น phone ให้ frontend ใช้
+        // ✅ เปลี่ยนมาดึงข้อมูลทั้งหมดจากตาราง users โดยตรง ไม่ต้อง JOIN แล้ว
         const sql = `
             SELECT 
-                u.user_id, u.fullname, u.email, u.role, u.gender, u.profile_image,
-                p.phone_number AS phone, 
-                p.bio 
-            FROM users u
-            LEFT JOIN psychologistprofiles p ON u.user_id = p.psychologist_id
-            WHERE u.user_id = ?
+                user_id, fullname, email, role, gender, profile_image,
+                phone, bio 
+            FROM users
+            WHERE user_id = ?
         `;
         
         const [result] = await db.query(sql, [user_id]);
@@ -54,7 +53,9 @@ router.get('/me', authMiddleware, async (req, res) => {
     }
 });
 
-// --- 3. PUT: บันทึกข้อมูล (แยกบันทึก 2 ตาราง) ---
+// ==========================================
+// 3. PUT: บันทึกข้อมูลโปรไฟล์ (อัปเดตตาราง users ที่เดียว)
+// ==========================================
 router.put('/me', authMiddleware, upload.single('profile_image'), async (req, res) => {
     try {
         const user_id = req.user.id;
@@ -62,29 +63,19 @@ router.put('/me', authMiddleware, upload.single('profile_image'), async (req, re
         
         console.log(`📝 Updating User ID: ${user_id}`);
 
-        // --- Step A: อัปเดตตาราง USERS (ข้อมูลพื้นฐาน) ---
-        let sqlUser, paramsUser;
+        let sql, params;
+
+        // ✅ อัปเดตข้อมูลทุกอย่างลงตาราง users ในคำสั่งเดียว
         if (req.file) {
             const filename = req.file.filename;
-            sqlUser = `UPDATE users SET fullname = ?, gender = ?, profile_image = ? WHERE user_id = ?`;
-            paramsUser = [fullname, gender, filename, user_id];
+            sql = `UPDATE users SET fullname = ?, gender = ?, phone = ?, bio = ?, profile_image = ? WHERE user_id = ?`;
+            params = [fullname, gender, phone || null, bio || null, filename, user_id];
         } else {
-            sqlUser = `UPDATE users SET fullname = ?, gender = ? WHERE user_id = ?`;
-            paramsUser = [fullname, gender, user_id];
+            sql = `UPDATE users SET fullname = ?, gender = ?, phone = ?, bio = ? WHERE user_id = ?`;
+            params = [fullname, gender, phone || null, bio || null, user_id];
         }
-        await db.execute(sqlUser, paramsUser);
-
-        // --- Step B: อัปเดตตาราง PSYCHOLOGISTPROFILES (ข้อมูลวิชาชีพ) ---
-        // ✅ ใช้ ON DUPLICATE KEY UPDATE: ถ้าไม่มีข้อมูลให้สร้างใหม่ ถ้ามีให้อัปเดต
-        const sqlProfile = `
-            INSERT INTO psychologistprofiles (psychologist_id, phone_number, bio)
-            VALUES (?, ?, ?)
-            ON DUPLICATE KEY UPDATE 
-                phone_number = VALUES(phone_number),
-                bio = VALUES(bio)
-        `;
-        // หมายเหตุ: ใน DB คุณใช้ชื่อคอลัมน์ phone_number
-        await db.execute(sqlProfile, [user_id, phone, bio]);
+        
+        await db.execute(sql, params);
 
         res.json({ msg: 'บันทึกข้อมูลเรียบร้อยแล้ว' });
 

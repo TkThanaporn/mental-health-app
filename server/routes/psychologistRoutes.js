@@ -2,10 +2,13 @@ const express = require('express');
 const router = express.Router();
 const db = require('../config/db');
 
+// ==========================================
 // ✅ 1. GET: ดึงรายชื่อนักจิตวิทยา (สำหรับหน้าจองของนักเรียน)
+// ==========================================
 router.get('/available', async (req, res) => {
     try {
         console.log("🔍 Fetching psychologists...");
+        // ตรงส่วนนี้โครงสร้างตรงกับ DB ใหม่แล้ว (ตาราง users) 
         const sql = `
             SELECT user_id, fullname, email, phone, bio, profile_image 
             FROM users 
@@ -29,16 +32,26 @@ router.get('/available', async (req, res) => {
     }
 });
 
+// ==========================================
 // ✅ 2. GET: ดึงรายการนัดหมายของนักจิตวิทยา (สำหรับหน้า Dashboard นักจิตวิทยา)
+// ==========================================
 router.get('/my-appointments/:id', async (req, res) => {
     try {
+        // อัปเดต SQL ให้ JOIN กับตาราง schedules เพื่อดึงวันที่และเวลา
+        // และเปลี่ยนชื่อคอลัมน์ให้ตรงกับ Data Dictionary ใหม่
         const sql = `
-            SELECT a.*, u.fullname as student_name 
+            SELECT 
+                a.*, 
+                u.fullname as student_name,
+                s.date as appointment_date, 
+                s.start_time as appointment_time
             FROM appointments a
-            JOIN users u ON a.student_id = u.user_id
-            WHERE a.psychologist_id = ?
-            ORDER BY a.appointment_date ASC, a.appointment_time ASC
+            JOIN users u ON a.student_user_id = u.user_id
+            JOIN schedules s ON a.schedule_id = s.schedule_id
+            WHERE a.psychologist_user_id = ?
+            ORDER BY s.date ASC, s.start_time ASC
         `;
+        
         const [rows] = await db.query(sql, [req.params.id]);
         res.json(rows);
     } catch (err) {

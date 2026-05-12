@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Card, Form, Button, Row, Col, Alert, Spinner, Badge, Image, Modal, Container } from 'react-bootstrap';
+import { Card, Form, Button, Row, Col, Alert, Spinner, Badge, Image, Modal } from 'react-bootstrap';
 import { FaBullhorn, FaPaperPlane, FaTrash, FaImage, FaEdit, FaEye, FaTimes, FaSave, FaClock, FaUserCircle, FaCloudUploadAlt, FaList } from 'react-icons/fa';
 
-import './NewsManagement.css'; // ✅ ใช้ CSS ใหม่
+import './NewsManagement.css'; 
 
 const NewsManagement = () => {
     // --- States ---
@@ -11,7 +11,7 @@ const NewsManagement = () => {
     const [content, setContent] = useState('');
     const [imageFile, setImageFile] = useState(null);
     const [previewUrl, setPreviewUrl] = useState(null);
-    const [categoryId, setCategoryId] = useState('');
+    const [category, setCategory] = useState(''); // ✅ เปลี่ยนชื่อ State ให้เข้าใจง่ายขึ้น
     
     const [categories, setCategories] = useState([]);
     const [newsList, setNewsList] = useState([]); 
@@ -57,7 +57,8 @@ const NewsManagement = () => {
         setEditId(news.news_id);
         setTitle(news.title);
         setContent(news.content);
-        setCategoryId(news.category_id);
+        // ✅ เปลี่ยนมารับค่า news.category ให้ตรงกับ DB ใหม่
+        setCategory(news.category || news.category_name || ''); 
         setPreviewUrl(news.image_url);
         setImageFile(null);
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -66,7 +67,7 @@ const NewsManagement = () => {
     const handleCancelEdit = () => {
         setIsEditing(false);
         setEditId(null);
-        setTitle(''); setContent(''); setCategoryId('');
+        setTitle(''); setContent(''); setCategory('');
         setImageFile(null); setPreviewUrl(null);
     };
 
@@ -85,7 +86,8 @@ const NewsManagement = () => {
             const formData = new FormData();
             formData.append('title', title);
             formData.append('content', content);
-            formData.append('category_id', categoryId);
+            // ✅ ส่งค่าชื่อ category กลับไปให้ Backend ตรงๆ
+            formData.append('category', category); 
             if (imageFile) formData.append('image', imageFile);
 
             const config = { headers: { 'x-auth-token': token, 'Content-Type': 'multipart/form-data' } };
@@ -97,7 +99,7 @@ const NewsManagement = () => {
             } else {
                 await axios.post('http://localhost:5000/api/news', formData, config);
                 setMessage({ type: 'success', text: '✅ สร้างประกาศข่าวใหม่สำเร็จ' });
-                setTitle(''); setContent(''); setCategoryId(''); setImageFile(null); setPreviewUrl(null);
+                setTitle(''); setContent(''); setCategory(''); setImageFile(null); setPreviewUrl(null);
             }
             fetchNewsHistory();
         } catch (err) { 
@@ -120,17 +122,16 @@ const NewsManagement = () => {
     return (
         <div className="pcshs-news-container fade-in-up px-3 px-lg-5 py-4">
             
-            {/* 1. Header (เหมือนหน้า Archive) */}
+            {/* 1. Header */}
             <div className="news-header mb-5 d-flex align-items-center">
                 <div className="brand-icon-box me-4"><FaBullhorn /></div>
                 <div>
-                    {/* ✅ แก้ไขตรงนี้: เปลี่ยน fw-bold เป็น fw-normal (ไม่หนา) */}
-                    <h1 className="fw-bold pcshs-blue-deep m-0 display-6" style={{letterSpacing: '-1px'}}>ระบบจัดการข่าวสาร</h1>
+                    <h1 className="fw-normal pcshs-blue-deep m-0 display-6" style={{letterSpacing: '-1px'}}>ระบบจัดการข่าวสาร</h1>
                     <p className="text-muted m-0 mt-2 lead">เผยแพร่ข้อมูลข่าวสารและกิจกรรมสำหรับนักเรียน</p>
                 </div>
             </div>
 
-            {/* 2. Form Section (Glass Panel) */}
+            {/* 2. Form Section */}
             <Card className="glass-panel mb-5 border-0">
                 <div className="panel-header-modern">
                     <div className="d-flex align-items-center">
@@ -181,8 +182,8 @@ const NewsManagement = () => {
                                         <label className="modern-label">หมวดหมู่</label>
                                         <Form.Select 
                                             className="modern-select w-100" 
-                                            value={categoryId} 
-                                            onChange={(e) => setCategoryId(e.target.value)} 
+                                            value={category} 
+                                            onChange={(e) => setCategory(e.target.value)} 
                                             required
                                         >
                                             <option value="">-- เลือกหมวดหมู่ --</option>
@@ -222,7 +223,7 @@ const NewsManagement = () => {
                 </Card.Body>
             </Card>
 
-            {/* 3. Table Section (Glass Panel & Row Cards) */}
+            {/* 3. Table Section */}
             <Card className="glass-panel border-0 p-3">
                 <div className="d-flex justify-content-between align-items-center mb-3 px-3 pt-2">
                     <div className="fw-bold pcshs-blue-deep fs-5"><FaList className="me-2"/> ประวัติการประกาศ ({newsList.length})</div>
@@ -267,7 +268,8 @@ const NewsManagement = () => {
                                                 <div className="fw-bold text-dark text-truncate" style={{maxWidth:'300px'}}>{news.title}</div>
                                             </td>
                                             <td>
-                                                <span className="cat-badge">{news.category_name || 'ทั่วไป'}</span>
+                                                {/* ✅ เปลี่ยนเป็นแสดงหมวดหมู่ที่ถูกต้อง */}
+                                                <span className="cat-badge">{news.category_name || news.category || 'ทั่วไป'}</span>
                                             </td>
                                             <td>
                                                 <div className="d-flex align-items-center text-muted" style={{fontSize:'0.85rem'}}>
@@ -290,14 +292,14 @@ const NewsManagement = () => {
                 </div>
             </Card>
 
-            {/* 4. Modal (เหมือนเดิมแต่เปลี่ยน Class) */}
+            {/* 4. Modal View */}
             <Modal show={showViewModal} onHide={() => setShowViewModal(false)} size="lg" centered contentClassName="modern-modal-content">
                 {selectedNews && (
                     <Modal.Body className="p-0">
                         <div className="position-relative" style={{height:'350px', background:'#2d3748'}}>
                             {selectedNews.image_url && <Image src={selectedNews.image_url} style={{width:'100%', height:'100%', objectFit:'cover', opacity:0.6}} />}
                             <div className="position-absolute bottom-0 start-0 p-4 w-100 text-white" style={{background:'linear-gradient(to top, rgba(0,0,0,0.8), transparent)'}}>
-                                <Badge bg="warning" text="dark" className="mb-2">{selectedNews.category_name}</Badge>
+                                <Badge bg="warning" text="dark" className="mb-2">{selectedNews.category_name || selectedNews.category}</Badge>
                                 <h3 className="fw-bold">{selectedNews.title}</h3>
                                 <div className="small opacity-75"><FaClock className="me-1"/> {new Date(selectedNews.created_at).toLocaleDateString('th-TH', { dateStyle: 'long' })}</div>
                             </div>

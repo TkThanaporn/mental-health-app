@@ -1,3 +1,4 @@
+// server/routes/newsRoutes.js
 const express = require('express');
 const router = express.Router();
 const db = require('../config/db');
@@ -12,22 +13,30 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage: storage });
 
-// 1. ดึงหมวดหมู่
+// ==========================================
+// 1. ดึงหมวดหมู่ (ส่งค่าจำลองไปให้ Frontend จะได้ไม่พัง เพราะเราลบตารางนี้ไปแล้ว)
+// ==========================================
 router.get('/categories', async (req, res) => {
     try {
-        const [rows] = await db.query('SELECT * FROM news_categories');
-        res.json(rows);
+        const categories = [
+            { category_id: 'ประกาศ', category_name: 'ประกาศ' },
+            { category_id: 'กิจกรรม', category_name: 'กิจกรรม' },
+            { category_id: 'สุขภาพจิต', category_name: 'สุขภาพจิต' },
+            { category_id: 'ทั่วไป', category_name: 'ทั่วไป' }
+        ];
+        res.json(categories);
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// 2. ดึงข่าวทั้งหมด
+// ==========================================
+// 2. ดึงข่าวทั้งหมด (ใช้ตาราง system_news ตาม DB ใหม่)
+// ==========================================
 router.get('/', async (req, res) => {
     try {
         const sql = `
-            SELECT n.*, c.category_name, u.fullname as author_name 
-            FROM student_news n
-            JOIN news_categories c ON n.category_id = c.category_id
-            LEFT JOIN users u ON n.author_id = u.user_id
+            SELECT n.*, n.category as category_name, u.fullname as author_name 
+            FROM system_news n
+            LEFT JOIN users u ON n.user_id = u.user_id
             ORDER BY n.created_at DESC
         `;
         const [rows] = await db.query(sql);
@@ -35,16 +44,20 @@ router.get('/', async (req, res) => {
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// ✅ 3. เพิ่มข่าวใหม่ (ใช้ authMiddleware เพื่อระบุตัวตนนักจิตวิทยา)
+// ==========================================
+// 3. เพิ่มข่าวใหม่
+// ==========================================
 router.post('/', authMiddleware, upload.single('image'), async (req, res) => {
     try {
-        const { title, content, category_id } = req.body;
-        // ดึง ID ของคนโพสต์จาก Token (req.user.id)
-        const author_id = req.user.id || req.user.user_id; 
+        const { title, content, category_id, category } = req.body;
+        const user_id = req.user.id || req.user.user_id; 
         const image_url = req.file ? `http://localhost:5000/uploads/${req.file.filename}` : null;
 
-        const sql = `INSERT INTO student_news (title, content, image_url, category_id, author_id) VALUES (?, ?, ?, ?, ?)`;
-        await db.query(sql, [title, content, image_url, category_id, author_id]); 
+        // ดักรับค่า category แบบเก่าและแบบใหม่ให้ลงตัว
+        const finalCategory = category || category_id || 'ทั่วไป';
+
+        const sql = `INSERT INTO system_news (title, content, image_url, category, user_id, status) VALUES (?, ?, ?, ?, ?, 'published')`;
+        await db.query(sql, [title, content, image_url, finalCategory, user_id]); 
         
         res.json({ msg: 'Success' });
     } catch (err) {
@@ -53,25 +66,26 @@ router.post('/', authMiddleware, upload.single('image'), async (req, res) => {
     }
 });
 
-// ✅ 4. แก้ไขข่าว (PUT)
+// ==========================================
+// 4. แก้ไขข่าว (PUT)
+// ==========================================
 router.put('/:id', authMiddleware, upload.single('image'), async (req, res) => {
     try {
         const { id } = req.params;
-        const { title, content, category_id } = req.body;
+        const { title, content, category_id, category } = req.body;
         
-        // ถ้ามีการอัปโหลดรูปใหม่ ให้ใช้รูปใหม่ ถ้าไม่มีให้ใช้รูปเดิม (Logic นี้ทำใน SQL)
+        const finalCategory = category || category_id || 'ทั่วไป';
+        
         let sql = '';
         let params = [];
 
         if (req.file) {
-            // กรณีเปลี่ยนรูป
             const image_url = `http://localhost:5000/uploads/${req.file.filename}`;
-            sql = `UPDATE student_news SET title=?, content=?, category_id=?, image_url=? WHERE news_id=?`;
-            params = [title, content, category_id, image_url, id];
+            sql = `UPDATE system_news SET title=?, content=?, category=?, image_url=? WHERE news_id=?`;
+            params = [title, content, finalCategory, image_url, id];
         } else {
-            // กรณีไม่เปลี่ยนรูป (ไม่ต้องอัปเดต image_url)
-            sql = `UPDATE student_news SET title=?, content=?, category_id=? WHERE news_id=?`;
-            params = [title, content, category_id, id];
+            sql = `UPDATE system_news SET title=?, content=?, category=? WHERE news_id=?`;
+            params = [title, content, finalCategory, id];
         }
 
         await db.query(sql, params);
@@ -82,10 +96,12 @@ router.put('/:id', authMiddleware, upload.single('image'), async (req, res) => {
     }
 });
 
+// ==========================================
 // 5. ลบข่าว
+// ==========================================
 router.delete('/:id', authMiddleware, async (req, res) => {
     try {
-        await db.query('DELETE FROM student_news WHERE news_id = ?', [req.params.id]);
+        await db.query('DELETE FROM system_news WHERE news_id = ?', [req.params.id]);
         res.json({ msg: 'Deleted' });
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
