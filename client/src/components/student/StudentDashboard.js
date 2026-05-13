@@ -235,11 +235,12 @@ const StudentDashboard = () => {
                     
                     <Row className="g-4">
                         {newsList.length > 0 ? (
-                            newsList.slice(0, 3).map((item) => (
-                                <Col md={4} key={item.id}>
+                            // ✅ แก้ไขตรงนี้ให้ดักจับ key ได้ทั้ง 3 แบบ (news_id, id, index)
+                            newsList.slice(0, 3).map((item, index) => (
+                                <Col md={4} key={item.news_id || item.id || index}>
                                     <Card 
                                         className="border-0 shadow-sm h-100 rounded-4 article-card hover-lift overflow-hidden" 
-                                        onClick={() => navigate(`/student/news/${item.id}`)}
+                                        onClick={() => navigate(`/student/news/${item.id || item.news_id}`)}
                                         style={{cursor: 'pointer'}}
                                     >
                                         <div style={{height: '180px', position: 'relative', overflow: 'hidden'}}>

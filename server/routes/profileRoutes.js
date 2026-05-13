@@ -17,17 +17,17 @@ const storage = multer.diskStorage({
 const upload = multer({ storage: storage });
 
 // ==========================================
-// 2. GET: ดึงข้อมูลโปรไฟล์ (ดึงจากตาราง users ที่เดียว)
+// 2. GET: ดึงข้อมูลโปรไฟล์
 // ==========================================
 router.get('/me', authMiddleware, async (req, res) => {
     try {
         const user_id = req.user.id;
         
-        // ✅ เปลี่ยนมาดึงข้อมูลทั้งหมดจากตาราง users โดยตรง ไม่ต้อง JOIN แล้ว
+        // ✅ เปลี่ยนคำว่า education_level AS grade เพื่อส่งไปให้ React รู้จัก
         const sql = `
             SELECT 
                 user_id, fullname, email, role, gender, profile_image,
-                phone, bio 
+                phone, bio, education_level AS grade, dormitory 
             FROM users
             WHERE user_id = ?
         `;
@@ -40,7 +40,6 @@ router.get('/me', authMiddleware, async (req, res) => {
         
         const user = result[0];
         
-        // แปลง path รูปภาพให้สมบูรณ์
         if (user.profile_image && !user.profile_image.startsWith('http')) {
             user.profile_image = `http://localhost:5000/uploads/${user.profile_image}`;
         }
@@ -54,25 +53,26 @@ router.get('/me', authMiddleware, async (req, res) => {
 });
 
 // ==========================================
-// 3. PUT: บันทึกข้อมูลโปรไฟล์ (อัปเดตตาราง users ที่เดียว)
+// 3. PUT: บันทึกข้อมูลโปรไฟล์
 // ==========================================
 router.put('/me', authMiddleware, upload.single('profile_image'), async (req, res) => {
     try {
         const user_id = req.user.id;
-        const { fullname, phone, gender, bio } = req.body;
+        // ✅ รับค่า grade และ dormitory จากหน้าเว็บ
+        const { fullname, phone, gender, bio, grade, dormitory } = req.body; 
         
         console.log(`📝 Updating User ID: ${user_id}`);
 
         let sql, params;
 
-        // ✅ อัปเดตข้อมูลทุกอย่างลงตาราง users ในคำสั่งเดียว
+        // ✅ อัปเดตลงคอลัมน์ education_level และ dormitory
         if (req.file) {
             const filename = req.file.filename;
-            sql = `UPDATE users SET fullname = ?, gender = ?, phone = ?, bio = ?, profile_image = ? WHERE user_id = ?`;
-            params = [fullname, gender, phone || null, bio || null, filename, user_id];
+            sql = `UPDATE users SET fullname = ?, gender = ?, phone = ?, bio = ?, education_level = ?, dormitory = ?, profile_image = ? WHERE user_id = ?`;
+            params = [fullname, gender, phone || null, bio || null, grade || null, dormitory || null, filename, user_id];
         } else {
-            sql = `UPDATE users SET fullname = ?, gender = ?, phone = ?, bio = ? WHERE user_id = ?`;
-            params = [fullname, gender, phone || null, bio || null, user_id];
+            sql = `UPDATE users SET fullname = ?, gender = ?, phone = ?, bio = ?, education_level = ?, dormitory = ? WHERE user_id = ?`;
+            params = [fullname, gender, phone || null, bio || null, grade || null, dormitory || null, user_id];
         }
         
         await db.execute(sql, params);
