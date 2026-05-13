@@ -9,7 +9,7 @@ import {
     FaDatabase, FaCheckCircle, FaHourglassHalf, FaTimesCircle, FaClipboardCheck
 } from 'react-icons/fa';
 
-// Import Recharts (เอา Radar ออกไปแล้ว)
+// Import Recharts
 import { 
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, 
     PieChart, Pie, Cell, LineChart, Line
@@ -36,7 +36,7 @@ const PsychologistDashboard = () => {
     const [stats, setStats] = useState({ total: 0, completed: 0, pending: 0, cancelled: 0 });
     const [chartData, setChartData] = useState({ monthlyTrends: [], issueCategories: [] });
     
-    // 🌟 State ข้อมูลแบบประเมิน (เปลี่ยนเป็น riskLevels รวม และ monthlyRisks รายเดือน)
+    // State ข้อมูลแบบประเมิน 
     const [assessmentData, setAssessmentData] = useState({ riskLevels: [], monthlyRisks: [] });
     const [loadingStats, setLoadingStats] = useState(true);
 
@@ -65,7 +65,7 @@ const PsychologistDashboard = () => {
         }
     };
 
-    // 🌟 ดึงข้อมูลและประมวลผลสำหรับ Dashboard (Real Data 100%)
+    // ดึงข้อมูลและประมวลผลสำหรับ Dashboard (Real Data 100%)
     const fetchDashboardData = async (token) => {
         setLoadingStats(true);
         try {
@@ -82,11 +82,12 @@ const PsychologistDashboard = () => {
             // ==========================================
             // 1. จัดการข้อมูลการนัดหมาย (Appointments)
             // ==========================================
+            // 🌟 แก้ไขตรงนี้: ปรับตัวพิมพ์ให้ตรงกับ Database และใช้ toLowerCase() ป้องกัน error
             setStats({
                 total: apptData.length,
-                completed: apptData.filter(a => a.status === 'Completed').length,
-                pending: apptData.filter(a => a.status === 'Pending' || a.status === 'Confirmed').length,
-                cancelled: apptData.filter(a => a.status === 'Cancelled').length
+                completed: apptData.filter(a => a.status?.toLowerCase() === 'completed').length,
+                pending: apptData.filter(a => a.status?.toLowerCase() === 'pending' || a.status?.toLowerCase() === 'confirmed').length,
+                cancelled: apptData.filter(a => a.status?.toLowerCase() === 'cancelled').length
             });
 
             const monthNames = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
@@ -103,7 +104,7 @@ const PsychologistDashboard = () => {
 
             const topicCounts = {};
             apptData.forEach(app => {
-                const appDate = new Date(app.date || app.appointment_date);
+                const appDate = new Date(app.date || app.appointment_date || app.booking_date);
                 const monthKey = `${appDate.getFullYear()}-${appDate.getMonth()}`;
                 if(trendsMap[monthKey]) trendsMap[monthKey].count += 1;
 
@@ -119,7 +120,7 @@ const PsychologistDashboard = () => {
             setChartData({ monthlyTrends: realMonthlyTrends, issueCategories: realIssueCategories });
 
             // ==========================================
-            // 2. จัดการข้อมูลแบบประเมิน (Assessments) - ของจริง 100%
+            // 2. จัดการข้อมูลแบบประเมิน (Assessments) 
             // ==========================================
             let normalCount = 0;
             let riskCount = 0;
@@ -134,7 +135,6 @@ const PsychologistDashboard = () => {
             }
 
             assessData.forEach(assess => {
-                // หากลืมบันทึกวันที่ ให้ใช้วันปัจจุบันแทน
                 const aDate = new Date(assess.created_at || new Date()); 
                 const aKey = `${aDate.getFullYear()}-${aDate.getMonth()}`;
 
@@ -151,21 +151,18 @@ const PsychologistDashboard = () => {
                         levelType = 'severe';
                     }
 
-                    // เพิ่มค่านับลงในเดือนที่ทำแบบประเมิน
                     if(assessTrendsMap[aKey] && levelType) {
                         assessTrendsMap[aKey][levelType] += 1;
                     }
                 }
             });
 
-            // ข้อมูลสำหรับกราฟแท่งรวม
             const realRiskLevels = [
                 { name: 'กลุ่มปกติ', value: normalCount, color: '#10B981' }, 
                 { name: 'กลุ่มเสี่ยง', value: riskCount, color: '#F59E0B' }, 
                 { name: 'กลุ่มมีปัญหา', value: severeCount, color: '#EF4444' } 
             ];
 
-            // ข้อมูลสำหรับกราฟแท่งซ้อนกัน (รายเดือน)
             const realMonthlyRisks = Object.values(assessTrendsMap).sort((a,b) => a.sortKey - b.sortKey);
 
             setAssessmentData({ riskLevels: realRiskLevels, monthlyRisks: realMonthlyRisks });
@@ -360,7 +357,7 @@ const PsychologistDashboard = () => {
                                         </Card>
                                     </Col>
 
-                                    {/* 5. 🌟 กราฟใหม่: แนวโน้มความเสี่ยงรายเดือน (Stacked Bar Chart) */}
+                                    {/* 5. กราฟใหม่: แนวโน้มความเสี่ยงรายเดือน (Stacked Bar Chart) */}
                                     <Col xs={12}>
                                         <Card className="shadow-sm border-0 mb-4" style={{borderRadius: '20px', background: 'linear-gradient(to right, #ffffff, #f8f9fa)'}}>
                                             <Card.Body>
@@ -441,4 +438,4 @@ const PsychologistDashboard = () => {
     );
 };
 
-export default PsychologistDashboard;       
+export default PsychologistDashboard;

@@ -54,9 +54,9 @@ const AllAppointmentList = () => {
 
     const stats = {
         total: filteredAppointments.length,
-        completed: filteredAppointments.filter(a => a.status === 'Completed').length,
-        pending: filteredAppointments.filter(a => a.status === 'Pending' || a.status === 'Confirmed').length,
-        cancelled: filteredAppointments.filter(a => a.status === 'Cancelled').length
+        completed: filteredAppointments.filter(a => a.status === 'completed').length,
+        pending: filteredAppointments.filter(a => a.status === 'pending' || a.status === 'confirmed').length,
+        cancelled: filteredAppointments.filter(a => a.status === 'cancelled').length
     };
 
     const getStatusConfig = (status) => {

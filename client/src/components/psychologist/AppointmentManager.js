@@ -76,9 +76,9 @@ const AppointmentManager = () => {
     };
 
     const opStats = {
-        newRequests: appointments.filter(a => a.status === 'Pending').length,
-        todaySchedule: appointments.filter(a => a.status === 'Confirmed' && isToday(a.appointment_date)).length,
-        confirmedUpcoming: appointments.filter(a => a.status === 'Confirmed').length,
+        newRequests: appointments.filter(a => a.status === 'pending').length,
+        todaySchedule: appointments.filter(a => a.status === 'confirmed' && isToday(a.appointment_date)).length,
+        confirmedUpcoming: appointments.filter(a => a.status === 'confirmed').length,
         weeklyOpenSlots: 8 
     };
 
