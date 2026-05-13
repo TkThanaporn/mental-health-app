@@ -5,16 +5,14 @@ import { useNavigate } from 'react-router-dom';
 import { 
     FaHome, FaSignOutAlt, FaBars, FaUserCircle,
     FaUserGraduate, FaChalkboardTeacher, FaNewspaper, FaChartPie,
-    FaUserMd, FaClipboardList, FaCalendarCheck
+    FaUserMd, FaClipboardList, FaCalendarCheck, FaUserShield // ✅ นำเข้า FaUserShield เพิ่ม
 } from 'react-icons/fa';
 
-// ใช้ CSS เดียวกัน หรือแยกไฟล์ก็ได้ (แนะนำให้สร้าง Admin.css โดย copy มาจาก Psychologist.css)
 import './AdminDashboard.css'; 
 
-// Import Components (สมมติว่าคุณแยกไฟล์ไว้แล้ว)
-// ถ้ายังไม่ได้แยก สามารถเขียน Inline ใน renderContent ได้ แต่เพื่อความสวยงามผมจะทำแบบ Component
-import UserManagement from './UserManagement'; // ต้องมีไฟล์นี้ (ตารางจัดการผู้ใช้)
-import NewsManagement from '../psychologist/NewsManagement'; // ใช้ร่วมกันได้
+import UserManagement from './UserManagement'; 
+import NewsManagement from '../psychologist/NewsManagement'; 
+import AdminProfile from './AdminProfile'; // ✅ 1. นำเข้า Component หน้าจัดการโปรไฟล์ที่เราเพิ่งสร้าง
 import pcshsLogo from '../../assets/pcshs_logo.png'; 
 
 const AdminDashboard = () => {
@@ -95,7 +93,7 @@ const AdminDashboard = () => {
                     { id: 'dashboard', icon: FaHome, label: 'ภาพรวมระบบ' },
                     { id: 'users', icon: FaUserGraduate, label: 'จัดการผู้ใช้งาน' },
                     { id: 'news', icon: FaNewspaper, label: 'จัดการข่าวสาร' },
-                    // { id: 'reports', icon: FaChartPie, label: 'รายงานสถิติ' } // เพิ่มในอนาคต
+                    { id: 'profile', icon: FaUserShield, label: 'โปรไฟล์ของฉัน' } // ✅ 2. เพิ่มเมนูจัดการโปรไฟล์ใน Sidebar
                 ].map((item) => (
                     <div key={item.id} onClick={() => handleMenuClick(item.id)} className={`nav-item-custom ${activeTab === item.id ? 'active' : ''}`}>
                         <item.icon className="me-3" /> {item.label}
@@ -143,7 +141,7 @@ const AdminDashboard = () => {
                             <Row className="g-4 mb-4">
                                 {[
                                     { title: "นักเรียนทั้งหมด", count: stats.total_students, unit: "คน", icon: <FaUserGraduate/>, type: "stat-navy" },
-                                    { title: "บุคลากร/นักจิตฯ", count: stats.pending_psychologists, unit: "คน", icon: <FaUserMd/>, type: "stat-info" }, // ใช้ pending_psychologists แทนจำนวนรวมไปก่อนตาม API ที่มี
+                                    { title: "บุคลากร/นักจิตฯ", count: stats.pending_psychologists, unit: "คน", icon: <FaUserMd/>, type: "stat-info" }, 
                                     { title: "นัดหมายยืนยัน", count: stats.confirmed_appointments, unit: "รายการ", icon: <FaCalendarCheck/>, type: "stat-success" },
                                     { title: "แบบประเมินรอตรวจ", count: stats.pending_assessments, unit: "รายการ", icon: <FaClipboardList/>, type: "stat-warning" }
                                 ].map((item, idx) => (
@@ -164,8 +162,9 @@ const AdminDashboard = () => {
                         </div>
                     </div>
                 );
-            case 'users': return <UserManagement />; // เรียกใช้ Component ตารางผู้ใช้ที่เราเคยทำ
-            case 'news': return <NewsManagement />; // ใช้ NewsManagement เดิมได้เลย
+            case 'users': return <UserManagement />; 
+            case 'news': return <NewsManagement />; 
+            case 'profile': return <AdminProfile />; // ✅ 3. ผูกคำสั่งเมื่อกดแท็บ 'profile' ให้ดึงหน้า AdminProfile มาแสดง
             default: return null;
         }
     };
@@ -192,7 +191,8 @@ const AdminDashboard = () => {
                             <div className="fw-bold text-dark" style={{fontSize: '0.9rem'}}>{adminProfile.fullname}</div>
                             <small className="text-danger fw-bold" style={{fontSize: '0.75rem'}}>● System Admin</small>
                         </div>
-                        <div className="position-relative cursor-pointer">
+                        {/* ✅ 4. เพิ่ม onClick ที่รูปโปรไฟล์ด้านบนขวา ให้คลิกแล้วเปิดหน้าโปรไฟล์ได้ด้วย */}
+                        <div className="position-relative cursor-pointer" onClick={() => handleMenuClick('profile')} style={{cursor: 'pointer'}}>
                             {adminProfile.profile_image ? (
                                 <Image src={adminProfile.profile_image} roundedCircle style={{width: '40px', height: '40px', objectFit: 'cover', border: '2px solid #003566'}} />
                             ) : (

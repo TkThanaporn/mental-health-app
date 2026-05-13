@@ -22,6 +22,7 @@ import AssessmentForm from './components/student/AssessmentForm';
 import AppointmentBooking from './components/student/AppointmentBooking';
 import StudentNews from './components/student/StudentNews'; 
 import StudentAppointments from './components/student/StudentAppointments'; 
+import AdminProfile from './components/admin/AdminProfile'; //
 
 // ✅ 1. Import AdminDashboard
 import AdminDashboard from './components/admin/AdminDashboard'; 
