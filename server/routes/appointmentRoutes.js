@@ -245,5 +245,24 @@ router.post('/complete/:id', authMiddleware, async (req, res) => {
         if (connection) connection.release();
     }
 });
+// ==========================================
+// 7. POST: บันทึกการประเมินความพึงพอใจ (ฝั่งนักเรียน)
+// ==========================================
+router.post('/feedback', authMiddleware, async (req, res) => {
+    const { appointment_id, rating, comment } = req.body;
+    const student_user_id = req.user.id || req.user.user_id;
+
+    try {
+        // ต้องตรวจสอบว่าตาราง feedback ของคุณชื่อฟิลด์ตรงตามนี้หรือไม่
+        await db.query(
+            'INSERT INTO feedback (appointment_id, student_user_id, rating, comment) VALUES (?, ?, ?, ?)',
+            [appointment_id, student_user_id, rating, comment || '-']
+        );
+        res.json({ msg: '✅ ขอบคุณสำหรับการประเมินครับ!' });
+    } catch (err) {
+        console.error("Feedback Error:", err);
+        res.status(500).send('Server Error');
+    }
+});
 
 module.exports = router;
