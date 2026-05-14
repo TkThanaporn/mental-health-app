@@ -11,7 +11,6 @@ router.get('/psychologist-history', authMiddleware, async (req, res) => {
     try {
         const psychologist_user_id = req.user.id || req.user.user_id; 
         
-        // ✅ JOIN ตาราง schedules เพื่อดึงวันที่และเวลา
         const sql = `
             SELECT 
                 a.appointment_id, 
@@ -63,8 +62,7 @@ router.post('/', authMiddleware, async (req, res) => {
             return res.status(400).json({ msg: 'เวลานี้ถูกจองไปแล้ว หรือไม่ว่างครับ' });
         }
 
-        // 2. บันทึกการจอง (ตัด appointment_date/time ออก เพราะอิงตาม schedule_id แล้ว)
-        // ✅ ปรับ ENUM ให้เป็นตัวพิมพ์เล็กตาม DB (online, individual, pending)
+        // 2. บันทึกการจอง
         const sql = `
             INSERT INTO appointments 
             (student_user_id, psychologist_user_id, schedule_id, topic, type, consultation_type, status) 
@@ -104,7 +102,6 @@ router.post('/', authMiddleware, async (req, res) => {
 router.get('/my-appointments', authMiddleware, async (req, res) => {
     try {
         const student_user_id = req.user.id || req.user.user_id;
-        // ✅ JOIN ตาราง schedules
         const sql = `
             SELECT 
                 a.*, 
@@ -131,20 +128,33 @@ router.get('/my-appointments', authMiddleware, async (req, res) => {
 router.get('/psychologist-appointments', authMiddleware, async (req, res) => {
     try {
         const psychologist_user_id = req.user.id || req.user.user_id;
-        // ✅ JOIN ตาราง schedules
+        
+        // ✅ อัปเดต SQL ตรงนี้: เพิ่ม JOIN ตาราง assessments และดึง start_time, end_time
         const sql = `
             SELECT 
                 a.*, 
                 u.fullname AS student_name, 
                 u.email AS student_email,
                 s.date AS appointment_date,
-                s.start_time AS appointment_time
+                s.start_time,
+                s.end_time,
+                ass.stress_level AS latest_assessment
             FROM appointments a
             JOIN users u ON a.student_user_id = u.user_id
             JOIN schedules s ON a.schedule_id = s.schedule_id
+            LEFT JOIN (
+                SELECT student_user_id, stress_level 
+                FROM assessments 
+                WHERE assessment_id IN (
+                    SELECT MAX(assessment_id) 
+                    FROM assessments 
+                    GROUP BY student_user_id
+                )
+            ) ass ON a.student_user_id = ass.student_user_id
             WHERE a.psychologist_user_id = ? 
             ORDER BY s.date DESC, s.start_time ASC
         `;
+        
         const [rows] = await db.query(sql, [psychologist_user_id]);
         res.json(rows);
     } catch (err) {
@@ -160,9 +170,8 @@ router.put('/status/:id', authMiddleware, async (req, res) => {
     const { status } = req.body; 
     const appointmentId = req.params.id;
 
-    // ✅ ปรับ Array ให้เป็นตัวพิมพ์เล็ก
     const validStatuses = ['confirmed', 'completed', 'cancelled', 'pending'];
-    const dbStatus = status.toLowerCase(); // แปลงสิ่งที่ Frontend ส่งมาให้เป็นตัวเล็ก
+    const dbStatus = status.toLowerCase(); 
 
     if (!validStatuses.includes(dbStatus)) {
         return res.status(400).json({ msg: 'สถานะไม่ถูกต้อง' });
@@ -185,9 +194,8 @@ router.put('/status/:id', authMiddleware, async (req, res) => {
 // ==========================================
 router.post('/complete/:id', authMiddleware, async (req, res) => {
     const appointmentId = req.params.id;
-    // เปลี่ยนตัวแปรที่รับมาให้เป็น student_user_id
     const { result_summary, follow_up_date, follow_up_time, student_id } = req.body;
-    const student_user_id = student_id; // Mapping ข้อมูล
+    const student_user_id = student_id; 
     const psychologist_user_id = req.user.id || req.user.user_id;
 
     let connection;
@@ -203,14 +211,12 @@ router.post('/complete/:id', authMiddleware, async (req, res) => {
 
         // 2. ถ้ามีการนัดต่อ (Follow-up)
         if (follow_up_date && follow_up_time) {
-            // ✅ สร้างตารางเวลา (Schedule) สำหรับ Follow-up ก่อน เพราะระบบบังคับให้ต้องมี schedule_id
             const [schedResult] = await connection.query(
                 'INSERT INTO schedules (psychologist_user_id, date, start_time, end_time, is_available) VALUES (?, ?, ?, ?, 0)',
-                [psychologist_user_id, follow_up_date, follow_up_time, follow_up_time] // อนุโลมใช้เวลาเริ่ม-จบเท่ากัน
+                [psychologist_user_id, follow_up_date, follow_up_time, follow_up_time]
             );
             const new_schedule_id = schedResult.insertId;
 
-            // ✅ สร้างนัดหมายใหม่
             const sqlFollowUp = `
                 INSERT INTO appointments 
                 (student_user_id, psychologist_user_id, schedule_id, topic, type, consultation_type, status) 
