@@ -96,7 +96,7 @@ router.post('/', authMiddleware, async (req, res) => {
     }
 });
 
-// ==========================================
+/// ==========================================
 // 3. GET: ดูประวัติการจอง (สำหรับนักเรียน)
 // ==========================================
 router.get('/my-appointments', authMiddleware, async (req, res) => {
@@ -107,7 +107,8 @@ router.get('/my-appointments', authMiddleware, async (req, res) => {
                 a.*, 
                 u.fullname AS psychologist_name,
                 s.date AS appointment_date,
-                s.start_time AS appointment_time
+                s.start_time,
+                s.end_time
             FROM appointments a
             JOIN users u ON a.psychologist_user_id = u.user_id
             JOIN schedules s ON a.schedule_id = s.schedule_id

@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap');
+
 /* --- PCSHS Theme Base --- */
 :root {
     --pcshs-navy: #002554;
@@ -20,6 +22,12 @@
     opacity: 0.05;
     z-index: 1;
 }
+
+/* --- Typography & Colors --- */
+.text-navy { color: var(--pcshs-navy) !important; }
+.text-orange { color: var(--pcshs-orange) !important; }
+.bg-navy { background-color: var(--pcshs-navy) !important; }
+.bg-orange { background-color: var(--pcshs-orange) !important; }
 
 /* --- View Mode Selector --- */
 .view-mode-selector {
@@ -46,22 +54,31 @@
 }
 
 /* --- Filter & Badges --- */
+.filter-wrapper {
+    border: 1px solid #e2e8f0;
+}
 .filter-tab {
     background: transparent; border: none; padding: 8px 18px;
     border-radius: 50px; color: #666; transition: 0.3s;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+.filter-tab:hover {
+    background: #e9ecef;
 }
 .filter-tab.active {
     background-color: var(--pcshs-navy); color: white;
 }
 .count-badge {
     background: var(--pcshs-orange); color: white;
-    font-size: 0.7rem; padding: 2px 7px; border-radius: 10px;
+    font-size: 0.75rem; padding: 2px 8px; border-radius: 20px;
 }
 
 /* --- Card Styles --- */
 .pcshs-card {
     border: none; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05);
     transition: 0.3s; overflow: hidden;
+    background: #ffffff;
 }
 .pcshs-card:hover { transform: translateY(-5px); box-shadow: 0 8px 25px rgba(0,0,0,0.1); }
 .card-top-accent { height: 5px; width: 100%; }
@@ -71,11 +88,36 @@
     padding: 10px; border-radius: 0 8px 8px 0;
 }
 
-.btn-action.enabled {
-    background-color: var(--pcshs-blue); color: white; border: none;
-    border-radius: 50px; font-weight: 600; padding: 10px;
+/* ป้ายแสดงวันที่ในการ์ด */
+.date-badge {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 10px;
+    padding: 5px 12px;
+    text-align: center;
+    color: var(--pcshs-navy);
 }
-.btn-action.enabled:hover { background-color: var(--pcshs-orange); }
+.d-day { display: block; font-size: 1.4rem; font-weight: 700; line-height: 1; }
+.d-month { font-size: 0.75rem; font-weight: 600; }
+
+/* --- Buttons --- */
+.btn-pcshs-primary { 
+    background: var(--pcshs-navy); 
+    color: white; 
+    border: none; 
+    transition: 0.3s; 
+}
+.btn-pcshs-primary:hover { 
+    background: var(--pcshs-orange); 
+    color: white; 
+}
+
+.btn-action {
+    border-radius: 10px;
+    padding: 8px 12px;
+    font-size: 0.9rem;
+    transition: 0.3s;
+}
 
 /* --- Table Styles --- */
 .pcshs-modern-table thead th {
@@ -83,6 +125,11 @@
     border-bottom: 2px solid #eee; padding: 15px;
 }
 .pcshs-modern-table tbody td { padding: 15px; vertical-align: middle; }
+
+/* --- Empty State --- */
+.empty-state-card {
+    border: 2px dashed #dee2e6;
+}
 
 /* --- Animations --- */
 .fade-in-up {
@@ -92,8 +139,3 @@
     from { opacity: 0; transform: translateY(20px); }
     to { opacity: 1; transform: translateY(0); }
 }
-
-.text-navy { color: var(--pcshs-navy); }
-.text-orange { color: var(--pcshs-orange); }
-.btn-pcshs-primary { background: var(--pcshs-navy); color: white; border: none; transition: 0.3s; }
-.btn-pcshs-primary:hover { background: var(--pcshs-orange); color: white; }

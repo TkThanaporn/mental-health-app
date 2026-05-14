@@ -72,13 +72,55 @@ const AppointmentManager = () => {
     const openChat = (appt) => { setSelectedChatAppt(appt); setShowChat(true); };
     const openDetails = (appt) => { setSelectedApptDetails(appt); setShowDetails(true); };
 
-    // เช็คว่าเป็นวันปัจจุบันหรือไม่ (รองรับฟิลด์ date หรือ appointment_date)
+    // เช็คว่าเป็นวันปัจจุบันหรือไม่
     const isToday = (d) => {
         if (!d) return false;
         const today = new Date();
         const date = new Date(d);
         return date.getDate() === today.getDate() && date.getMonth() === today.getMonth() && date.getFullYear() === today.getFullYear();
     };
+
+    // ==========================================
+    // ฟังก์ชันจัดการเวลาและสิทธิ์การเข้าแชท
+    // ==========================================
+    
+    // 1. ฟังก์ชันจัดการเวลาให้แสดงรูปแบบ 00.00-00.00 น.
+    const formatTimeSlot = (start, end, apptTime) => {
+        let startTime = start ? start.substring(0, 5) : (apptTime ? String(apptTime).substring(0, 5) : '00:00');
+        let endTime = end ? end.substring(0, 5) : '00:00';
+        
+        // แปลงเครื่องหมาย : เป็น .
+        startTime = startTime.replace(':', '.');
+        endTime = endTime.replace(':', '.');
+
+        return `${startTime}-${endTime}`;
+    };
+
+    // 2. ฟังก์ชันเช็คว่าเปิดแชทได้หรือยัง (ต้องถึงเวลาและสถานะต้องไม่ใช่ยกเลิก/เสร็จสิ้น)
+    const isChatOpen = (appt) => {
+        const status = String(appt.status).toLowerCase();
+        
+        // ถ้าสถานะเป็นเสร็จสิ้น (completed) หรือยกเลิก (cancelled) จะไม่ให้แชท
+        if (status !== 'confirmed' && status !== 'pending') return false;
+
+        try {
+            const now = new Date();
+            const apptDate = new Date(appt.date || appt.appointment_date);
+            
+            // ดึงเวลาเริ่มนัดหมาย
+            const timeStr = appt.start_time || appt.appointment_time || "00:00:00";
+            const [hours, minutes] = timeStr.split(':').map(Number);
+            
+            // เซ็ตเวลาให้ตรงกับเวลานัด
+            apptDate.setHours(hours, minutes, 0, 0);
+
+            // ส่งคืนค่า true ถ้าเวลาปัจจุบัน >= เวลาที่นัดไว้
+            return now >= apptDate;
+        } catch (error) {
+            return false;
+        }
+    };
+
 
     // --- Logic การกรองข้อมูล ---
     let filteredAppointments = appointments;
@@ -127,6 +169,7 @@ const AppointmentManager = () => {
         if (s === 'confirmed' || s === 'ยืนยัน') return <Badge bg="success" className="px-3 py-2 rounded-pill fw-normal shadow-sm"><FaCheck className="me-1"/> ยืนยันแล้ว</Badge>;
         if (s === 'cancelled' || s === 'ยกเลิก') return <Badge bg="danger" className="px-3 py-2 rounded-pill fw-normal shadow-sm"><FaTimes className="me-1"/> ยกเลิกแล้ว</Badge>;
         if (s === 'pending' || s === 'รอดำเนินการ') return <Badge bg="warning" text="dark" className="px-3 py-2 rounded-pill fw-normal shadow-sm"><FaClock className="me-1"/> รอดำเนินการ</Badge>;
+        if (s === 'completed' || s === 'เสร็จสิ้น') return <Badge bg="secondary" className="px-3 py-2 rounded-pill fw-normal shadow-sm"><FaHistory className="me-1"/> เสร็จสิ้น</Badge>;
         return <Badge bg="secondary" className="px-3 py-2 rounded-pill fw-normal shadow-sm"><FaCircle className="me-1"/> {status || 'ไม่ระบุ'}</Badge>;
     };
 
@@ -231,10 +274,9 @@ const AppointmentManager = () => {
                         <Row className="g-4">
                             {filteredAppointments.map((app) => {
                                 const appDate = new Date(app.date || app.appointment_date);
-                                // ดึงเวลาเริ่ม-จบ หรือใช้เวลาเดียว
-                                const startTime = app.start_time ? app.start_time.substring(0, 5) : (app.appointment_time || '');
-                                const endTime = app.end_time ? app.end_time.substring(0, 5) : '';
+                                const timeStr = formatTimeSlot(app.start_time, app.end_time, app.appointment_time);
                                 const studentName = app.student_name || app.fullname || 'ไม่ทราบชื่อ';
+                                const chatOpen = isChatOpen(app); // เช็คว่าถึงเวลาคุยหรือยัง
 
                                 return (
                                     <Col lg={4} md={6} key={app.appointment_id}>
@@ -253,10 +295,10 @@ const AppointmentManager = () => {
                                                     </div>
                                                 </div>
 
-                                                {/* ✅ เพิ่มส่วนแสดงเวลาตรงนี้ */}
+                                                {/* แสดงเวลาแบบใหม่ */}
                                                 <div className="text-muted small mb-3 bg-light p-2 rounded-3 d-inline-block" style={{ width: 'fit-content' }}>
                                                     <FaClock className="me-2 text-primary"/>
-                                                    เวลา: <strong className="text-dark">{startTime} {endTime ? `- ${endTime}` : ''} น.</strong>
+                                                    เวลา: <strong className="text-dark">{timeStr} น.</strong>
                                                 </div>
 
                                                 <h6 className="topic-text mb-3">{app.topic || 'ไม่ระบุหัวข้อ'}</h6>
@@ -278,12 +320,14 @@ const AppointmentManager = () => {
                                                         <FaInfoCircle className="me-1"/> ข้อมูล
                                                     </Button>
 
+                                                    {/* ปุ่มแชทที่ถูกควบคุมสิทธิ์ตามเวลา */}
                                                     <Button 
-                                                        variant={String(app.status).toLowerCase() === 'pending' ? "primary" : "outline-primary"} 
+                                                        variant={chatOpen ? "primary" : "secondary"} 
                                                         className="btn-action flex-grow-1 fw-bold"
                                                         onClick={() => openChat(app)}
+                                                        disabled={!chatOpen}
                                                     >
-                                                        <FaComments className="me-1"/> แชท
+                                                        <FaComments className="me-1"/> {chatOpen ? 'แชท' : 'ยังไม่ถึงเวลา'}
                                                     </Button>
 
                                                     <Dropdown align="end">
@@ -314,14 +358,15 @@ const AppointmentManager = () => {
                                 </thead>
                                 <tbody>
                                     {filteredAppointments.map(app => {
-                                        const startTime = app.start_time ? app.start_time.substring(0, 5) : (app.appointment_time || '');
+                                        const timeStr = formatTimeSlot(app.start_time, app.end_time, app.appointment_time);
                                         const studentName = app.student_name || app.fullname || 'ไม่ทราบชื่อ';
+                                        const chatOpen = isChatOpen(app);
 
                                         return(
                                         <tr key={app.appointment_id} className="table-row-hover">
                                             <td className="ps-4">
                                                 <div className="fw-bold text-navy">{new Date(app.date || app.appointment_date).toLocaleDateString('th-TH', {day: 'numeric', month: 'short'})}</div>
-                                                <small className="text-muted"><FaClock className="me-1"/>{startTime} น.</small>
+                                                <small className="text-muted"><FaClock className="me-1"/>{timeStr} น.</small>
                                             </td>
                                             <td>
                                                 <div className="d-flex align-items-center gap-2">
@@ -341,7 +386,15 @@ const AppointmentManager = () => {
                                             </td>
                                             <td className="text-end pe-4">
                                                 <Button size="sm" variant="light" className="rounded-pill px-3 me-2 text-primary fw-bold border" onClick={() => openDetails(app)}>ข้อมูล</Button>
-                                                <Button size="sm" variant="primary" className="rounded-pill px-3 me-2 fw-bold" onClick={() => openChat(app)}>แชท</Button>
+                                                <Button 
+                                                    size="sm" 
+                                                    variant={chatOpen ? "primary" : "secondary"} 
+                                                    className="rounded-pill px-3 fw-bold" 
+                                                    onClick={() => openChat(app)}
+                                                    disabled={!chatOpen}
+                                                >
+                                                    {chatOpen ? 'แชท' : 'ยังไม่ถึงเวลา'}
+                                                </Button>
                                             </td>
                                         </tr>
                                     )})}
@@ -377,7 +430,7 @@ const AppointmentManager = () => {
                                     </Col>
                                     <Col xs={6}>
                                         <div className="text-muted small">เวลา</div>
-                                        <div className="fw-bold"><FaClock className="me-2 text-primary"/>{selectedApptDetails.start_time ? selectedApptDetails.start_time.substring(0, 5) : selectedApptDetails.appointment_time} น.</div>
+                                        <div className="fw-bold"><FaClock className="me-2 text-primary"/>{formatTimeSlot(selectedApptDetails.start_time, selectedApptDetails.end_time, selectedApptDetails.appointment_time)} น.</div>
                                     </Col>
                                 </Row>
                             </div>
