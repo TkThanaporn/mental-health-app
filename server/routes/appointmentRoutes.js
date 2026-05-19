@@ -96,7 +96,7 @@ router.post('/', authMiddleware, async (req, res) => {
     }
 });
 
-/// ==========================================
+// ==========================================
 // 3. GET: ดูประวัติการจอง (สำหรับนักเรียน)
 // ==========================================
 router.get('/my-appointments', authMiddleware, async (req, res) => {
@@ -130,7 +130,6 @@ router.get('/psychologist-appointments', authMiddleware, async (req, res) => {
     try {
         const psychologist_user_id = req.user.id || req.user.user_id;
         
-        // ✅ อัปเดต SQL ตรงนี้: เพิ่ม JOIN ตาราง assessments และดึง start_time, end_time
         const sql = `
             SELECT 
                 a.*, 
@@ -171,7 +170,8 @@ router.put('/status/:id', authMiddleware, async (req, res) => {
     const { status } = req.body; 
     const appointmentId = req.params.id;
 
-    const validStatuses = ['confirmed', 'completed', 'cancelled', 'pending'];
+    // ✅ อนุญาตให้ใช้สถานะ no-show ได้แล้ว
+    const validStatuses = ['confirmed', 'completed', 'cancelled', 'pending', 'no-show'];
     const dbStatus = status.toLowerCase(); 
 
     if (!validStatuses.includes(dbStatus)) {
@@ -204,13 +204,11 @@ router.post('/complete/:id', authMiddleware, async (req, res) => {
         connection = await db.getConnection();
         await connection.beginTransaction();
 
-        // 1. อัปเดตงานเดิมเป็น completed + บันทึกผล
         await connection.query(
             'UPDATE appointments SET status = ?, result_summary = ? WHERE appointment_id = ?',
             ['completed', result_summary, appointmentId]
         );
 
-        // 2. ถ้ามีการนัดต่อ (Follow-up)
         if (follow_up_date && follow_up_time) {
             const [schedResult] = await connection.query(
                 'INSERT INTO schedules (psychologist_user_id, date, start_time, end_time, is_available) VALUES (?, ?, ?, ?, 0)',
@@ -245,6 +243,7 @@ router.post('/complete/:id', authMiddleware, async (req, res) => {
         if (connection) connection.release();
     }
 });
+
 // ==========================================
 // 7. POST: บันทึกการประเมินความพึงพอใจ (ฝั่งนักเรียน)
 // ==========================================
@@ -253,14 +252,32 @@ router.post('/feedback', authMiddleware, async (req, res) => {
     const student_user_id = req.user.id || req.user.user_id;
 
     try {
-        // ต้องตรวจสอบว่าตาราง feedback ของคุณชื่อฟิลด์ตรงตามนี้หรือไม่
         await db.query(
             'INSERT INTO feedback (appointment_id, student_user_id, rating, comment) VALUES (?, ?, ?, ?)',
             [appointment_id, student_user_id, rating, comment || '-']
         );
-        res.json({ msg: '✅ ขอบคุณสำหรับการประเมินครับ!' });
+        res.json({ msg: '✅ ขอบคุณสำหรับการประเมินคค่ะ!' });
     } catch (err) {
         console.error("Feedback Error:", err);
+        res.status(500).send('Server Error');
+    }
+});
+
+// ==========================================
+// 8. PUT: ขาดนัด / ไม่มาตามนัด (No-show) 🆕
+// ==========================================
+router.put('/no-show/:id', authMiddleware, async (req, res) => {
+    const appointmentId = req.params.id;
+    const { note } = req.body; // เผื่อนักจิตวิทยาอยากพิมพ์โน้ตเพิ่ม เช่น "รอนาน 20 นาที โทรไปไม่รับสาย"
+
+    try {
+        await db.query(
+            'UPDATE appointments SET status = ?, result_summary = ? WHERE appointment_id = ?',
+            ['no-show', note || 'นักเรียนขาดนัด / ไม่มาตามวันเวลาที่กำหนด (No-show)', appointmentId]
+        );
+        res.json({ msg: 'บันทึกสถานะขาดนัด (No-show) เรียบร้อยแล้ว' });
+    } catch (err) {
+        console.error("No-Show Error:", err);
         res.status(500).send('Server Error');
     }
 });

@@ -8,7 +8,7 @@ import {
     FaComments, FaUserMd, FaClock, FaCalendarAlt, FaHistory, 
     FaCheckCircle, FaTimesCircle, FaExclamationCircle, FaListUl, FaAtom,
     FaThLarge, FaBars, FaInfoCircle, FaCheck, FaTimes, FaCircle,
-    FaVideo, FaBuilding, FaClipboardList, FaStar
+    FaVideo, FaBuilding, FaClipboardList, FaStar, FaUserTimes // 🆕 นำเข้าไอคอน FaUserTimes
 } from 'react-icons/fa';
 
 import './StudentAppointments.css';
@@ -69,17 +69,26 @@ const StudentAppointments = () => {
         } catch (err) { alert("เกิดข้อผิดพลาดในการส่งข้อมูล"); }
     };
 
+    // ✅ แก้ไข: ให้นับรวม no-show เข้าไปอยู่ในช่อง cancelled
     const statusCounts = useMemo(() => {
         const counts = { All: appointments.length, pending: 0, confirmed: 0, completed: 0, cancelled: 0 };
         appointments.forEach(appt => {
             const s = String(appt.status).toLowerCase();
-            if (counts[s] !== undefined) counts[s]++;
+            if (s === 'no-show') {
+                counts['cancelled']++;
+            } else if (counts[s] !== undefined) {
+                counts[s]++;
+            }
         });
         return counts;
     }, [appointments]);
 
+    // ✅ แก้ไข: เวลาฟิลเตอร์ cancelled ให้แสดงผลรวมทั้ง cancelled และ no-show
     const filteredAppointments = useMemo(() => {
         if (filterStatus === 'All') return appointments;
+        if (filterStatus === 'cancelled') {
+            return appointments.filter(appt => ['cancelled', 'no-show'].includes(String(appt.status).toLowerCase()));
+        }
         return appointments.filter(appt => String(appt.status).toLowerCase() === filterStatus.toLowerCase());
     }, [filterStatus, appointments]);
 
@@ -107,21 +116,25 @@ const StudentAppointments = () => {
         } catch (error) { return false; }
     };
 
+    // ✅ แก้ไข: เพิ่มป้าย badge สำหรับ no-show
     const getStatusBadge = (status) => {
         const s = status ? String(status).toLowerCase() : '';
         if (s === 'confirmed' || s === 'ยืนยัน') return <Badge bg="success" className="px-3 py-2 rounded-pill fw-normal shadow-sm"><FaCheck className="me-1"/> ยืนยันแล้ว</Badge>;
         if (s === 'cancelled' || s === 'ยกเลิก') return <Badge bg="danger" className="px-3 py-2 rounded-pill fw-normal shadow-sm"><FaTimes className="me-1"/> ยกเลิกแล้ว</Badge>;
         if (s === 'pending' || s === 'รอดำเนินการ') return <Badge bg="warning" text="dark" className="px-3 py-2 rounded-pill fw-normal shadow-sm"><FaClock className="me-1"/> รออนุมัติ</Badge>;
         if (s === 'completed' || s === 'เสร็จสิ้น') return <Badge bg="secondary" className="px-3 py-2 rounded-pill fw-normal shadow-sm"><FaHistory className="me-1"/> เสร็จสิ้น</Badge>;
+        if (s === 'no-show' || s === 'ขาดนัด') return <Badge bg="dark" className="px-3 py-2 rounded-pill fw-normal shadow-sm"><FaUserTimes className="me-1"/> ขาดนัด</Badge>;
         return <Badge bg="secondary" className="px-3 py-2 rounded-pill fw-normal shadow-sm"><FaCircle className="me-1"/> {status || 'ไม่ระบุ'}</Badge>;
     };
 
+    // ✅ แก้ไข: เพิ่มสีสำหรับ no-show
     const getStatusColor = (status) => {
         const s = status ? String(status).toLowerCase() : '';
         if (s === 'confirmed' || s === 'ยืนยัน') return '#198754';
         if (s === 'cancelled' || s === 'ยกเลิก') return '#dc3545';
         if (s === 'pending' || s === 'รอดำเนินการ') return '#ffc107';
         if (s === 'completed' || s === 'เสร็จสิ้น') return '#6c757d';
+        if (s === 'no-show' || s === 'ขาดนัด') return '#212529';
         return '#6c757d';
     };
 
@@ -136,7 +149,7 @@ const StudentAppointments = () => {
         { key: 'pending', label: 'รออนุมัติ', icon: <FaExclamationCircle /> },
         { key: 'confirmed', label: 'ยืนยันแล้ว', icon: <FaCheckCircle /> },
         { key: 'completed', label: 'เสร็จสิ้น', icon: <FaHistory /> },
-        { key: 'cancelled', label: 'ยกเลิก', icon: <FaTimesCircle /> },
+        { key: 'cancelled', label: 'ยกเลิก / ขาดนัด', icon: <FaTimesCircle /> }, // เปลี่ยนป้ายกำกับให้ชัดเจนขึ้น
     ];
 
     const openDetails = (appt) => { setSelectedApptDetails(appt); setShowDetails(true); };

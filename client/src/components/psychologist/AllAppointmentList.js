@@ -7,7 +7,6 @@ import {
     FaDatabase, FaShieldAlt, FaFilter, FaUndo, FaCalendarAlt
 } from 'react-icons/fa';
 
-// ✅ นำเข้า CSS
 import './Psychologist.css';       
 import './AllAppointmentList.css'; 
 
@@ -52,20 +51,23 @@ const AllAppointmentList = () => {
         return matchesSearch && matchesDate && matchesYear && matchesTime;
     });
 
+    // ✅ แก้ไข: อัปเดตให้เช็กตัวพิมพ์เล็ก และเพิ่ม no-show เข้าไปในกลุ่ม cancelled
     const stats = {
         total: filteredAppointments.length,
-        completed: filteredAppointments.filter(a => a.status === 'completed').length,
-        pending: filteredAppointments.filter(a => a.status === 'pending' || a.status === 'confirmed').length,
-        cancelled: filteredAppointments.filter(a => a.status === 'cancelled').length
+        completed: filteredAppointments.filter(a => a.status?.toLowerCase() === 'completed').length,
+        pending: filteredAppointments.filter(a => ['pending', 'confirmed'].includes(a.status?.toLowerCase())).length,
+        cancelled: filteredAppointments.filter(a => ['cancelled', 'no-show'].includes(a.status?.toLowerCase())).length
     };
 
+    // ✅ แก้ไข: รองรับตัวพิมพ์เล็ก และเพิ่ม case 'no-show'
     const getStatusConfig = (status) => {
-        switch (status) {
-            case 'Pending': return { label: 'รอเข้าพบ', cls: 'chip-pen' };
-            case 'Confirmed': return { label: 'ยืนยันนัด', cls: 'chip-conf' };
-            case 'Completed': return { label: 'สำเร็จแล้ว', cls: 'chip-comp' };
-            case 'Cancelled': return { label: 'ยกเลิกนัด', cls: 'chip-can' };
-            default: return { label: status, cls: 'chip-def' };
+        switch (status?.toLowerCase()) {
+            case 'pending': return { label: 'รอเข้าพบ', cls: 'chip-pen' };
+            case 'confirmed': return { label: 'ยืนยันนัด', cls: 'chip-conf' };
+            case 'completed': return { label: 'สำเร็จแล้ว', cls: 'chip-comp' };
+            case 'cancelled': return { label: 'ยกเลิกนัด', cls: 'chip-can' };
+            case 'no-show': return { label: 'ขาดนัด', cls: 'chip-dark' }; // 🆕 สถานะขาดนัด
+            default: return { label: status || 'ไม่ทราบสถานะ', cls: 'chip-def' };
         }
     };
 
@@ -92,7 +94,7 @@ const AllAppointmentList = () => {
                 </div>
             </div>
 
-            {/* --- 🎛️ Modern Filter Bar (ภาษาไทย) --- */}
+            {/* --- 🎛️ Modern Filter Bar --- */}
             <Card className="glass-panel mb-5 border-0">
                 <Card.Header className="filter-header-modern">
                     <FaFilter className="me-2" /> <span>ตัวกรองข้อมูลขั้นสูง</span>
@@ -133,7 +135,7 @@ const AllAppointmentList = () => {
                 </Card.Body>
             </Card>
 
-            {/* --- 📊 Premium Stat Cards (ภาษาไทย) --- */}
+            {/* --- 📊 Premium Stat Cards --- */}
             <Row className="g-4 mb-5">
                 {[
                     { label: 'บันทึกทั้งหมด', value: stats.total, icon: <FaDatabase/>, type: 'navy' },
@@ -154,7 +156,7 @@ const AllAppointmentList = () => {
                 ))}
             </Row>
 
-            {/* --- 📑 Modern Table (ภาษาไทย) --- */}
+            {/* --- 📑 Modern Table --- */}
             <div className="glass-panel modern-table-container p-3">
                 <div className="table-top-bar-modern d-flex justify-content-between align-items-center mb-3 px-3">
                     <div className="fw-bold pcshs-blue-deep d-flex align-items-center fs-5">

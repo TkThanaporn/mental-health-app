@@ -238,3 +238,9 @@
 
 .chip-can { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
 .chip-can::before { background: #ef4444; box-shadow: 0 0 8px #ef4444; }
+
+.chip-dark {
+    background-color: #212529 !important;
+    color: #ffffff !important;
+    border: 1px solid #000000;
+}
