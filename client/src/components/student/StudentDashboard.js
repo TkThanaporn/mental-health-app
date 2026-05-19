@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Button, Card, Row, Col, Badge } from 'react-bootstrap';
+import { Container, Button, Card, Row, Col, Badge, Modal } from 'react-bootstrap'; // ✅ เพิ่ม Modal ตรงนี้
 import { jwtDecode } from "jwt-decode";
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -20,6 +20,7 @@ const StudentDashboard = () => {
     const navigate = useNavigate();
     const [currentUserName, setCurrentUserName] = useState("นักเรียน");
     const [newsList, setNewsList] = useState([]);
+    const [selectedNews, setSelectedNews] = useState(null); // ✅ 1. เพิ่ม State สำหรับเก็บข้อมูลข่าวที่จะโชว์ในป๊อปอัพ
 
     // ตั้งค่า URL ของ Backend (ปรับตามจริง หรือดึงจาก .env)
     const API_BASE_URL = 'http://localhost:5000';
@@ -56,6 +57,7 @@ const StudentDashboard = () => {
                         title: 'เทคนิคการจัดการความเครียดก่อนสอบ', 
                         category: 'Stress', 
                         summary: 'วิธีง่ายๆ ในการผ่อนคลายสมองเมื่อต้องอ่านหนังสือหนักๆ ลองทำตาม 5 วิธีนี้...', 
+                        content: 'รายละเอียดบทความ... วิธีจัดการความเครียดก่อนสอบสามารถทำได้โดยการพักผ่อนให้เพียงพอ การจัดตารางอ่านหนังสือ และการทำสมาธิ...',
                         image_url: 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?auto=format&fit=crop&q=80&w=500', 
                     },
                     { 
@@ -63,6 +65,7 @@ const StudentDashboard = () => {
                         title: 'นอนไม่หลับทำอย่างไร?', 
                         category: 'Sleep', 
                         summary: 'ปรับเปลี่ยนพฤติกรรมเล็กน้อย เพื่อการนอนหลับที่มีคุณภาพมากขึ้น ตื่นมาสดใสกว่าเดิม...', 
+                        content: 'รายละเอียดบทความ... การงดเล่นมือถือก่อนนอน 30 นาที และการจัดสภาพแวดล้อมห้องนอนให้มืดและเย็น จะช่วยให้หลับสบายยิ่งขึ้น...',
                         image_url: 'https://images.unsplash.com/photo-1541480601022-2308c0f02487?auto=format&fit=crop&q=80&w=500', 
                     },
                     { 
@@ -70,6 +73,7 @@ const StudentDashboard = () => {
                         title: 'วิธีสร้างพลังบวกในวันที่แย่', 
                         category: 'Mood', 
                         summary: 'มองโลกในมุมใหม่ เพื่อใจที่สดใสกว่าเดิม แม้ในวันที่รู้สึกเหนื่อยล้า...', 
+                        content: 'รายละเอียดบทความ... การฝึกขอบคุณสิ่งเล็กๆ น้อยๆ ในแต่ละวัน จะช่วยปรับมุมมองและสร้างพลังบวกให้กับตัวเราได้...',
                         image_url: 'https://images.unsplash.com/photo-1490730141103-6cac27aaab94?auto=format&fit=crop&q=80&w=500', 
                     }
                 ]);
@@ -227,7 +231,7 @@ const StudentDashboard = () => {
                         <div 
                             className="text-primary fw-bold" 
                             style={{ cursor: 'pointer', fontSize: '0.9rem' }}
-                            onClick={() => navigate('/news')}
+                            onClick={() => navigate('/student/news')} // เปลี่ยนเป็นลิงก์ไปหน้าข่าวรวมของนักเรียน
                         >
                             ดูทั้งหมด <FaChevronRight size={12}/>
                         </div>
@@ -235,12 +239,11 @@ const StudentDashboard = () => {
                     
                     <Row className="g-4">
                         {newsList.length > 0 ? (
-                            // ✅ แก้ไขตรงนี้ให้ดักจับ key ได้ทั้ง 3 แบบ (news_id, id, index)
                             newsList.slice(0, 3).map((item, index) => (
                                 <Col md={4} key={item.news_id || item.id || index}>
                                     <Card 
                                         className="border-0 shadow-sm h-100 rounded-4 article-card hover-lift overflow-hidden" 
-                                        onClick={() => navigate(`/student/news/${item.id || item.news_id}`)}
+                                        onClick={() => setSelectedNews(item)} // ✅ 2. เปลี่ยนให้แสดง Modal แทน
                                         style={{cursor: 'pointer'}}
                                     >
                                         <div style={{height: '180px', position: 'relative', overflow: 'hidden'}}>
@@ -299,6 +302,44 @@ const StudentDashboard = () => {
                         </Button>
                     </div>
                 </div>
+
+                {/* ✅ 3. เพิ่ม Modal Component โชว์รายละเอียดข่าว */}
+                <Modal 
+                    show={selectedNews !== null} 
+                    onHide={() => setSelectedNews(null)} 
+                    size="lg" 
+                    centered
+                >
+                    {selectedNews && (
+                        <>
+                            <Modal.Header closeButton>
+                                <Modal.Title className="fw-bold">{selectedNews.title}</Modal.Title>
+                            </Modal.Header>
+                            <Modal.Body>
+                                {(selectedNews.image_url || selectedNews.imageUrl) && (
+                                    <img 
+                                        src={getImageUrl(selectedNews.image_url || selectedNews.imageUrl)} 
+                                        alt={selectedNews.title} 
+                                        className="img-fluid rounded-4 mb-3 w-100" 
+                                        style={{ maxHeight: '400px', objectFit: 'cover' }}
+                                    />
+                                )}
+                                <div className="d-flex gap-2 mb-3">
+                                    <Badge bg="info">{selectedNews.category || 'ความรู้ทั่วไป'}</Badge>
+                                </div>
+                                <div className="news-content" style={{ whiteSpace: 'pre-line', lineHeight: '1.6' }}>
+                                    {/* เลือกโชว์ content ถ้ามี หากไม่มีโชว์ summary */}
+                                    {selectedNews.content || selectedNews.summary} 
+                                </div>
+                            </Modal.Body>
+                            <Modal.Footer>
+                                <Button variant="secondary" onClick={() => setSelectedNews(null)}>
+                                    ปิดหน้าต่าง
+                                </Button>
+                            </Modal.Footer>
+                        </>
+                    )}
+                </Modal>
 
             </Container>
 
