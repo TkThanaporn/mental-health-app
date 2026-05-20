@@ -6,6 +6,26 @@ const { authMiddleware } = require('../middleware/auth');
 const { sendEmail } = require('../services/emailService');
 
 // ==========================================
+// ฟังก์ชันช่วยแปลงเวลาให้อยู่ในรูปแบบ 00.00 น.
+// ==========================================
+const formatTimeWithDot = (timeString) => {
+    if (!timeString) return '00.00';
+    return timeString.substring(0, 5).replace(':', '.');
+};
+
+// ==========================================
+// ฟังก์ชันช่วยแปลงวันที่เป็นภาษาไทยแบบเต็ม
+// ==========================================
+const formatThaiDate = (dateString) => {
+    if (!dateString) return '';
+    return new Date(dateString).toLocaleDateString('th-TH', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+    });
+};
+
+// ==========================================
 // 1. GET: ดูประวัตินัดหมาย (สำหรับนักจิตวิทยา)
 // ==========================================
 router.get('/psychologist-history', authMiddleware, async (req, res) => {
@@ -83,16 +103,22 @@ router.post('/', authMiddleware, async (req, res) => {
         );
 
         const [psychRows] = await connection.query(
-            'SELECT fullname, email FROM users WHERE user_id = ?', 
-            [psychologist_id]
+            `SELECT u.fullname, u.email, s.date, s.start_time, s.end_time 
+             FROM users u 
+             JOIN schedules s ON s.schedule_id = ? 
+             WHERE u.user_id = ?`, 
+            [schedule_id, psychologist_id]
         );
 
         await connection.commit();
 
-        // 📧 ดีไซน์อีเมล: มีคิวใหม่เข้า (หานักจิตวิทยา)
         if (psychRows.length > 0 && psychRows[0].email) {
+            const info = psychRows[0];
+            const formattedDate = formatThaiDate(info.date);
+            const formattedTime = `${formatTimeWithDot(info.start_time)}-${formatTimeWithDot(info.end_time)} น.`;
+
             await sendEmail({
-                to: psychRows[0].email,
+                to: info.email,
                 subject: '🔔 มีคำขอจองคิวรับคำปรึกษาใหม่เข้าสู่ระบบ',
                 html: `
                     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;">
@@ -101,8 +127,15 @@ router.post('/', authMiddleware, async (req, res) => {
                         </div>
                         <div style="padding: 30px; background-color: #f8f9fa;">
                             <h3 style="color: #f26522; margin-top: 0;">🔔 มีคำขอรับคำปรึกษาใหม่</h3>
-                            <p style="color: #333333; font-size: 16px;">เรียน คุณ <strong>${psychRows[0].fullname}</strong>,</p>
-                            <p style="color: #555555; font-size: 15px; line-height: 1.6;">ขณะนี้มีนักเรียนได้ทำการจองคิวใหม่เข้ามาในระบบ โปรดเข้าสู่ระบบเพื่อตรวจสอบรายละเอียดและกดยืนยันการนัดหมายครับ</p>
+                            <p style="color: #333333; font-size: 16px;">เรียน คุณ <strong>${info.fullname}</strong>,</p>
+                            <p style="color: #555555; font-size: 15px; line-height: 1.6;">ขณะนี้มีนักเรียนได้ทำการจองคิวใหม่เข้ามาในระบบ โดยมีรายละเอียดการนัดหมายดังนี้:</p>
+                            
+                            <div style="background-color: #ffffff; border-left: 4px solid #002d56; padding: 15px; margin: 20px 0; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                                <p style="margin: 5px 0; font-size: 16px; color: #333;">📅 <strong>วันที่:</strong> ${formattedDate}</p>
+                                <p style="margin: 5px 0; font-size: 16px; color: #333;">⏰ <strong>เวลา:</strong> ${formattedTime}</p>
+                            </div>
+
+                            <p style="color: #555555; font-size: 15px; line-height: 1.6;">โปรดเข้าสู่ระบบเพื่อตรวจสอบรายละเอียดและกดยืนยันการนัดหมายครับ</p>
                             <div style="text-align: center; margin-top: 30px;">
                                 <a href="http://localhost:3000/psychologist/appointments" style="background-color: #f26522; color: #ffffff; padding: 12px 25px; text-decoration: none; border-radius: 25px; font-weight: bold; display: inline-block;">จัดการการนัดหมาย</a>
                             </div>
@@ -138,7 +171,8 @@ router.get('/my-appointments', authMiddleware, async (req, res) => {
                 u.fullname AS psychologist_name,
                 s.date AS appointment_date,
                 s.start_time,
-                s.end_time
+                s.end_time,
+                (SELECT COUNT(*) FROM feedback f WHERE f.appointment_id = a.appointment_id) AS is_reviewed
             FROM appointments a
             JOIN users u ON a.psychologist_user_id = u.user_id
             JOIN schedules s ON a.schedule_id = s.schedule_id
@@ -214,24 +248,26 @@ router.put('/status/:id', authMiddleware, async (req, res) => {
         );
 
         const [studentInfo] = await db.query(`
-            SELECT u.email, u.fullname, a.topic, s.date, s.start_time
+            SELECT u.email, u.fullname, a.topic, s.date, s.start_time, s.end_time
             FROM appointments a
             JOIN users u ON a.student_user_id = u.user_id
             JOIN schedules s ON a.schedule_id = s.schedule_id
             WHERE a.appointment_id = ?
         `, [appointmentId]);
 
-        // 📧 ดีไซน์อีเมล: แจ้งเปลี่ยนสถานะคิว (หานักเรียน)
         if (studentInfo.length > 0 && studentInfo[0].email) {
             const info = studentInfo[0];
             const isConfirmed = dbStatus === 'confirmed';
             
-            // แปลงสถานะเป็นภาษาไทยให้ดูสวยงาม
             let thStatus = dbStatus;
             if (dbStatus === 'confirmed') thStatus = 'ยืนยันการนัดหมายแล้ว';
             if (dbStatus === 'cancelled') thStatus = 'ถูกยกเลิก';
+            if (dbStatus === 'no-show') thStatus = 'ขาดนัด (ไม่มีการปรากฏตัว)';
             
             const colorCode = isConfirmed ? '#198754' : '#dc3545';
+            
+            const formattedDate = formatThaiDate(info.date);
+            const formattedTime = `${formatTimeWithDot(info.start_time)}-${formatTimeWithDot(info.end_time)} น.`;
 
             await sendEmail({
                 to: info.email,
@@ -244,10 +280,12 @@ router.put('/status/:id', authMiddleware, async (req, res) => {
                         <div style="padding: 30px; background-color: #ffffff;">
                             <h3 style="color: ${colorCode}; margin-top: 0;">📅 อัปเดตสถานะการนัดหมาย</h3>
                             <p style="color: #333333; font-size: 16px;">สวัสดี <strong>${info.fullname}</strong>,</p>
-                            <p style="color: #555555; font-size: 15px; line-height: 1.6;">รายการนัดหมายของคุณในหัวข้อ:</p>
+                            <p style="color: #555555; font-size: 15px; line-height: 1.6;">รายการนัดหมายของคุณได้รับการอัปเดตสถานะแล้ว โดยมีรายละเอียดดังนี้:</p>
                             
                             <div style="background-color: #f8f9fa; border-left: 4px solid #f26522; padding: 15px; margin: 15px 0;">
-                                <strong style="color: #002d56; font-size: 16px;">"${info.topic}"</strong>
+                                <p style="margin: 0 0 8px 0; font-size: 15px;">📌 <strong>หัวข้อ:</strong> ${info.topic}</p>
+                                <p style="margin: 0 0 8px 0; font-size: 15px;">📅 <strong>วันที่:</strong> ${formattedDate}</p>
+                                <p style="margin: 0; font-size: 15px;">⏰ <strong>เวลา:</strong> ${formattedTime}</p>
                             </div>
                             
                             <p style="color: #555555; font-size: 15px;">สถานะล่าสุดคือ: <strong style="color: ${colorCode}; font-size: 16px;">${thStatus}</strong></p>
@@ -290,10 +328,17 @@ router.post('/complete/:id', authMiddleware, async (req, res) => {
             ['completed', result_summary, appointmentId]
         );
 
+        let follow_up_end_time = null; // ✅ ตัวแปรเก็บเวลาจบที่บวกแล้ว
+
         if (follow_up_date && follow_up_time) {
+            // ✅ คำนวณบวกเวลาสิ้นสุดไปอีก 1 ชั่วโมง (ป้องกันปัญหาเวลาซ้ำ 22.00-22.00)
+            let [hours, minutes] = follow_up_time.split(':');
+            hours = String((parseInt(hours) + 1) % 24).padStart(2, '0');
+            follow_up_end_time = `${hours}:${minutes}`;
+
             const [schedResult] = await connection.query(
                 'INSERT INTO schedules (psychologist_user_id, date, start_time, end_time, is_available) VALUES (?, ?, ?, ?, 0)',
-                [psychologist_user_id, follow_up_date, follow_up_time, follow_up_time]
+                [psychologist_user_id, follow_up_date, follow_up_time, follow_up_end_time]
             );
             const new_schedule_id = schedResult.insertId;
 
@@ -320,8 +365,25 @@ router.post('/complete/:id', authMiddleware, async (req, res) => {
 
         await connection.commit();
 
-        // 📧 ดีไซน์อีเมล: แจ้งเคสจบ (หานักเรียน) - ซ่อนผลสรุปแล้ว
         if (studentRows.length > 0 && studentRows[0].email) {
+            let followUpHtml = '';
+            
+            // ✅ นำเวลาที่บวกเสร็จแล้วมาแสดงผลแบบมีขีดกลาง
+            if (follow_up_date && follow_up_time) {
+                const fDate = formatThaiDate(follow_up_date);
+                const fTimeStart = formatTimeWithDot(follow_up_time);
+                const fTimeEnd = formatTimeWithDot(follow_up_end_time);
+
+                followUpHtml = `
+                <div style="background-color: #fff3cd; border-radius: 8px; padding: 15px; margin: 20px 0; text-align: left; border-left: 4px solid #ffc107;">
+                    <p style="margin: 0 0 10px 0; color: #856404; font-weight: bold; font-size: 16px;">📅 มีการนัดติดตามอาการ (Follow-up)</p>
+                    <p style="margin: 5px 0; color: #666; font-size: 15px;"><strong>วันที่:</strong> ${fDate}</p>
+                    <p style="margin: 5px 0; color: #666; font-size: 15px;"><strong>เวลา:</strong> ${fTimeStart}-${fTimeEnd} น.</p>
+                    <p style="margin: 10px 0 0 0; color: #666; font-size: 14px;">โปรดตรวจสอบรายละเอียดเพิ่มเติมได้ที่หน้าแอปพลิเคชัน</p>
+                </div>
+                `;
+            }
+
             await sendEmail({
                 to: studentRows[0].email,
                 subject: '✅ การให้คำปรึกษาเสร็จสิ้น - PCSHS Student Care',
@@ -338,12 +400,7 @@ router.post('/complete/:id', authMiddleware, async (req, res) => {
                             <p style="color: #333333; font-size: 16px;">สวัสดี <strong>${studentRows[0].fullname}</strong>,</p>
                             <p style="color: #555555; font-size: 15px; line-height: 1.6;">ขอบคุณที่เข้ารับการพูดคุยและปรึกษากับครูแนะแนว/นักจิตวิทยาในวันนี้ หวังว่าคุณจะรู้สึกสบายใจขึ้นและได้รับมุมมองใหม่ๆ ในการจัดการกับความรู้สึกนะครับ</p>
                             
-                            ${follow_up_date ? `
-                            <div style="background-color: #fff3cd; border-radius: 8px; padding: 15px; margin: 20px 0; text-align: center; border-left: 4px solid #ffc107;">
-                                <p style="margin: 0; color: #856404; font-weight: bold; font-size: 16px;">📅 มีการนัดติดตามอาการ (Follow-up)</p>
-                                <p style="margin: 5px 0 0 0; color: #666; font-size: 14px;">โปรดตรวจสอบวันและเวลาคิวใหม่ได้ที่หน้าแอปพลิเคชัน</p>
-                            </div>
-                            ` : ''}
+                            ${followUpHtml}
 
                             <div style="background-color: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px; padding: 20px; margin: 25px 0; text-align: center;">
                                 <h4 style="color: #002d56; margin-top: 0; font-size: 18px;">บอกเราหน่อยว่าวันนี้เป็นอย่างไรบ้าง? ⭐</h4>

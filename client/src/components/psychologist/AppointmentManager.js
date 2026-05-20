@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Container, Card, Button, Row, Col, Modal, InputGroup, Form, Badge, Dropdown } from 'react-bootstrap';
+import { Container, Card, Button, Row, Col, Modal, InputGroup, Form, Badge, Dropdown, Spinner } from 'react-bootstrap';
 import { jwtDecode } from "jwt-decode";
 import ChatRoom from '../common/ChatRoom';
 import { 
@@ -8,7 +8,7 @@ import {
     FaClock, FaSearch, FaCircle, FaCalendarAlt, FaUserClock, 
     FaCalendarDay, FaRegCalendarCheck, FaUserCheck, FaCheckCircle,
     FaVideo, FaBuilding, FaFileMedical, FaInfoCircle, FaClipboardList, FaFilter,
-    FaUserTimes // 🆕 นำเข้าไอคอนสำหรับ "ขาดนัด"
+    FaUserTimes 
 } from 'react-icons/fa';
 
 import './AppointmentManager.css'; 
@@ -31,6 +31,9 @@ const AppointmentManager = () => {
     // State สำหรับบันทึกผลการให้คำปรึกษา
     const [showResultModal, setShowResultModal] = useState(false);
     const [resultData, setResultData] = useState({ summary: '', needFollowUp: false, date: '', time: '' });
+    
+    // ✅ เพิ่ม State ป้องกันการกดปุ่มเบิ้ล
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
         fetchAppointments();
@@ -64,7 +67,6 @@ const AppointmentManager = () => {
         } catch (err) { alert(`Error updating status`); }
     };
 
-    // 🆕 ฟังก์ชันใหม่: จัดการกรณีนักเรียนขาดนัด (No-show)
     const handleNoShow = async (id) => {
         if (!window.confirm("ยืนยันว่านักเรียนไม่มาตามนัด (ขาดนัด) ใช่หรือไม่?")) return;
         try {
@@ -78,6 +80,12 @@ const AppointmentManager = () => {
 
     const submitResult = async () => {
         if(!resultData.summary) return alert("กรุณากรอกสรุปผลการให้คำปรึกษา");
+        // ✅ ดักจับกรณีเลือก Follow up แต่กรอกข้อมูลไม่ครบ
+        if(resultData.needFollowUp && (!resultData.date || !resultData.time)) {
+            return alert("กรุณาระบุวันที่และเวลาสำหรับการนัดติดตามอาการให้ครบถ้วน");
+        }
+
+        setIsSubmitting(true); // ล็อกปุ่ม
         try {
             const token = localStorage.getItem('token');
             await axios.post(`http://localhost:5000/api/appointments/complete/${selectedApptDetails.appointment_id}`, {
@@ -91,7 +99,11 @@ const AppointmentManager = () => {
             setShowResultModal(false);
             setResultData({ summary: '', needFollowUp: false, date: '', time: '' });
             fetchAppointments();
-        } catch (err) { alert("เกิดข้อผิดพลาดในการบันทึก"); }
+        } catch (err) { 
+            alert("เกิดข้อผิดพลาดในการบันทึก"); 
+        } finally {
+            setIsSubmitting(false); // ปลดล็อกปุ่ม
+        }
     };
 
     const openChat = (appt) => { setSelectedChatAppt(appt); setShowChat(true); };
@@ -168,7 +180,6 @@ const AppointmentManager = () => {
         if (s === 'cancelled' || s === 'ยกเลิก') return <Badge bg="danger" className="px-3 py-2 rounded-pill fw-normal shadow-sm"><FaTimes className="me-1"/> ยกเลิกแล้ว</Badge>;
         if (s === 'pending' || s === 'รอดำเนินการ') return <Badge bg="warning" text="dark" className="px-3 py-2 rounded-pill fw-normal shadow-sm"><FaClock className="me-1"/> รอดำเนินการ</Badge>;
         if (s === 'completed' || s === 'เสร็จสิ้น') return <Badge bg="secondary" className="px-3 py-2 rounded-pill fw-normal shadow-sm"><FaHistory className="me-1"/> เสร็จสิ้น</Badge>;
-        // 🆕 เพิ่มป้ายสำหรับ No-show
         if (s === 'no-show' || s === 'ขาดนัด') return <Badge bg="dark" className="px-3 py-2 rounded-pill fw-normal shadow-sm"><FaUserTimes className="me-1"/> ขาดนัด</Badge>;
         return <Badge bg="secondary" className="px-3 py-2 rounded-pill fw-normal shadow-sm"><FaCircle className="me-1"/> {status || 'ไม่ระบุ'}</Badge>;
     };
@@ -179,7 +190,6 @@ const AppointmentManager = () => {
         if (s === 'cancelled' || s === 'ยกเลิก') return '#dc3545';
         if (s === 'pending' || s === 'รอดำเนินการ') return '#ffc107';
         if (s === 'completed' || s === 'เสร็จสิ้น') return '#6c757d';
-        // 🆕 เพิ่มสีสำหรับ No-show
         if (s === 'no-show' || s === 'ขาดนัด') return '#212529'; 
         return '#6c757d';
     };
@@ -213,7 +223,6 @@ const AppointmentManager = () => {
                     <Button variant="warning" className="flex-grow-1 fw-bold text-dark btn-action" onClick={() => { setSelectedApptDetails(app); setShowResultModal(true); }}>
                         <FaClipboardList className="me-1"/> บันทึกผล
                     </Button>
-                    {/* 🆕 ปุ่มขาดนัด (แสดงเมื่อเลยเวลานัดแล้ว หรือนักจิตวิทยากดเพื่อรายงานว่าเด็กไม่มา) */}
                     <Button variant="outline-dark" className="fw-bold btn-action" onClick={() => handleNoShow(app.appointment_id)}>
                         <FaUserTimes /> ขาดนัด
                     </Button>
@@ -364,7 +373,9 @@ const AppointmentManager = () => {
                     </Form>
                 </Modal.Body>
                 <Modal.Footer className="border-0 pt-0">
-                    <Button variant="success" className="w-100 rounded-pill fw-bold shadow-sm" onClick={submitResult}>บันทึกผลและเสร็จสิ้นการนัดหมาย</Button>
+                    <Button variant="success" className="w-100 rounded-pill fw-bold shadow-sm" onClick={submitResult} disabled={isSubmitting}>
+                        {isSubmitting ? <Spinner size="sm" animation="border" /> : "บันคาึกผลและเสร็จสิ้นการนัดหมาย"}
+                    </Button>
                 </Modal.Footer>
             </Modal>
 

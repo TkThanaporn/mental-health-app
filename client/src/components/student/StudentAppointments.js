@@ -161,11 +161,20 @@ const StudentAppointments = () => {
         const chatOpen = isChatOpen(appt);
 
         if (status === 'completed') {
-            return (
-                <Button variant="success" className="flex-grow-1 fw-bold btn-action" onClick={() => { setReviewData({...reviewData, appointment_id: appt.appointment_id}); setShowReviewModal(true); }}>
-                    <FaStar className="me-1 mb-1"/> ประเมินความพึงพอใจ
-                </Button>
-            );
+            // ✅ ดักจับว่าถ้า is_reviewed มากกว่า 0 แปลว่าเคยประเมินแล้ว
+            if (appt.is_reviewed > 0) {
+                return (
+                    <Button variant="outline-success" className="flex-grow-1 fw-bold btn-action" disabled>
+                        <FaCheckCircle className="me-1 mb-1"/> ประเมินแล้ว
+                    </Button>
+                );
+            } else {
+                return (
+                    <Button variant="success" className="flex-grow-1 fw-bold btn-action" onClick={() => { setReviewData({...reviewData, appointment_id: appt.appointment_id}); setShowReviewModal(true); }}>
+                        <FaStar className="me-1 mb-1"/> ประเมินความพึงพอใจ
+                    </Button>
+                );
+            }
         } else {
             return (
                 <>
