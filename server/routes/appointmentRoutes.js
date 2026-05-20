@@ -1,8 +1,9 @@
 // server/routes/appointmentRoutes.js
 const express = require('express');
 const router = express.Router();
-const db = require('../config/db'); // Import Pool
+const db = require('../config/db'); 
 const { authMiddleware } = require('../middleware/auth');
+const { sendEmail } = require('../services/emailService');
 
 // ==========================================
 // 1. GET: ดูประวัตินัดหมาย (สำหรับนักจิตวิทยา)
@@ -51,7 +52,6 @@ router.post('/', authMiddleware, async (req, res) => {
         connection = await db.getConnection(); 
         await connection.beginTransaction();
 
-        // 1. เช็คเวลาว่าง
         const [slots] = await connection.query(
             'SELECT * FROM schedules WHERE schedule_id = ? AND is_available = 1', 
             [schedule_id]
@@ -62,7 +62,6 @@ router.post('/', authMiddleware, async (req, res) => {
             return res.status(400).json({ msg: 'เวลานี้ถูกจองไปแล้ว หรือไม่ว่างครับ' });
         }
 
-        // 2. บันทึกการจอง
         const sql = `
             INSERT INTO appointments 
             (student_user_id, psychologist_user_id, schedule_id, topic, type, consultation_type, status) 
@@ -78,13 +77,44 @@ router.post('/', authMiddleware, async (req, res) => {
             (consultation_type || 'individual').toLowerCase()
         ]);
 
-        // 3. ตัดเวลาออกจากตาราง (ไม่ว่างแล้ว)
         await connection.query(
             'UPDATE schedules SET is_available = 0 WHERE schedule_id = ?', 
             [schedule_id]
         );
 
+        const [psychRows] = await connection.query(
+            'SELECT fullname, email FROM users WHERE user_id = ?', 
+            [psychologist_id]
+        );
+
         await connection.commit();
+
+        // 📧 ดีไซน์อีเมล: มีคิวใหม่เข้า (หานักจิตวิทยา)
+        if (psychRows.length > 0 && psychRows[0].email) {
+            await sendEmail({
+                to: psychRows[0].email,
+                subject: '🔔 มีคำขอจองคิวรับคำปรึกษาใหม่เข้าสู่ระบบ',
+                html: `
+                    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;">
+                        <div style="background-color: #002d56; padding: 20px; text-align: center;">
+                            <h2 style="color: #ffffff; margin: 0; letter-spacing: 1px;">PCSHS Care</h2>
+                        </div>
+                        <div style="padding: 30px; background-color: #f8f9fa;">
+                            <h3 style="color: #f26522; margin-top: 0;">🔔 มีคำขอรับคำปรึกษาใหม่</h3>
+                            <p style="color: #333333; font-size: 16px;">เรียน คุณ <strong>${psychRows[0].fullname}</strong>,</p>
+                            <p style="color: #555555; font-size: 15px; line-height: 1.6;">ขณะนี้มีนักเรียนได้ทำการจองคิวใหม่เข้ามาในระบบ โปรดเข้าสู่ระบบเพื่อตรวจสอบรายละเอียดและกดยืนยันการนัดหมายครับ</p>
+                            <div style="text-align: center; margin-top: 30px;">
+                                <a href="http://localhost:3000/psychologist/appointments" style="background-color: #f26522; color: #ffffff; padding: 12px 25px; text-decoration: none; border-radius: 25px; font-weight: bold; display: inline-block;">จัดการการนัดหมาย</a>
+                            </div>
+                        </div>
+                        <div style="background-color: #eeeeee; padding: 15px; text-align: center; font-size: 12px; color: #888888;">
+                            อีเมลแจ้งเตือนอัตโนมัติจากระบบดูแลช่วยเหลือนักเรียน<br>โรงเรียนวิทยาศาสตร์จุฬาภรณราชวิทยาลัย
+                        </div>
+                    </div>
+                `
+            });
+        }
+
         res.json({ msg: '✅ จองนัดหมายสำเร็จ!' });
 
     } catch (err) {
@@ -170,7 +200,6 @@ router.put('/status/:id', authMiddleware, async (req, res) => {
     const { status } = req.body; 
     const appointmentId = req.params.id;
 
-    // ✅ อนุญาตให้ใช้สถานะ no-show ได้แล้ว
     const validStatuses = ['confirmed', 'completed', 'cancelled', 'pending', 'no-show'];
     const dbStatus = status.toLowerCase(); 
 
@@ -183,6 +212,58 @@ router.put('/status/:id', authMiddleware, async (req, res) => {
             'UPDATE appointments SET status = ? WHERE appointment_id = ?', 
             [dbStatus, appointmentId]
         );
+
+        const [studentInfo] = await db.query(`
+            SELECT u.email, u.fullname, a.topic, s.date, s.start_time
+            FROM appointments a
+            JOIN users u ON a.student_user_id = u.user_id
+            JOIN schedules s ON a.schedule_id = s.schedule_id
+            WHERE a.appointment_id = ?
+        `, [appointmentId]);
+
+        // 📧 ดีไซน์อีเมล: แจ้งเปลี่ยนสถานะคิว (หานักเรียน)
+        if (studentInfo.length > 0 && studentInfo[0].email) {
+            const info = studentInfo[0];
+            const isConfirmed = dbStatus === 'confirmed';
+            
+            // แปลงสถานะเป็นภาษาไทยให้ดูสวยงาม
+            let thStatus = dbStatus;
+            if (dbStatus === 'confirmed') thStatus = 'ยืนยันการนัดหมายแล้ว';
+            if (dbStatus === 'cancelled') thStatus = 'ถูกยกเลิก';
+            
+            const colorCode = isConfirmed ? '#198754' : '#dc3545';
+
+            await sendEmail({
+                to: info.email,
+                subject: `📅 อัปเดตสถานะการนัดหมาย: ${info.topic}`,
+                html: `
+                    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;">
+                        <div style="background-color: #002d56; padding: 20px; text-align: center;">
+                            <h2 style="color: #ffffff; margin: 0; letter-spacing: 1px;">PCSHS Care</h2>
+                        </div>
+                        <div style="padding: 30px; background-color: #ffffff;">
+                            <h3 style="color: ${colorCode}; margin-top: 0;">📅 อัปเดตสถานะการนัดหมาย</h3>
+                            <p style="color: #333333; font-size: 16px;">สวัสดี <strong>${info.fullname}</strong>,</p>
+                            <p style="color: #555555; font-size: 15px; line-height: 1.6;">รายการนัดหมายของคุณในหัวข้อ:</p>
+                            
+                            <div style="background-color: #f8f9fa; border-left: 4px solid #f26522; padding: 15px; margin: 15px 0;">
+                                <strong style="color: #002d56; font-size: 16px;">"${info.topic}"</strong>
+                            </div>
+                            
+                            <p style="color: #555555; font-size: 15px;">สถานะล่าสุดคือ: <strong style="color: ${colorCode}; font-size: 16px;">${thStatus}</strong></p>
+                            
+                            <div style="text-align: center; margin-top: 30px;">
+                                <a href="http://localhost:3000/student/appointments" style="background-color: #002d56; color: #ffffff; padding: 12px 25px; text-decoration: none; border-radius: 25px; font-weight: bold; display: inline-block;">ดูรายละเอียดของฉัน</a>
+                            </div>
+                        </div>
+                        <div style="background-color: #eeeeee; padding: 15px; text-align: center; font-size: 12px; color: #888888;">
+                            อีเมลแจ้งเตือนอัตโนมัติจากระบบดูแลช่วยเหลือนักเรียน<br>โรงเรียนวิทยาศาสตร์จุฬาภรณราชวิทยาลัย
+                        </div>
+                    </div>
+                `
+            });
+        }
+
         res.json({ msg: `อัปเดตสถานะเป็น ${status} เรียบร้อย!` });
     } catch (err) {
         console.error("Update Status Error:", err);
@@ -232,7 +313,52 @@ router.post('/complete/:id', authMiddleware, async (req, res) => {
             ]);
         }
 
+        const [studentRows] = await connection.query(
+            'SELECT fullname, email FROM users WHERE user_id = ?', 
+            [student_user_id]
+        );
+
         await connection.commit();
+
+        // 📧 ดีไซน์อีเมล: แจ้งเคสจบ (หานักเรียน) - ซ่อนผลสรุปแล้ว
+        if (studentRows.length > 0 && studentRows[0].email) {
+            await sendEmail({
+                to: studentRows[0].email,
+                subject: '✅ การให้คำปรึกษาเสร็จสิ้น - PCSHS Student Care',
+                html: `
+                    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;">
+                        <div style="background-color: #002d56; padding: 20px; text-align: center;">
+                            <h2 style="color: #ffffff; margin: 0; letter-spacing: 1px;">PCSHS Care</h2>
+                        </div>
+                        <div style="padding: 30px; background-color: #ffffff;">
+                            <div style="text-align: center; margin-bottom: 20px;">
+                                <span style="font-size: 50px;">✅</span>
+                            </div>
+                            <h3 style="color: #198754; margin-top: 0; text-align: center;">การให้คำปรึกษาเสร็จสิ้น</h3>
+                            <p style="color: #333333; font-size: 16px;">สวัสดี <strong>${studentRows[0].fullname}</strong>,</p>
+                            <p style="color: #555555; font-size: 15px; line-height: 1.6;">ขอบคุณที่เข้ารับการพูดคุยและปรึกษากับครูแนะแนว/นักจิตวิทยาในวันนี้ หวังว่าคุณจะรู้สึกสบายใจขึ้นและได้รับมุมมองใหม่ๆ ในการจัดการกับความรู้สึกนะครับ</p>
+                            
+                            ${follow_up_date ? `
+                            <div style="background-color: #fff3cd; border-radius: 8px; padding: 15px; margin: 20px 0; text-align: center; border-left: 4px solid #ffc107;">
+                                <p style="margin: 0; color: #856404; font-weight: bold; font-size: 16px;">📅 มีการนัดติดตามอาการ (Follow-up)</p>
+                                <p style="margin: 5px 0 0 0; color: #666; font-size: 14px;">โปรดตรวจสอบวันและเวลาคิวใหม่ได้ที่หน้าแอปพลิเคชัน</p>
+                            </div>
+                            ` : ''}
+
+                            <div style="background-color: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px; padding: 20px; margin: 25px 0; text-align: center;">
+                                <h4 style="color: #002d56; margin-top: 0; font-size: 18px;">บอกเราหน่อยว่าวันนี้เป็นอย่างไรบ้าง? ⭐</h4>
+                                <p style="color: #555555; font-size: 14px;">การให้คะแนนความพึงพอใจของคุณ จะช่วยให้เราพัฒนาการดูแลนักเรียนได้ดียิ่งขึ้น</p>
+                                <a href="http://localhost:3000/student/appointments" style="background-color: #ffc107; color: #000000; padding: 10px 25px; text-decoration: none; border-radius: 25px; font-weight: bold; display: inline-block; margin-top: 10px;">ทำแบบประเมินความพึงพอใจ</a>
+                            </div>
+                        </div>
+                        <div style="background-color: #eeeeee; padding: 15px; text-align: center; font-size: 12px; color: #888888;">
+                            ระบบดูแลช่วยเหลือนักเรียน<br>โรงเรียนวิทยาศาสตร์จุฬาภรณราชวิทยาลัย
+                        </div>
+                    </div>
+                `
+            });
+        }
+
         res.json({ msg: '✅ บันทึกผลการให้คำปรึกษาเรียบร้อยแล้ว!' });
 
     } catch (err) {
@@ -256,7 +382,7 @@ router.post('/feedback', authMiddleware, async (req, res) => {
             'INSERT INTO feedback (appointment_id, student_user_id, rating, comment) VALUES (?, ?, ?, ?)',
             [appointment_id, student_user_id, rating, comment || '-']
         );
-        res.json({ msg: '✅ ขอบคุณสำหรับการประเมินคค่ะ!' });
+        res.json({ msg: '✅ ขอบคุณสำหรับการประเมินค่ะ!' });
     } catch (err) {
         console.error("Feedback Error:", err);
         res.status(500).send('Server Error');
@@ -264,11 +390,11 @@ router.post('/feedback', authMiddleware, async (req, res) => {
 });
 
 // ==========================================
-// 8. PUT: ขาดนัด / ไม่มาตามนัด (No-show) 🆕
+// 8. PUT: ขาดนัด / ไม่มาตามนัด (No-show)
 // ==========================================
 router.put('/no-show/:id', authMiddleware, async (req, res) => {
     const appointmentId = req.params.id;
-    const { note } = req.body; // เผื่อนักจิตวิทยาอยากพิมพ์โน้ตเพิ่ม เช่น "รอนาน 20 นาที โทรไปไม่รับสาย"
+    const { note } = req.body; 
 
     try {
         await db.query(
