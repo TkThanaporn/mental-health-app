@@ -1,12 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Container, Button, Card, Row, Col, Nav, Navbar, Offcanvas, Badge, Image, Spinner } from 'react-bootstrap';
+import { Container, Button, Card, Row, Col, Nav, Navbar, Offcanvas, Badge, Image, Spinner, Form, Dropdown } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import { 
     FaHome, FaSignOutAlt, FaBars, FaUserCircle,
     FaUserGraduate, FaChalkboardTeacher, FaNewspaper, FaChartPie,
-    FaUserMd, FaClipboardList, FaCalendarCheck, FaUserShield // ✅ นำเข้า FaUserShield เพิ่ม
+    FaUserMd, FaCalendarCheck, FaUserShield, FaFileExcel, FaPrint // ✅ นำเข้า FaUserShield เพิ่ม
 } from 'react-icons/fa';
+import { FaFilter, FaUsers } from 'react-icons/fa';
+import {
+    Bar,
+    BarChart,
+    CartesianGrid,
+    Cell,
+    Legend,
+    Line,
+    LineChart,
+    Pie,
+    PieChart,
+    ResponsiveContainer,
+    Tooltip,
+    XAxis,
+    YAxis
+} from 'recharts';
 
 import './AdminDashboard.css'; 
 
@@ -14,6 +30,19 @@ import UserManagement from './UserManagement';
 import NewsManagement from '../psychologist/NewsManagement'; 
 import AdminProfile from './AdminProfile'; // ✅ 1. นำเข้า Component หน้าจัดการโปรไฟล์ที่เราเพิ่งสร้าง
 import pcshsLogo from '../../assets/pcshs_logo.png'; 
+
+const ROLE_COLORS = {
+    Student: '#003566',
+    Psychologist: '#0ea5e9',
+    Admin: '#F25C05'
+};
+
+const CHART_COLORS = {
+    line: '#F25C05',
+    bar: '#003566',
+    grade: '#0ea5e9',
+    grid: '#e2e8f0'
+};
 
 const AdminDashboard = () => {
     const navigate = useNavigate();
@@ -28,12 +57,23 @@ const AdminDashboard = () => {
 
     // State สำหรับเก็บสถิติ Admin
     const [stats, setStats] = useState({
+        selectedYear: new Date().getFullYear(),
+        availableYears: [new Date().getFullYear()],
+        total_users: 0,
         total_students: 0,
+        total_admins: 0,
         pending_assessments: 0,
         confirmed_appointments: 0,
-        pending_psychologists: 0
+        yearly_appointments: 0,
+        pending_psychologists: 0,
+        roleSummary: [],
+        monthlyConsultations: [],
+        dormitoryUsage: [],
+        gradeUsage: []
     });
+    const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
     const [loadingStats, setLoadingStats] = useState(true);
+    const [exporting, setExporting] = useState(false);
 
     useEffect(() => {
         const token = localStorage.getItem('token');
@@ -44,7 +84,7 @@ const AdminDashboard = () => {
         
         fetchProfile(token);
         fetchStats(token);
-    }, [activeTab]);
+    }, [activeTab, selectedYear]);
 
     const fetchProfile = async (token) => {
         try {
@@ -57,7 +97,8 @@ const AdminDashboard = () => {
 
     const fetchStats = async (token) => {
         try {
-            const res = await axios.get('http://localhost:5000/api/admin/summary', {
+            setLoadingStats(true);
+            const res = await axios.get(`http://localhost:5000/api/admin/summary?year=${selectedYear}`, {
                 headers: { 'x-auth-token': token }
             });
             setStats(res.data);
@@ -77,6 +118,81 @@ const AdminDashboard = () => {
     const handleMenuClick = (tabName) => {
         setActiveTab(tabName);
         setShowMobileMenu(false);
+    };
+
+    const handleExportExcel = async () => {
+        const token = localStorage.getItem('token');
+        if (!token) return handleLogout();
+
+        try {
+            setExporting(true);
+            const res = await axios.get(`http://localhost:5000/api/admin/export/excel?year=${selectedYear}`, {
+                headers: { 'x-auth-token': token },
+                responseType: 'blob'
+            });
+
+            const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/vnd.ms-excel' }));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `pcshs-heartcare-report-${selectedYear}.xls`);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(url);
+        } catch (err) {
+            console.error("Export Excel Error", err);
+            alert('ไม่สามารถสร้างไฟล์ Excel ได้');
+        } finally {
+            setExporting(false);
+        }
+    };
+
+    const handleOpenPrintableReport = async () => {
+        const token = localStorage.getItem('token');
+        if (!token) return handleLogout();
+
+        try {
+            setExporting(true);
+            const res = await axios.get(`http://localhost:5000/api/admin/export/report?year=${selectedYear}`, {
+                headers: { 'x-auth-token': token },
+                responseType: 'text'
+            });
+
+            const reportWindow = window.open('', '_blank');
+            if (!reportWindow) {
+                alert('กรุณาอนุญาต pop-up เพื่อเปิดรายงาน');
+                return;
+            }
+            reportWindow.document.open();
+            reportWindow.document.write(res.data);
+            reportWindow.document.close();
+        } catch (err) {
+            console.error("Printable Report Error", err);
+            alert('ไม่สามารถเปิดรายงานได้');
+        } finally {
+            setExporting(false);
+        }
+    };
+
+    const availableYears = stats.availableYears?.length ? stats.availableYears : [selectedYear];
+    const roleChartData = stats.roleSummary?.length ? stats.roleSummary : [
+        { role: 'Student', label: 'นักเรียน', count: 0 },
+        { role: 'Psychologist', label: 'นักจิตวิทยา', count: 0 },
+        { role: 'Admin', label: 'ผู้ดูแลระบบ', count: 0 }
+    ];
+    const monthlyChartData = stats.monthlyConsultations || [];
+    const dormitoryChartData = stats.dormitoryUsage?.length ? stats.dormitoryUsage : [{ dormitory: 'ไม่มีข้อมูล', count: 0 }];
+    const gradeChartData = stats.gradeUsage?.length ? stats.gradeUsage : ['ม.1', 'ม.2', 'ม.3', 'ม.4', 'ม.5', 'ม.6'].map((grade) => ({ grade, count: 0 }));
+    const roleTotal = roleChartData.reduce((sum, item) => sum + Number(item.count || 0), 0);
+
+    const chartTooltip = ({ active, payload, label }) => {
+        if (!active || !payload?.length) return null;
+        return (
+            <div className="chart-tooltip">
+                <div className="fw-bold">{label || payload[0].name}</div>
+                <div>{payload[0].value} คน/รายการ</div>
+            </div>
+        );
     };
 
     // --- Sidebar Component ---//
@@ -137,13 +253,45 @@ const AdminDashboard = () => {
 
                         {/* Stats Section */}
                         <div className="px-2">
-                            <h4 className="fw-bold mb-4" style={{color: '#003566'}}>สถานะระบบปัจจุบัน</h4>
+                            <div className="dashboard-section-heading mb-4">
+                                <div>
+                                    <h4 className="fw-bold mb-1" style={{color: '#003566'}}>สถานะระบบปัจจุบัน</h4>
+                                    <p className="text-muted mb-0">เลือกปีเพื่อดูแนวโน้มคำขอและกลุ่มนักเรียนที่ใช้บริการ</p>
+                                </div>
+                                <div className="year-filter">
+                                    <FaFilter className="text-orange" />
+                                    <Form.Select
+                                        value={selectedYear}
+                                        onChange={(e) => setSelectedYear(Number(e.target.value))}
+                                        className="year-select shadow-none"
+                                        aria-label="เลือกปีข้อมูล"
+                                    >
+                                        {availableYears.map((year) => (
+                                            <option key={year} value={year}>ปี {year}</option>
+                                        ))}
+                                    </Form.Select>
+                                </div>
+                                <Dropdown align="end">
+                                    <Dropdown.Toggle className="export-toggle" disabled={exporting}>
+                                        {exporting ? <Spinner animation="border" size="sm" className="me-2" /> : <FaPrint className="me-2" />}
+                                        Export รายงาน
+                                    </Dropdown.Toggle>
+                                    <Dropdown.Menu className="export-menu shadow-sm border-0">
+                                        <Dropdown.Item onClick={handleExportExcel}>
+                                            <FaFileExcel className="me-2 text-success" /> Excel (.xls)
+                                        </Dropdown.Item>
+                                        <Dropdown.Item onClick={handleOpenPrintableReport}>
+                                            <FaPrint className="me-2 text-orange" /> พิมพ์ / Save as PDF
+                                        </Dropdown.Item>
+                                    </Dropdown.Menu>
+                                </Dropdown>
+                            </div>
                             <Row className="g-4 mb-4">
                                 {[
-                                    { title: "นักเรียนทั้งหมด", count: stats.total_students, unit: "คน", icon: <FaUserGraduate/>, type: "stat-navy" },
-                                    { title: "บุคลากร/นักจิตฯ", count: stats.pending_psychologists, unit: "คน", icon: <FaUserMd/>, type: "stat-info" }, 
-                                    { title: "นัดหมายยืนยัน", count: stats.confirmed_appointments, unit: "รายการ", icon: <FaCalendarCheck/>, type: "stat-success" },
-                                    { title: "แบบประเมินรอตรวจ", count: stats.pending_assessments, unit: "รายการ", icon: <FaClipboardList/>, type: "stat-warning" }
+                                    { title: "ผู้ใช้ทั้งหมด", count: stats.total_users, unit: "คน", icon: <FaUsers/>, type: "stat-navy" },
+                                    { title: "นักเรียนทั้งหมด", count: stats.total_students, unit: "คน", icon: <FaUserGraduate/>, type: "stat-info" },
+                                    { title: `คำขอปี ${selectedYear}`, count: stats.yearly_appointments, unit: "รายการ", icon: <FaCalendarCheck/>, type: "stat-success" },
+                                    { title: "นักจิตวิทยา", count: stats.pending_psychologists, unit: "คน", icon: <FaUserMd/>, type: "stat-warning" }
                                 ].map((item, idx) => (
                                     <Col xs={12} sm={6} lg={3} key={idx}>
                                         <Card className={`premium-stat-card ${item.type}`}>
@@ -158,6 +306,119 @@ const AdminDashboard = () => {
                                         </Card>
                                     </Col>
                                 ))}
+                            </Row>
+                            <Row className="g-4 mb-4">
+                                <Col xs={12} xl={5}>
+                                    <Card className="dashboard-chart-card">
+                                        <div className="chart-card-header">
+                                            <div>
+                                                <h5>สัดส่วนผู้ใช้งานทั้งหมด</h5>
+                                                <p>นับจาก role ในตาราง users</p>
+                                            </div>
+                                            <span className="chart-total-pill">{roleTotal} คน</span>
+                                        </div>
+                                        <div className="donut-chart-wrap">
+                                            {loadingStats ? (
+                                                <div className="chart-loading"><Spinner animation="border" /></div>
+                                            ) : (
+                                                <ResponsiveContainer width="100%" height={280}>
+                                                    <PieChart>
+                                                        <Pie
+                                                            data={roleChartData}
+                                                            dataKey="count"
+                                                            nameKey="label"
+                                                            innerRadius={72}
+                                                            outerRadius={105}
+                                                            paddingAngle={4}
+                                                        >
+                                                            {roleChartData.map((entry) => (
+                                                                <Cell key={entry.role} fill={ROLE_COLORS[entry.role] || '#64748b'} />
+                                                            ))}
+                                                        </Pie>
+                                                        <Tooltip content={chartTooltip} />
+                                                        <Legend />
+                                                    </PieChart>
+                                                </ResponsiveContainer>
+                                            )}
+                                            <div className="donut-center-label">
+                                                <strong>{roleTotal}</strong>
+                                                <span>ผู้ใช้ทั้งหมด</span>
+                                            </div>
+                                        </div>
+                                    </Card>
+                                </Col>
+                                <Col xs={12} xl={7}>
+                                    <Card className="dashboard-chart-card">
+                                        <div className="chart-card-header">
+                                            <div>
+                                                <h5>จำนวนผู้ขอรับคำปรึกษารายเดือน</h5>
+                                                <p>แสดง 12 เดือนของปี {selectedYear}</p>
+                                            </div>
+                                        </div>
+                                        {loadingStats ? (
+                                            <div className="chart-loading"><Spinner animation="border" /></div>
+                                        ) : (
+                                            <ResponsiveContainer width="100%" height={320}>
+                                                <LineChart data={monthlyChartData} margin={{ top: 12, right: 18, bottom: 4, left: -12 }}>
+                                                    <CartesianGrid strokeDasharray="3 3" stroke={CHART_COLORS.grid} />
+                                                    <XAxis dataKey="label" tickLine={false} axisLine={false} />
+                                                    <YAxis allowDecimals={false} tickLine={false} axisLine={false} />
+                                                    <Tooltip content={chartTooltip} />
+                                                    <Line type="monotone" dataKey="count" name="คำขอ" stroke={CHART_COLORS.line} strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+                                                </LineChart>
+                                            </ResponsiveContainer>
+                                        )}
+                                    </Card>
+                                </Col>
+                            </Row>
+
+                            <Row className="g-4">
+                                <Col xs={12} xl={6}>
+                                    <Card className="dashboard-chart-card">
+                                        <div className="chart-card-header">
+                                            <div>
+                                                <h5>หอพักที่ใช้บริการมากที่สุด</h5>
+                                                <p>นับนักเรียนไม่ซ้ำที่มีคำขอในปี {selectedYear}</p>
+                                            </div>
+                                        </div>
+                                        {loadingStats ? (
+                                            <div className="chart-loading"><Spinner animation="border" /></div>
+                                        ) : (
+                                            <ResponsiveContainer width="100%" height={330}>
+                                                <BarChart data={dormitoryChartData} layout="vertical" margin={{ top: 8, right: 24, bottom: 8, left: 52 }}>
+                                                    <CartesianGrid strokeDasharray="3 3" stroke={CHART_COLORS.grid} horizontal={false} />
+                                                    <XAxis type="number" allowDecimals={false} tickLine={false} axisLine={false} />
+                                                    <YAxis type="category" dataKey="dormitory" width={96} tickLine={false} axisLine={false} />
+                                                    <Tooltip content={chartTooltip} />
+                                                    <Bar dataKey="count" name="นักเรียน" fill={CHART_COLORS.bar} radius={[0, 8, 8, 0]} />
+                                                </BarChart>
+                                            </ResponsiveContainer>
+                                        )}
+                                    </Card>
+                                </Col>
+                                <Col xs={12} xl={6}>
+                                    <Card className="dashboard-chart-card">
+                                        <div className="chart-card-header">
+                                            <div>
+                                                <h5>ระดับชั้นที่ใช้บริการมากที่สุด</h5>
+                                                <p>ม.1 ถึง ม.6 นับนักเรียนไม่ซ้ำในปี {selectedYear}</p>
+                                            </div>
+                                        </div>
+                                        {loadingStats ? (
+                                            <div className="chart-loading"><Spinner animation="border" /></div>
+                                        ) : (
+                                            <ResponsiveContainer width="100%" height={330}>
+                                                <BarChart data={gradeChartData} margin={{ top: 8, right: 18, bottom: 4, left: -12 }}>
+                                                    <CartesianGrid strokeDasharray="3 3" stroke={CHART_COLORS.grid} vertical={false} />
+                                                    <XAxis dataKey="grade" tickLine={false} axisLine={false} />
+                                                    <YAxis allowDecimals={false} tickLine={false} axisLine={false} />
+                                                    <Tooltip content={chartTooltip} />
+                                                    <Bar dataKey="count" name="นักเรียน" fill={CHART_COLORS.grade} radius={[8, 8, 0, 0]} />
+                                                </BarChart>
+                                            </ResponsiveContainer>
+                                        )}
+                                    </Card>
+                                </Col>
                             </Row>
                         </div>
                     </div>
