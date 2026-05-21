@@ -2,14 +2,13 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
-import { Container, Form, Button, Row, Col, InputGroup } from 'react-bootstrap';
-// ✅ เอา FaGraduationCap และ FaHome ออกจาก import เพราะไม่ได้ใช้แล้ว
-import { FaEnvelope, FaLock, FaUser } from 'react-icons/fa';
+import { Form, Button, Row, Col, InputGroup, Spinner } from 'react-bootstrap';
+import { FaEnvelope, FaLock, FaUser, FaKey, FaArrowLeft } from 'react-icons/fa';
 
 import pcshsLogo from '../../assets/pcshs_logo.png'; 
 
 const Register = () => {
-    // ✅ เอา education_level และ dormitory ออกจาก State เริ่มต้น
+    // 1️⃣ State สำหรับเก็บข้อมูลฟอร์ม
     const [formData, setFormData] = useState({ 
         email: '', 
         password: '', 
@@ -17,10 +16,14 @@ const Register = () => {
         fullname: '' 
     });
     
+    // 2️⃣ State สำหรับระบบ OTP
+    const [step, setStep] = useState(1); // step 1 = กรอกข้อมูล, step 2 = กรอก OTP
+    const [otp, setOtp] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+
     const [showPassword, setShowPassword] = useState(false);
     const navigate = useNavigate();
 
-    // Theme สีโรงเรียนวิทยาศาสตร์จุฬาภรณราชวิทยาลัย (PCSHS) - น้ำเงิน/แสด
     const themeColors = {
         primaryBlue: '#002147', 
         secondaryBlue: '#1B3F8B', 
@@ -31,22 +34,54 @@ const Register = () => {
 
     const onChange = e => setFormData({ ...formData, [e.target.name]: e.target.value });
 
-    const onSubmit = async e => {
+    // ==========================================
+    // ฟังก์ชัน Step 1: ส่งข้อมูลไปขอ OTP
+    // ==========================================
+    const onRequestOTP = async e => {
         e.preventDefault();
+        setIsLoading(true);
         try {
-            await axios.post('http://localhost:5000/api/auth/register', formData);
-            alert('การสมัครสมาชิกสำเร็จแล้ว! กรุณาเข้าสู่ระบบ');
+            // ยิง API ไปที่ register-request (ตามที่เขียนไว้ใน authRoutes.js)
+            const res = await axios.post('http://localhost:5000/api/auth/register-request', formData);
+            alert(res.data.msg || 'ระบบได้ส่งรหัส OTP ไปที่อีเมลของคุณแล้ว');
+            setStep(2); // เปลี่ยนหน้าจอไป Step 2
+        } catch (err) {
+            const msg = err.response && err.response.data && err.response.data.msg 
+                        ? err.response.data.msg 
+                        : 'การส่งคำขอไม่สำเร็จ กรุณาตรวจสอบอีเมลหรือข้อมูล';
+            alert(msg);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    // ==========================================
+    // ฟังก์ชัน Step 2: ส่ง OTP ไปยืนยันการสมัคร
+    // ==========================================
+    const onVerifyOTP = async e => {
+        e.preventDefault();
+        if (otp.length !== 6) {
+            return alert("กรุณากรอกรหัส OTP ให้ครบ 6 หลัก");
+        }
+
+        setIsLoading(true);
+        try {
+            await axios.post('http://localhost:5000/api/auth/register-verify', {
+                email: formData.email,
+                otp: otp
+            });
+            alert('ยืนยันตัวตนสำเร็จ! สมัครสมาชิกเรียบร้อยแล้ว');
             navigate('/login');
         } catch (err) {
             const msg = err.response && err.response.data && err.response.data.msg 
                         ? err.response.data.msg 
-                        : 'การสมัครสมาชิกไม่สำเร็จ กรุณาตรวจสอบอีเมลหรือข้อมูล';
-            console.error("Registration Failed:", err.response || err);
+                        : 'รหัส OTP ไม่ถูกต้องหรือหมดอายุ';
             alert(msg);
+        } finally {
+            setIsLoading(false);
         }
     };
 
-    // สไตล์สำหรับ Input fields
     const inputStyle = { backgroundColor: '#f8f9fa', border: 'none', fontSize: '1rem' };
     const iconStyle = { backgroundColor: '#f8f9fa', border: 'none' };
 
@@ -59,7 +94,6 @@ const Register = () => {
             justifyContent: 'center',
             padding: '20px'
         }}>
-            {/* Main Card Container */}
             <div className="shadow-lg overflow-hidden bg-white" 
                  style={{ 
                      borderRadius: '20px', 
@@ -70,77 +104,134 @@ const Register = () => {
                  }}>
                 <Row className="g-0 w-100">
                     
-                    {/* ================= LEFT SIDE: REGISTER FORM ================= */}
+                    {/* ================= LEFT SIDE: FORM ================= */}
                     <Col lg={6} className="p-4 p-md-5 d-flex flex-column justify-content-center bg-white">
                         <div style={{ maxWidth: '480px', margin: '0 auto', width: '100%' }}>
-                            <h2 className="text-center fw-bold mb-4" style={{ color: themeColors.textDark, fontSize: '2rem' }}>ลงทะเบียน</h2>
                             
-                            <Form onSubmit={onSubmit}>
-                                
-                                {/* Fullname */}
-                                <Form.Group className="mb-3">
-                                    <InputGroup size="lg">
-                                        <InputGroup.Text style={iconStyle}><FaUser className="text-muted" /></InputGroup.Text>
-                                        <Form.Control type="text" name="fullname" placeholder="ชื่อ-นามสกุล" value={formData.fullname} onChange={onChange} required style={inputStyle} className="py-3" />
-                                    </InputGroup>
-                                </Form.Group>
+                            {/* 🔄 แสดงหน้าจอตาม Step */}
+                            {step === 1 ? (
+                                // ----------------- STEP 1: ฟอร์มสมัครสมาชิก -----------------
+                                <>
+                                    <h2 className="text-center fw-bold mb-4" style={{ color: themeColors.textDark, fontSize: '2rem' }}>ลงทะเบียน</h2>
+                                    
+                                    <Form onSubmit={onRequestOTP}>
+                                        <Form.Group className="mb-3">
+                                            <InputGroup size="lg">
+                                                <InputGroup.Text style={iconStyle}><FaUser className="text-muted" /></InputGroup.Text>
+                                                <Form.Control type="text" name="fullname" placeholder="ชื่อ-นามสกุล" value={formData.fullname} onChange={onChange} required style={inputStyle} className="py-3" />
+                                            </InputGroup>
+                                        </Form.Group>
 
-                                {/* Email */}
-                                <Form.Group className="mb-3">
-                                    <InputGroup size="lg">
-                                        <InputGroup.Text style={iconStyle}><FaEnvelope className="text-muted" /></InputGroup.Text>
-                                        <Form.Control type="email" name="email" placeholder="อีเมล (สำหรับเข้าสู่ระบบ)" value={formData.email} onChange={onChange} required style={inputStyle} className="py-3" />
-                                    </InputGroup>
-                                </Form.Group>
+                                        <Form.Group className="mb-3">
+                                            <InputGroup size="lg">
+                                                <InputGroup.Text style={iconStyle}><FaEnvelope className="text-muted" /></InputGroup.Text>
+                                                <Form.Control type="email" name="email" placeholder="อีเมล (สำหรับรับ OTP และเข้าสู่ระบบ)" value={formData.email} onChange={onChange} required style={inputStyle} className="py-3" />
+                                            </InputGroup>
+                                        </Form.Group>
 
-                                {/* Password */}
-                                <Form.Group className="mb-3">
-                                    <InputGroup size="lg">
-                                        <InputGroup.Text style={iconStyle}><FaLock className="text-muted" /></InputGroup.Text>
-                                        <Form.Control 
-                                            type={showPassword ? "text" : "password"} 
-                                            name="password" 
-                                            placeholder="รหัสผ่าน" 
-                                            value={formData.password} 
-                                            onChange={onChange} 
-                                            required 
-                                            style={inputStyle}
-                                            className="py-3" 
-                                        />
-                                    </InputGroup>
-                                </Form.Group>
+                                        <Form.Group className="mb-3">
+                                            <InputGroup size="lg">
+                                                <InputGroup.Text style={iconStyle}><FaLock className="text-muted" /></InputGroup.Text>
+                                                <Form.Control 
+                                                    type={showPassword ? "text" : "password"} 
+                                                    name="password" 
+                                                    placeholder="รหัสผ่าน" 
+                                                    value={formData.password} 
+                                                    onChange={onChange} 
+                                                    required 
+                                                    style={inputStyle}
+                                                    className="py-3" 
+                                                />
+                                            </InputGroup>
+                                        </Form.Group>
 
-                                {/* Checkbox Show Password */}
-                                <div className="mb-4 d-flex align-items-center">
-                                    <Form.Check 
-                                        type="checkbox" 
-                                        id="show-password-checkbox"
-                                        label="แสดงรหัสผ่าน" 
-                                        className="text-muted me-2"
-                                        style={{ cursor: 'pointer' }}
-                                        checked={showPassword}
-                                        onChange={() => setShowPassword(!showPassword)}
-                                    />
+                                        <div className="mb-4 d-flex align-items-center">
+                                            <Form.Check 
+                                                type="checkbox" 
+                                                id="show-password-checkbox"
+                                                label="แสดงรหัสผ่าน" 
+                                                className="text-muted me-2"
+                                                style={{ cursor: 'pointer' }}
+                                                checked={showPassword}
+                                                onChange={() => setShowPassword(!showPassword)}
+                                            />
+                                        </div>
+
+                                        <Button 
+                                            type="submit" 
+                                            disabled={isLoading}
+                                            className="w-100 py-3 fw-bold text-white border-0"
+                                            style={{ 
+                                                backgroundColor: themeColors.primaryOrange, 
+                                                borderRadius: '30px',
+                                                boxShadow: '0 4px 15px rgba(242, 101, 34, 0.4)', 
+                                                fontSize: '1.2rem'
+                                            }}
+                                        >
+                                            {isLoading ? <Spinner animation="border" size="sm" /> : "ดำเนินการต่อ (รับรหัส OTP)"}
+                                        </Button>
+                                    </Form>
+
+                                    <div className="text-center mt-4 text-muted">
+                                        มีบัญชีอยู่แล้ว? <Link to="/login" className="fw-bold" style={{ textDecoration: 'none', color: themeColors.primaryOrange }}>เข้าสู่ระบบ</Link>
+                                    </div>
+                                </>
+                            ) : (
+                                // ----------------- STEP 2: ฟอร์มยืนยัน OTP -----------------
+                                <div className="text-center fade-in">
+                                    <div className="mb-4 text-primary" style={{ fontSize: '3rem' }}>
+                                        <FaKey />
+                                    </div>
+                                    <h2 className="fw-bold mb-3" style={{ color: themeColors.textDark }}>ยืนยันอีเมลของคุณ</h2>
+                                    <p className="text-muted mb-4">
+                                        ระบบได้ส่งรหัส OTP 6 หลัก ไปยังอีเมล<br/>
+                                        <strong className="text-dark">{formData.email}</strong><br/>
+                                        <small className="text-danger">รหัสจะหมดอายุภายใน 5 นาที</small>
+                                    </p>
+                                    
+                                    <Form onSubmit={onVerifyOTP}>
+                                        <Form.Group className="mb-4">
+                                            <Form.Control 
+                                                type="text" 
+                                                maxLength="6"
+                                                placeholder="------" 
+                                                value={otp} 
+                                                onChange={(e) => setOtp(e.target.value.replace(/[^0-9]/g, ''))} // บังคับกรอกแต่ตัวเลข
+                                                required 
+                                                className="text-center py-3 fw-bold tracking-widest"
+                                                style={{ 
+                                                    fontSize: '2rem', 
+                                                    letterSpacing: '10px', 
+                                                    backgroundColor: '#f8f9fa', 
+                                                    border: `2px dashed ${themeColors.primaryOrange}` 
+                                                }} 
+                                            />
+                                        </Form.Group>
+
+                                        <Button 
+                                            type="submit" 
+                                            disabled={isLoading || otp.length < 6}
+                                            className="w-100 py-3 fw-bold text-white border-0 mb-3"
+                                            style={{ 
+                                                backgroundColor: themeColors.primaryBlue, 
+                                                borderRadius: '30px',
+                                                fontSize: '1.2rem'
+                                            }}
+                                        >
+                                            {isLoading ? <Spinner animation="border" size="sm" /> : "ยืนยันรหัส OTP"}
+                                        </Button>
+
+                                        <Button 
+                                            variant="link" 
+                                            className="text-muted text-decoration-none"
+                                            onClick={() => setStep(1)}
+                                            disabled={isLoading}
+                                        >
+                                            <FaArrowLeft className="me-2" /> กลับไปแก้ไขข้อมูล
+                                        </Button>
+                                    </Form>
                                 </div>
-
-                                {/* Submit Button */}
-                                <Button 
-                                    type="submit" 
-                                    className="w-100 py-3 fw-bold text-white border-0"
-                                    style={{ 
-                                        backgroundColor: themeColors.primaryOrange, 
-                                        borderRadius: '30px',
-                                        boxShadow: '0 4px 15px rgba(242, 101, 34, 0.4)', 
-                                        fontSize: '1.2rem'
-                                    }}
-                                >
-                                    สมัครสมาชิก
-                                </Button>
-                            </Form>
-
-                            <div className="text-center mt-4 text-muted">
-                                มีบัญชีอยู่แล้ว? <Link to="/login" className="fw-bold" style={{ textDecoration: 'none', color: themeColors.primaryOrange }}>เข้าสู่ระบบ</Link>
-                            </div>
+                            )}
                         </div>
                     </Col>
 

@@ -7,7 +7,7 @@ require('dotenv').config();
 const db = require('./config/db');
 const path = require('path'); 
 
-// 🔥 [เพิ่มใหม่ 1] นำเข้าบริการ Cron Job
+// 🔥 นำเข้าบริการ Cron Job
 const { startNotificationCron } = require('./services/cronService');
 
 const app = express();
@@ -72,6 +72,21 @@ server.listen(PORT, () => {
     console.log(`🚀 Server running on port ${PORT}`);
     console.log(`💬 Socket.io Ready!`);
     
-    // 🔥 [เพิ่มใหม่ 2] เรียกใช้งานระบบแจ้งเตือนอัตโนมัติ
+    // เรียกใช้งานระบบแจ้งเตือนอัตโนมัติ (แจ้งเตือนล่วงหน้า 15 นาที)
     startNotificationCron();
+
+    // 🧹 [เพิ่มใหม่] ระบบลบข้อมูลขยะอัตโนมัติ (รันทุกๆ 1 นาที)
+    setInterval(async () => {
+        try {
+            // ลบ User ที่ยังไม่ได้ยืนยันตัวตน (is_verified = FALSE) และเวลาหมดอายุ OTP ผ่านไปแล้ว
+            const [result] = await db.query(
+                'DELETE FROM users WHERE is_verified = FALSE AND otp_expires_at < NOW()'
+            );
+            if (result.affectedRows > 0) {
+                console.log(`🧹 [Cron Job] ลบบัญชีขยะ (OTP หมดอายุ) จำนวน ${result.affectedRows} รายการ`);
+            }
+        } catch (err) {
+            console.error('❌ [Cron Job Error] ไม่สามารถเคลียร์ขยะได้:', err.message);
+        }
+    }, 60000); // 60000 มิลลิวินาที = 1 นาที
 });
