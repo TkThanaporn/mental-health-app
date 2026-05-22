@@ -30,7 +30,7 @@ router.post('/register-request', async (req, res) => {
             }
         }
 
-        // 2. เข้ารหัสรหัสผ่าน (นำระบบ bcrypt จากโค้ดเก่าของคุณมาใช้)
+        // 2. เข้ารหัสรหัสผ่าน
         const salt = await bcrypt.genSalt(10);
         const hashed_password = await bcrypt.hash(password, salt);
 
@@ -65,22 +65,18 @@ router.post('/register-request', async (req, res) => {
             html: `
                 <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; background-color: #f4f7f6; padding: 20px; border-radius: 12px;">
                     <div style="background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
-                        
                         <div style="background: linear-gradient(135deg, #002147 0%, #1B3F8B 100%); padding: 30px 20px; text-align: center;">
                             <h1 style="color: #FFD700; margin: 0; font-size: 26px; letter-spacing: 1px;">PCSHS HeartCare</h1>
                             <p style="color: #ffffff; margin: 10px 0 0 0; font-size: 15px; opacity: 0.9;">ระบบดูแลช่วยเหลือนักเรียน</p>
                         </div>
-
                         <div style="padding: 40px 30px; text-align: center;">
                             <h2 style="color: #333333; margin-top: 0; font-size: 22px;">รหัสยืนยันตัวตน (OTP)</h2>
                             <p style="color: #666666; font-size: 16px; line-height: 1.6; margin-bottom: 30px;">
                                 กรุณานำรหัส 6 หลักด้านล่างนี้ไปกรอกในแอปพลิเคชัน เพื่อยืนยันการสมัครสมาชิกของคุณ
                             </p>
-
                             <div style="background-color: #fff4e6; border: 2px dashed #f26522; border-radius: 12px; padding: 20px; margin: 0 auto; max-width: 320px;">
                                 <h1 style="color: #f26522; font-size: 46px; letter-spacing: 12px; margin: 0; text-align: center; font-weight: 900;">${otp}</h1>
                             </div>
-
                             <div style="margin-top: 35px; padding: 15px; background-color: #f8f9fa; border-radius: 8px; border-left: 4px solid #dc3545; text-align: left;">
                                 <p style="margin: 0; color: #dc3545; font-size: 14px; font-weight: bold;">⚠️ ข้อควรระวังด้านความปลอดภัย</p>
                                 <p style="margin: 5px 0 0 0; color: #555555; font-size: 14px; line-height: 1.5;">
@@ -88,7 +84,6 @@ router.post('/register-request', async (req, res) => {
                                 </p>
                             </div>
                         </div>
-
                         <div style="background-color: #eeeeee; padding: 20px; text-align: center; border-top: 1px solid #dddddd;">
                             <p style="color: #888888; font-size: 12px; margin: 0 0 10px 0; line-height: 1.5;">
                                 หากคุณไม่ได้เป็นผู้ทำรายการนี้ โปรดละเว้นอีเมลฉบับนี้และไม่ต้องดำเนินการใดๆ
@@ -97,7 +92,6 @@ router.post('/register-request', async (req, res) => {
                                 &copy; โรงเรียนวิทยาศาสตร์จุฬาภรณราชวิทยาลัย เลย
                             </p>
                         </div>
-                        
                     </div>
                 </div>
             `
@@ -189,6 +183,99 @@ router.post('/login', async (req, res) => {
     } catch (err) {
         console.error("LOGIN ERROR:", err.message);
         res.status(500).send('Server error.');
+    }
+});
+
+// ==========================================
+// 4. POST: ขอรหัส OTP สำหรับลืมรหัสผ่าน
+// ==========================================
+router.post('/forgot-password', async (req, res) => {
+    const { email } = req.body;
+    try {
+        const [users] = await db.execute('SELECT * FROM users WHERE email = ? AND is_verified = TRUE', [email]);
+        if (users.length === 0) return res.status(404).json({ msg: 'ไม่พบอีเมลนี้ หรือบัญชียังไม่ได้ยืนยันตัวตน' });
+
+        // สุ่มรหัส OTP 6 หลัก และให้เวลา 15 นาที
+        const otp = Math.floor(100000 + Math.random() * 900000).toString(); 
+        const expires_at = new Date(Date.now() + 5 * 60000);
+        // บันทึก OTP ลงคอลัมน์เดิม
+        await db.execute(
+            'UPDATE users SET otp_code = ?, otp_expires_at = ? WHERE email = ?', 
+            [otp, expires_at, email]
+        );
+
+        // ส่งอีเมลโดยใช้ service ของคุณ พร้อมดีไซน์พรีเมียม
+        await sendEmail({
+            to: email,
+            subject: '🔑 รหัส OTP สำหรับรีเซ็ตรหัสผ่าน - PCSHS Care',
+            html: `
+                <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; background-color: #f4f7f6; padding: 20px; border-radius: 12px;">
+                    <div style="background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
+                        <div style="background: linear-gradient(135deg, #002147 0%, #1B3F8B 100%); padding: 30px 20px; text-align: center;">
+                            <h1 style="color: #FFD700; margin: 0; font-size: 26px; letter-spacing: 1px;">PCSHS HeartCare</h1>
+                            <p style="color: #ffffff; margin: 10px 0 0 0; font-size: 15px; opacity: 0.9;">การกู้คืนรหัสผ่าน</p>
+                        </div>
+                        <div style="padding: 40px 30px; text-align: center;">
+                            <h2 style="color: #333333; margin-top: 0; font-size: 22px;">รหัสรีเซ็ตรหัสผ่าน (OTP)</h2>
+                            <p style="color: #666666; font-size: 16px; line-height: 1.6; margin-bottom: 30px;">
+                                ระบบได้รับการร้องขอให้เปลี่ยนรหัสผ่านบัญชีของคุณ<br>กรุณานำรหัส 6 หลักด้านล่างไปกรอกเพื่อตั้งรหัสผ่านใหม่
+                            </p>
+                            <div style="background-color: #f3f6fa; border: 2px dashed #1B3F8B; border-radius: 12px; padding: 20px; margin: 0 auto; max-width: 320px;">
+                                <h1 style="color: #1B3F8B; font-size: 46px; letter-spacing: 12px; margin: 0; text-align: center; font-weight: 900;">${otp}</h1>
+                            </div>
+                            <div style="margin-top: 35px; padding: 15px; background-color: #f8f9fa; border-radius: 8px; border-left: 4px solid #dc3545; text-align: left;">
+                                <p style="margin: 0; color: #dc3545; font-size: 14px; font-weight: bold;">⚠️ ข้อควรระวัง</p>
+                                <p style="margin: 5px 0 0 0; color: #555555; font-size: 14px; line-height: 1.5;">
+                                    รหัสนี้จะหมดอายุภายใน <strong>15 นาที</strong> หากคุณไม่ได้เป็นคนขอรีเซ็ตรหัสผ่าน โปรดเปลี่ยนรหัสผ่านอีเมลของคุณทันที
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `
+        });
+
+        res.json({ msg: 'ส่งรหัส OTP ไปที่อีเมลแล้ว กรุณาตรวจสอบกล่องจดหมาย' });
+    } catch (err) {
+        console.error("FORGOT PASSWORD ERROR:", err.message);
+        res.status(500).json({ msg: 'เกิดข้อผิดพลาดของระบบ' });
+    }
+});
+
+// ==========================================
+// 5. POST: ยืนยัน OTP และตั้งรหัสผ่านใหม่
+// ==========================================
+router.post('/reset-password', async (req, res) => {
+    const { email, otp, newPassword } = req.body;
+    try {
+        const [users] = await db.execute(
+            'SELECT * FROM users WHERE email = ? AND otp_code = ?', 
+            [email, otp]
+        );
+        
+        if (users.length === 0) return res.status(400).json({ msg: 'รหัส OTP ไม่ถูกต้อง' });
+
+        const user = users[0];
+
+        // เช็คว่า OTP หมดอายุหรือยัง
+        if (new Date() > new Date(user.otp_expires_at)) {
+            return res.status(400).json({ msg: 'รหัส OTP หมดอายุแล้ว กรุณาขอรหัสใหม่อีกครั้ง' });
+        }
+
+        // เข้ารหัสรหัสผ่านใหม่
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+        // อัปเดตรหัสผ่านใหม่ และเคลียร์ OTP คืนค่าว่าง
+        await db.execute(
+            'UPDATE users SET password = ?, otp_code = NULL, otp_expires_at = NULL WHERE email = ?', 
+            [hashedPassword, email]
+        );
+
+        res.json({ msg: 'เปลี่ยนรหัสผ่านสำเร็จ สามารถเข้าสู่ระบบด้วยรหัสผ่านใหม่ได้ทันที!' });
+    } catch (err) {
+        console.error("RESET PASSWORD ERROR:", err.message);
+        res.status(500).json({ msg: 'เกิดข้อผิดพลาดของระบบ' });
     }
 });
 
