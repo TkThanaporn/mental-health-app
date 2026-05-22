@@ -26,7 +26,7 @@ const formatThaiDate = (dateString) => {
 };
 
 // ==========================================
-// 1. GET: ดูประวัตินัดหมาย (สำหรับนักจิตวิทยา)
+// 1. GET: ดูประวัตินัดหมาย (สำหรับนักจิตวิทยา) - แก้ไขใหม่ให้ดึงผลประเมินและสรุปผล
 // ==========================================
 router.get('/psychologist-history', authMiddleware, async (req, res) => {
     try {
@@ -35,13 +35,21 @@ router.get('/psychologist-history', authMiddleware, async (req, res) => {
         const sql = `
             SELECT 
                 a.appointment_id, 
+                a.student_user_id,
                 s.date AS date, 
                 CONCAT(DATE_FORMAT(s.start_time, '%H:%i'), '-', DATE_FORMAT(s.end_time, '%H:%i')) AS time_slot, 
                 a.status, 
                 a.topic,
+                a.result_summary, -- 👈 เพิ่มตรงนี้เพื่อให้เห็นสรุปผล
                 u.fullname AS student_name,
                 u.email AS student_email,
-                u.phone AS student_phone
+                u.phone AS student_phone,
+                -- 👇 เพิ่ม Subquery ตรงนี้เพื่อดึงผลประเมินล่าสุด
+                (SELECT stress_level 
+                 FROM assessments 
+                 WHERE student_user_id = a.student_user_id 
+                 ORDER BY created_at DESC 
+                 LIMIT 1) AS stress_level
             FROM appointments a
             JOIN users u ON a.student_user_id = u.user_id
             JOIN schedules s ON a.schedule_id = s.schedule_id
