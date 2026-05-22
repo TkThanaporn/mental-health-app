@@ -44,6 +44,8 @@ const CHART_COLORS = {
     grid: '#e2e8f0'
 };
 
+const DASHBOARD_FALLBACK_YEARS = [...new Set([new Date().getFullYear(), 2025])].sort((a, b) => b - a);
+
 const AdminDashboard = () => {
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('dashboard'); 
@@ -58,7 +60,7 @@ const AdminDashboard = () => {
     // State สำหรับเก็บสถิติ Admin
     const [stats, setStats] = useState({
         selectedYear: new Date().getFullYear(),
-        availableYears: [new Date().getFullYear()],
+        availableYears: DASHBOARD_FALLBACK_YEARS,
         total_users: 0,
         total_students: 0,
         total_admins: 0,
@@ -174,7 +176,10 @@ const AdminDashboard = () => {
         }
     };
 
-    const availableYears = stats.availableYears?.length ? stats.availableYears : [selectedYear];
+    const availableYears = [...new Set([
+        ...(stats.availableYears?.length ? stats.availableYears : DASHBOARD_FALLBACK_YEARS),
+        selectedYear
+    ].map(Number))].sort((a, b) => b - a);
     const roleChartData = stats.roleSummary?.length ? stats.roleSummary : [
         { role: 'Student', label: 'นักเรียน', count: 0 },
         { role: 'Psychologist', label: 'นักจิตวิทยา', count: 0 },
@@ -313,7 +318,8 @@ const AdminDashboard = () => {
                                         <div className="chart-card-header">
                                             <div>
                                                 <h5>สัดส่วนผู้ใช้งานทั้งหมด</h5>
-                                                <p>นับจาก role ในตาราง users</p>
+                                                {/* นับจาก role ในตาราง users */}
+                                                <p>จำนวนผู้ใช้งานทั้งหมด</p>
                                             </div>
                                             <span className="chart-total-pill">{roleTotal} คน</span>
                                         </div>
@@ -378,7 +384,8 @@ const AdminDashboard = () => {
                                         <div className="chart-card-header">
                                             <div>
                                                 <h5>หอพักที่ใช้บริการมากที่สุด</h5>
-                                                <p>นับนักเรียนไม่ซ้ำที่มีคำขอในปี {selectedYear}</p>
+                                                {/* นับนักเรียนไม่ซ้ำที่มีคำขอในปี */}
+                                                <p>จำนวนนักเรียนที่มีคำขอในปี {selectedYear}</p>
                                             </div>
                                         </div>
                                         {loadingStats ? (
@@ -401,7 +408,8 @@ const AdminDashboard = () => {
                                         <div className="chart-card-header">
                                             <div>
                                                 <h5>ระดับชั้นที่ใช้บริการมากที่สุด</h5>
-                                                <p>ม.1 ถึง ม.6 นับนักเรียนไม่ซ้ำในปี {selectedYear}</p>
+                                                {/* ม.1 ถึง ม.6 นับนักเรียนไม่ซ้ำในปี */}
+                                                <p>จำนวนนักเรียน ม.1 ถึง ม.6 ในปี {selectedYear}</p>
                                             </div>
                                         </div>
                                         {loadingStats ? (

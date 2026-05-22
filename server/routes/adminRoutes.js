@@ -5,6 +5,8 @@ const db = require('../config/db');
 const bcrypt = require('bcryptjs'); // ✅ เปลี่ยนเป็น bcryptjs ให้เหมือน authRoutes
 const { authMiddleware, authorizeRole } = require('../middleware/auth');
 
+const defaultDashboardYears = [2025];
+
 const monthLabels = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
 const gradeLabels = ['ม.1', 'ม.2', 'ม.3', 'ม.4', 'ม.5', 'ม.6'];
 
@@ -12,6 +14,16 @@ const parseDashboardYear = (year) => {
     const currentYear = new Date().getFullYear();
     const requestedYear = parseInt(year, 10);
     return Number.isInteger(requestedYear) ? requestedYear : currentYear;
+};
+
+const normalizeDashboardYears = (years, selectedYear) => {
+    const currentYear = new Date().getFullYear();
+    return [...new Set([
+        currentYear,
+        selectedYear,
+        ...defaultDashboardYears,
+        ...years
+    ].filter(Boolean).map(Number))].sort((a, b) => b - a);
 };
 
 const escapeHtml = (value) => String(value ?? '')
@@ -61,9 +73,7 @@ const getDashboardStats = async (year) => {
             WHERE booking_date IS NOT NULL
             ORDER BY year DESC
         `);
-        availableYears = yearRows.map((row) => row.year).filter(Boolean);
-        if (!availableYears.includes(currentYear)) availableYears.unshift(currentYear);
-        if (!availableYears.includes(selectedYear)) availableYears.unshift(selectedYear);
+        availableYears = normalizeDashboardYears(yearRows.map((row) => row.year), selectedYear);
 
         const [monthlyRows] = await db.query(`
             SELECT MONTH(booking_date) AS month, COUNT(*) AS count
@@ -108,6 +118,7 @@ const getDashboardStats = async (year) => {
         gradeUsage = gradeUsage.map((item) => ({ ...item, count: gradeCountMap[item.grade] || 0 }));
     } catch (e) {
         console.log("Dashboard chart data not ready:", e.message);
+        availableYears = normalizeDashboardYears(availableYears, selectedYear);
     }
 
     const roleCountMap = roleRows.reduce((map, row) => {
