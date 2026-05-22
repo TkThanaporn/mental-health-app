@@ -23,8 +23,7 @@ const ScheduleManager = () => {
     const [loading, setLoading] = useState(true);
     const [syncing, setSyncing] = useState(false);
     const [deleting, setDeleting] = useState(false);
-    const GOOGLE_CLIENT_ID = "236473618158-1epvinqshfo3r2p9tgk7uhc6df7hjigo.apps.googleusercontent.com"; 
-
+    const GOOGLE_CLIENT_ID = process.env.REACT_APP_GOOGLE_CLIENT_ID;
     const availableTimeSlots = [
         "09:00-10:00", "10:00-11:00", "11:00-12:00",
         "13:00-14:00", "14:00-15:00", "15:00-16:00",
