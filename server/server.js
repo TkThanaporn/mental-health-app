@@ -30,7 +30,8 @@ app.use('/api/profile', require('./routes/profileRoutes'));
 app.use('/api/news', require('./routes/newsRoutes'));
 app.use('/api/schedule', require('./routes/scheduleRoutes'));
 app.use('/api/admin', require('./routes/adminRoutes'));
-
+app.use('/api/calendar', require('./routes/calendarRoutes')); // 👈 เพิ่มบรรทัดนี้
+require('./services/syncService');
 const server = http.createServer(app);
 
 const io = new Server(server, {
