@@ -271,7 +271,7 @@ const AdminDashboard = () => {
                                         ))}
                                     </Form.Select>
                                 </div>
-                                <Dropdown align="end">
+                                <Dropdown align="end" className="export-dropdown">
                                     <Dropdown.Toggle className="export-toggle" disabled={exporting}>
                                         {exporting ? <Spinner animation="border" size="sm" className="me-2" /> : <FaPrint className="me-2" />}
                                         Export รายงาน
@@ -439,7 +439,7 @@ const AdminDashboard = () => {
                 <Offcanvas.Body className="p-0"><SidebarContent /></Offcanvas.Body>
             </Offcanvas>
 
-            <div className="main-content d-flex flex-column" style={{ marginLeft: window.innerWidth > 992 ? '280px' : '0' }}>
+            <div className="main-content d-flex flex-column">
                 <Navbar className="navbar-modern justify-content-between shadow-sm px-4 py-3">
                     <div className="d-flex align-items-center">
                         <Button variant="link" className="d-lg-none text-dark p-0 me-3" onClick={() => setShowMobileMenu(true)}><FaBars size={24}/></Button>

@@ -66,11 +66,19 @@
     flex: 1;
     transition: margin-left 0.3s ease;
     width: 100%;
+    min-width: 0;
 }
 
 .navbar-modern {
     background: white;
     min-height: 70px;
+}
+
+@media (min-width: 992px) {
+    .main-content {
+        margin-left: 280px;
+        width: calc(100% - 280px);
+    }
 }
 
 /* Hero Section */
@@ -231,10 +239,21 @@
     background: #d94f04 !important;
 }
 
+.export-dropdown {
+    position: relative;
+}
+
 .export-menu {
     border-radius: 12px;
     overflow: hidden;
     padding: 6px;
+    animation: none !important;
+    margin-top: 8px !important;
+}
+
+.export-dropdown .export-menu.show {
+    inset: 100% 0 auto auto !important;
+    transform: none !important;
 }
 
 .export-menu .dropdown-item {
