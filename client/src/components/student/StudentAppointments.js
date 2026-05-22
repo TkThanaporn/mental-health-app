@@ -8,7 +8,7 @@ import {
     FaComments, FaUserMd, FaClock, FaCalendarAlt, FaHistory, 
     FaCheckCircle, FaTimesCircle, FaExclamationCircle, FaListUl, FaAtom,
     FaThLarge, FaBars, FaInfoCircle, FaCheck, FaTimes, FaCircle,
-    FaVideo, FaBuilding, FaClipboardList, FaStar, FaUserTimes // 🆕 นำเข้าไอคอน FaUserTimes
+    FaVideo, FaBuilding, FaClipboardList, FaStar, FaUserTimes
 } from 'react-icons/fa';
 
 import './StudentAppointments.css';
@@ -26,7 +26,6 @@ const StudentAppointments = () => {
     const [showDetails, setShowDetails] = useState(false);
     const [selectedApptDetails, setSelectedApptDetails] = useState(null);
 
-    // State สำหรับการให้คะแนน
     const [showReviewModal, setShowReviewModal] = useState(false);
     const [reviewData, setReviewData] = useState({ appointment_id: null, rating: 5, comment: '' });
 
@@ -69,7 +68,6 @@ const StudentAppointments = () => {
         } catch (err) { alert("เกิดข้อผิดพลาดในการส่งข้อมูล"); }
     };
 
-    // ✅ แก้ไข: ให้นับรวม no-show เข้าไปอยู่ในช่อง cancelled
     const statusCounts = useMemo(() => {
         const counts = { All: appointments.length, pending: 0, confirmed: 0, completed: 0, cancelled: 0 };
         appointments.forEach(appt => {
@@ -83,7 +81,6 @@ const StudentAppointments = () => {
         return counts;
     }, [appointments]);
 
-    // ✅ แก้ไข: เวลาฟิลเตอร์ cancelled ให้แสดงผลรวมทั้ง cancelled และ no-show
     const filteredAppointments = useMemo(() => {
         if (filterStatus === 'All') return appointments;
         if (filterStatus === 'cancelled') {
@@ -98,7 +95,6 @@ const StudentAppointments = () => {
         return `${startTime.replace(':', '.')}-${endTime.replace(':', '.')}`;
     };
 
-    // ล็อกแชท: เปิดเฉพาะคิวยืนยันแล้ว + เป็นออนไลน์ + ถึงเวลาแล้ว
     const isChatOpen = (appt) => {
         const status = String(appt.status).toLowerCase();
         const type = String(appt.type || appt.meeting_type).toLowerCase();
@@ -116,32 +112,46 @@ const StudentAppointments = () => {
         } catch (error) { return false; }
     };
 
-    // ✅ แก้ไข: เพิ่มป้าย badge สำหรับ no-show
+// ✅ อัปเดตป้ายสถานะ
     const getStatusBadge = (status) => {
         const s = status ? String(status).toLowerCase() : '';
-        if (s === 'confirmed' || s === 'ยืนยัน') return <Badge bg="success" className="px-3 py-2 rounded-pill fw-normal shadow-sm"><FaCheck className="me-1"/> ยืนยันแล้ว</Badge>;
-        if (s === 'cancelled' || s === 'ยกเลิก') return <Badge bg="danger" className="px-3 py-2 rounded-pill fw-normal shadow-sm"><FaTimes className="me-1"/> ยกเลิกแล้ว</Badge>;
-        if (s === 'pending' || s === 'รอดำเนินการ') return <Badge bg="warning" text="dark" className="px-3 py-2 rounded-pill fw-normal shadow-sm"><FaClock className="me-1"/> รออนุมัติ</Badge>;
-        if (s === 'completed' || s === 'เสร็จสิ้น') return <Badge bg="secondary" className="px-3 py-2 rounded-pill fw-normal shadow-sm"><FaHistory className="me-1"/> เสร็จสิ้น</Badge>;
-        if (s === 'no-show' || s === 'ขาดนัด') return <Badge bg="dark" className="px-3 py-2 rounded-pill fw-normal shadow-sm"><FaUserTimes className="me-1"/> ขาดนัด</Badge>;
-        return <Badge bg="secondary" className="px-3 py-2 rounded-pill fw-normal shadow-sm"><FaCircle className="me-1"/> {status || 'ไม่ระบุ'}</Badge>;
+        
+        if (s === 'confirmed' || s === 'ยืนยัน' || s === 'ยืนยันแล้ว') 
+            return <span style={{ backgroundColor: '#198754' }} className="badge px-3 py-2 rounded-pill fw-normal shadow-sm text-white"><FaCheck className="me-1"/> ยืนยันแล้ว</span>;
+        
+        if (s === 'cancelled' || s === 'ยกเลิก') 
+            return <span style={{ backgroundColor: '#DC3545' }} className="badge px-3 py-2 rounded-pill fw-normal shadow-sm text-white"><FaTimes className="me-1"/> ยกเลิกแล้ว</span>;
+        
+        // 🛠️ แก้ไขตรงนี้: บังคับพิมพ์คำว่า "รออนุมัติ" ทับลงไปเลย ไม่เอาข้อความจากตัวแปร status มาแสดงแล้ว
+        if (s === 'pending' || s === 'รอดำเนินการ' || s === 'รออนุมัติ') 
+            return <span style={{ backgroundColor: '#FFC107' }} className="badge px-3 py-2 rounded-pill fw-normal shadow-sm text-dark"><FaClock className="me-1"/> รออนุมัติ</span>;
+        
+        if (s === 'completed' || s === 'เสร็จสิ้น') 
+            return <span style={{ backgroundColor: '#6C757D' }} className="badge px-3 py-2 rounded-pill fw-normal shadow-sm text-white"><FaHistory className="me-1"/> เสร็จสิ้น</span>;
+        
+        if (s === 'no-show' || s === 'ขาดนัด') 
+            return <span style={{ backgroundColor: '#212529' }} className="badge px-3 py-2 rounded-pill fw-normal shadow-sm text-white"><FaUserTimes className="me-1"/> ขาดนัด</span>;
+        
+        return <span className="badge bg-secondary px-3 py-2 rounded-pill fw-normal shadow-sm"><FaCircle className="me-1"/> {status || 'ไม่ระบุ'}</span>;
     };
-
-    // ✅ แก้ไข: เพิ่มสีสำหรับ no-show
+    // ✅ อัปเดตสีเส้นขอบการ์ดให้ตรงกัน
     const getStatusColor = (status) => {
         const s = status ? String(status).toLowerCase() : '';
-        if (s === 'confirmed' || s === 'ยืนยัน') return '#198754';
-        if (s === 'cancelled' || s === 'ยกเลิก') return '#dc3545';
-        if (s === 'pending' || s === 'รอดำเนินการ') return '#ffc107';
-        if (s === 'completed' || s === 'เสร็จสิ้น') return '#6c757d';
+        if (s === 'confirmed' || s === 'ยืนยัน' || s === 'ยืนยันแล้ว') return '#198754';
+        if (s === 'cancelled' || s === 'ยกเลิก') return '#DC3545';
+        if (s === 'pending' || s === 'รอดำเนินการ' || s === 'รออนุมัติ') return '#FFC107';
+        if (s === 'completed' || s === 'เสร็จสิ้น') return '#6C757D';
         if (s === 'no-show' || s === 'ขาดนัด') return '#212529';
-        return '#6c757d';
+        return '#6C757D'; 
     };
 
+    // ✅ ปรับรูปแบบให้เป็นทางการ ไม่มีสีพื้นหลัง
     const getMeetingTypeBadge = (type) => {
         const t = type ? String(type).toLowerCase() : '';
-        if(t === 'online' || t === 'ออนไลน์') return <Badge bg="primary" className="px-3 py-2 rounded-pill fw-normal shadow-sm"><FaVideo className="me-1"/> ออนไลน์</Badge>;
-        return <Badge bg="info" text="dark" className="px-3 py-2 rounded-pill fw-normal shadow-sm"><FaBuilding className="me-1"/> พบตัว (On-site)</Badge>;
+        if(t === 'online' || t === 'ออนไลน์') {
+            return <span className="text-dark fw-semibold d-flex align-items-center"><FaVideo className="text-muted me-2"/> ออนไลน์</span>;
+        }
+        return <span className="text-dark fw-semibold d-flex align-items-center"><FaBuilding className="text-muted me-2"/> พบตัว (On-site)</span>;
     };
 
     const filterOptions = [
@@ -149,19 +159,17 @@ const StudentAppointments = () => {
         { key: 'pending', label: 'รออนุมัติ', icon: <FaExclamationCircle /> },
         { key: 'confirmed', label: 'ยืนยันแล้ว', icon: <FaCheckCircle /> },
         { key: 'completed', label: 'เสร็จสิ้น', icon: <FaHistory /> },
-        { key: 'cancelled', label: 'ยกเลิก / ขาดนัด', icon: <FaTimesCircle /> }, // เปลี่ยนป้ายกำกับให้ชัดเจนขึ้น
+        { key: 'cancelled', label: 'ยกเลิก / ขาดนัด', icon: <FaTimesCircle /> },
     ];
 
     const openDetails = (appt) => { setSelectedApptDetails(appt); setShowDetails(true); };
 
-    // ควบคุมการแสดงปุ่ม ฝั่งนักเรียน
     const renderActionButtons = (appt) => {
         const status = String(appt.status).toLowerCase();
         const type = String(appt.type || appt.meeting_type).toLowerCase();
         const chatOpen = isChatOpen(appt);
 
         if (status === 'completed') {
-            // ✅ ดักจับว่าถ้า is_reviewed มากกว่า 0 แปลว่าเคยประเมินแล้ว
             if (appt.is_reviewed > 0) {
                 return (
                     <Button variant="outline-success" className="flex-grow-1 fw-bold btn-action" disabled>
@@ -248,7 +256,10 @@ const StudentAppointments = () => {
                                             <Card.Body className="p-4 d-flex flex-column">
                                                 <div className="d-flex justify-content-between mb-3 align-items-start">
                                                     <div className="date-badge"><span className="d-day">{appDate.getDate()}</span><span className="d-month">{appDate.toLocaleDateString('th-TH', {month: 'short'})}</span></div>
-                                                    <div className="text-end d-flex flex-column gap-2 align-items-end">{getStatusBadge(appt.status)}{getMeetingTypeBadge(appt.type || appt.meeting_type)}</div>
+                                                    <div className="text-end d-flex flex-column gap-2 align-items-end">
+                                                        {getStatusBadge(appt.status)}
+                                                        <div className="small mt-1">{getMeetingTypeBadge(appt.type || appt.meeting_type)}</div>
+                                                    </div>
                                                 </div>
                                                 <h5 className="fw-bold mb-3 text-navy text-truncate">{appt.topic || 'การปรึกษาทั่วไป'}</h5>
                                                 <div className="info-box bg-light p-3 rounded-3 mb-3 flex-grow-1">
@@ -266,16 +277,39 @@ const StudentAppointments = () => {
                         </Row>
                     ) : (
                         <div className="table-responsive bg-white rounded-4 shadow-sm fade-in-up p-3">
+                            {/* ✅ แก้ไขหัวตารางให้แยก รูปแบบ ออกจาก สถานะ และใช้ text-nowrap เพื่อให้ไม่บีบ */}
                             <Table hover className="m-0 pcshs-modern-table align-middle">
-                                <thead><tr><th className="ps-3">วันที่ และ เวลา</th><th>หัวข้อการปรึกษา</th><th>นักจิตวิทยา</th><th>รูปแบบ & สถานะ</th><th className="text-end pe-3">จัดการ</th></tr></thead>
+                                <thead>
+                                    <tr>
+                                        <th className="ps-3 text-nowrap">วันที่ และ เวลา</th>
+                                        <th className="text-nowrap">หัวข้อการปรึกษา</th>
+                                        <th className="text-nowrap">นักจิตวิทยา</th>
+                                        <th className="text-nowrap">รูปแบบ</th>
+                                        <th className="text-nowrap">สถานะ</th>
+                                        <th className="text-end pe-3 text-nowrap">จัดการ</th>
+                                    </tr>
+                                </thead>
                                 <tbody>
                                     {filteredAppointments.map(appt => (
                                         <tr key={appt.appointment_id}>
-                                            <td className="ps-3"><div className="fw-bold text-navy">{new Date(appt.date || appt.appointment_date).toLocaleDateString('th-TH', {day: 'numeric', month: 'short'})}</div><small className="text-muted"><FaClock className="me-1"/>{formatTimeSlot(appt.start_time, appt.end_time, appt.appointment_time)} น.</small></td>
-                                            <td className="fw-semibold text-dark">{appt.topic || 'การปรึกษาทั่วไป'}</td>
-                                            <td><div className="d-flex align-items-center gap-2"><div className="bg-light text-primary rounded-circle d-flex align-items-center justify-content-center" style={{width:'30px', height:'30px'}}><FaUserMd/></div><span>{appt.psychologist_name || 'รอดำเนินการ'}</span></div></td>
-                                            <td><div className="d-flex flex-column gap-1 align-items-start">{getStatusBadge(appt.status)}{getMeetingTypeBadge(appt.type || appt.meeting_type)}</div></td>
-                                            <td className="text-end pe-3 d-flex gap-2 justify-content-end">{renderActionButtons(appt)}</td>
+                                            <td className="ps-3 text-nowrap">
+                                                <div className="fw-bold text-navy">{new Date(appt.date || appt.appointment_date).toLocaleDateString('th-TH', {day: 'numeric', month: 'short', year: 'numeric'})}</div>
+                                                <small className="text-muted"><FaClock className="me-1"/>{formatTimeSlot(appt.start_time, appt.end_time, appt.appointment_time)} น.</small>
+                                            </td>
+                                            <td className="fw-semibold text-dark text-nowrap">{appt.topic || 'การปรึกษาทั่วไป'}</td>
+                                            <td className="text-nowrap">
+                                                <div className="d-flex align-items-center gap-2">
+                                                    <div className="bg-light text-primary rounded-circle d-flex align-items-center justify-content-center" style={{width:'30px', height:'30px'}}><FaUserMd/></div>
+                                                    <span>{appt.psychologist_name || 'รอดำเนินการ'}</span>
+                                                </div>
+                                            </td>
+                                            {/* ✅ แสดงรูปแบบแบบทางการ */}
+                                            <td className="text-nowrap">{getMeetingTypeBadge(appt.type || appt.meeting_type)}</td>
+                                            {/* ✅ แสดงสถานะพร้อมสี */}
+                                            <td className="text-nowrap">{getStatusBadge(appt.status)}</td>
+                                            <td className="text-end pe-3 text-nowrap">
+                                                <div className="d-flex gap-2 justify-content-end">{renderActionButtons(appt)}</div>
+                                            </td>
                                         </tr>
                                     ))}
                                 </tbody>
@@ -285,7 +319,7 @@ const StudentAppointments = () => {
                 )}
             </Container>
 
-            {/* Modal ประเมินความพึงพอใจ (แสดงเมื่อกดให้คะแนน) */}
+            {/* Modal ประเมินความพึงพอใจ */}
             <Modal show={showReviewModal} onHide={() => setShowReviewModal(false)} centered>
                 <Modal.Header closeButton className="border-0 pb-0">
                     <Modal.Title className="fw-bold text-navy"><FaStar className="me-2 text-warning"/>ประเมินความพึงพอใจ</Modal.Title>
@@ -317,8 +351,26 @@ const StudentAppointments = () => {
                 <Modal.Body className="pt-3">
                     {selectedApptDetails && (
                         <div className="details-content">
-                            <div className="text-center mb-4"><div className="bg-light text-primary rounded-circle mx-auto d-flex align-items-center justify-content-center mb-2" style={{width: '60px', height: '60px', fontSize: '1.5rem'}}><FaUserMd/></div><h5 className="fw-bold m-0">{selectedApptDetails.psychologist_name || 'รอจัดสรรนักจิตวิทยา'}</h5><div className="mt-3 d-flex justify-content-center gap-2">{getStatusBadge(selectedApptDetails.status)}{getMeetingTypeBadge(selectedApptDetails.type || selectedApptDetails.meeting_type)}</div></div>
-                            <div className="info-box bg-light p-3 rounded-3 mb-3"><Row className="g-3"><Col xs={6}><div className="text-muted small">วันที่นัดหมาย</div><div className="fw-bold"><FaCalendarAlt className="me-2 text-primary"/>{new Date(selectedApptDetails.date || selectedApptDetails.appointment_date).toLocaleDateString('th-TH')}</div></Col><Col xs={6}><div className="text-muted small">เวลา</div><div className="fw-bold"><FaClock className="me-2 text-primary"/>{formatTimeSlot(selectedApptDetails.start_time, selectedApptDetails.end_time, selectedApptDetails.appointment_time)} น.</div></Col></Row></div>
+                            <div className="text-center mb-4">
+                                <div className="bg-light text-primary rounded-circle mx-auto d-flex align-items-center justify-content-center mb-2" style={{width: '60px', height: '60px', fontSize: '1.5rem'}}><FaUserMd/></div>
+                                <h5 className="fw-bold m-0">{selectedApptDetails.psychologist_name || 'รอจัดสรรนักจิตวิทยา'}</h5>
+                                <div className="mt-3 d-flex justify-content-center gap-3 align-items-center">
+                                    {getMeetingTypeBadge(selectedApptDetails.type || selectedApptDetails.meeting_type)}
+                                    {getStatusBadge(selectedApptDetails.status)}
+                                </div>
+                            </div>
+                            <div className="info-box bg-light p-3 rounded-3 mb-3">
+                                <Row className="g-3">
+                                    <Col xs={6}>
+                                        <div className="text-muted small">วันที่นัดหมาย</div>
+                                        <div className="fw-bold"><FaCalendarAlt className="me-2 text-primary"/>{new Date(selectedApptDetails.date || selectedApptDetails.appointment_date).toLocaleDateString('th-TH')}</div>
+                                    </Col>
+                                    <Col xs={6}>
+                                        <div className="text-muted small">เวลา</div>
+                                        <div className="fw-bold"><FaClock className="me-2 text-primary"/>{formatTimeSlot(selectedApptDetails.start_time, selectedApptDetails.end_time, selectedApptDetails.appointment_time)} น.</div>
+                                    </Col>
+                                </Row>
+                            </div>
                             <div className="info-group mb-3"><div className="text-muted small mb-1">หัวข้อการปรึกษา</div><div className="fw-semibold text-dark p-2 border rounded-3 bg-white">{selectedApptDetails.topic || 'การปรึกษาทั่วไป'}</div></div>
                             {selectedApptDetails.result_summary && (<div className="info-group border-start border-success border-4 ps-3 py-2 bg-white shadow-sm rounded-end mt-3"><div className="text-success small fw-bold mb-1"><FaCheckCircle className="me-1"/> สรุปผลการให้คำปรึกษา</div><div className="fw-semibold text-dark">{selectedApptDetails.result_summary}</div></div>)}
                         </div>
