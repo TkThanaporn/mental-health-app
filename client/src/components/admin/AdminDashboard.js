@@ -241,7 +241,7 @@ const AdminDashboard = () => {
                             <div className="hero-bg-pattern"></div>
                             <div className="position-relative z-1">
                                 <Badge bg="danger" text="white" className="mb-2 px-3 rounded-pill fw-bold">Super Admin</Badge>
-                                <h1 className="fw-title display-5 fw-bold mb-2 text-white">สวัสดี, {adminProfile.fullname}</h1>
+                                <h1 className="fw-title display-5 fw-bold mb-2 text-white">สวัสดีคุณ {adminProfile.fullname}</h1>
                                 <p className="text-white-50 mb-4 fw-light lead" style={{maxWidth: '600px'}}>
                                     ควบคุมและจัดการระบบดูแลช่วยเหลือนักเรียน <br/> โรงเรียนวิทยาศาสตร์จุฬาภรณราชวิทยาลัย
                                 </p>
