@@ -10,6 +10,10 @@
 .pcshs-news-container {
     font-family: 'Sarabun', sans-serif;
     position: relative;
+    width: 100%;
+    max-width: 1480px;
+    margin-inline: auto;
+    box-sizing: border-box;
     /* พื้นหลังลายวิทยาศาสตร์เดียวกับหน้า Archive */
     background-image: 
         radial-gradient(circle at 10% 20%, rgba(0, 35, 75, 0.03) 0%, transparent 20%),
@@ -19,6 +23,11 @@
     background-attachment: fixed;
     min-height: 100vh;
     padding-bottom: 3rem;
+}
+
+.pcshs-news-container .glass-panel {
+    width: 100%;
+    max-width: 100%;
 }
 
 h1, h2, h3, h4, h5, .fw-title { font-family: 'Prompt', sans-serif; }

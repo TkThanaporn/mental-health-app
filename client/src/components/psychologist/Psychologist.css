@@ -121,6 +121,7 @@ h1, h2, h3, h4, h5, h6, .fw-title {
   min-height: 100vh;
   transition: margin-left 0.3s ease;
   width: 100%;
+  min-width: 0;
 }
 
 @media (min-width: 992px) {
