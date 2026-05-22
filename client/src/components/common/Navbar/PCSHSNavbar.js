@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Container, Navbar, Nav, Dropdown } from 'react-bootstrap';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { jwtDecode } from "jwt-decode";
+import axios from 'axios'; // ✅ เพิ่ม axios เพื่อให้ดึงข้อมูลได้
 import { 
     FaHome, FaNewspaper, FaHeartbeat, FaCalendarAlt, FaHistory, 
     FaUserCircle, FaSignOutAlt, FaUserEdit 
@@ -34,8 +35,35 @@ const PCSHSNavbar = () => {
             } catch (e) {
                 console.error("Token Error in Navbar", e);
             }
+            
+            // ✅ สั่งให้ Navbar ทำการเช็คโปรไฟล์แบบเงียบๆ ทุกครั้งที่เปิดเว็บ
+            checkProfileCompletion(token);
         }
     }, []);
+
+    // ✅ ฟังก์ชันแอบเช็คว่าข้อมูลแหว่งไหม ถ้าแหว่งให้เด้ง Modal บังคับกรอกทันที
+    const checkProfileCompletion = async (token) => {
+        try {
+            const res = await axios.get('http://localhost:5000/api/profile/me', {
+                headers: { 'x-auth-token': token }
+            });
+            const data = res.data;
+            
+            // ถ้าเป็นนักเรียน แล้วพบว่ามีฟิลด์ว่าง
+            if (data.role === 'Student') {
+                if (!data.phone || !data.gender || !data.grade || !data.dormitory) {
+                    setShowProfile(true); // 👈 เด้งหน้าจอ Profile ขึ้นมาดักทันที
+                }
+            } else {
+                // ถ้าเป็นหมอหรือแอดมิน ก็เช็คเฉพาะบางช่อง
+                if (!data.phone || !data.gender) {
+                    setShowProfile(true); 
+                }
+            }
+        } catch (error) {
+            console.error("Error checking profile:", error);
+        }
+    };
 
     const isActive = (path) => location.pathname === path ? 'active' : '';
 
@@ -81,7 +109,6 @@ const PCSHSNavbar = () => {
                                 <Dropdown.Menu className="border-0 shadow-lg mt-2 rounded-4 p-2">
                                     <Dropdown.Header className="small text-muted fw-bold">จัดการบัญชี</Dropdown.Header>
                                     
-                                    {/* --- เปลี่ยนเป็นเปิด Modal แทนการ navigate --- */}
                                     <Dropdown.Item onClick={() => setShowProfile(true)} className="rounded-3">
                                         <FaUserEdit className="me-2 text-primary"/> โปรไฟล์ส่วนตัว
                                     </Dropdown.Item>
@@ -98,6 +125,7 @@ const PCSHSNavbar = () => {
             </Navbar>
 
             {/* --- เรียกใช้ Profile Modal --- */}
+            {/* ตัว Profile.js ที่เราแก้ไปเมื่อสักครู่ จะทำหน้าที่ล็อคตัวเองไม่ให้ปิด ถ้ามันเช็คเจอว่าข้อมูลแหว่งครับ */}
             <Profile 
                 show={showProfile} 
                 handleClose={() => setShowProfile(false)} 
