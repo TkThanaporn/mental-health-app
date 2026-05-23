@@ -2,7 +2,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../config/db'); 
-const { authMiddleware } = require('../middleware/auth');
+const { authMiddleware, authorizeRole } = require('../middleware/auth');
 const { sendEmail } = require('../services/emailService');
 
 // ==========================================
@@ -25,6 +25,229 @@ const formatThaiDate = (dateString) => {
     });
 };
 
+const monthLabels = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+const gradeLabels = ['ม.1', 'ม.2', 'ม.3', 'ม.4', 'ม.5', 'ม.6'];
+
+const parseDashboardYear = (year) => {
+    const currentYear = new Date().getFullYear();
+    const requestedYear = parseInt(year, 10);
+    return Number.isInteger(requestedYear) ? requestedYear : currentYear;
+};
+
+const escapeHtml = (value) => String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+
+const getValidDate = (...values) => {
+    for (const value of values) {
+        if (!value) continue;
+        const date = new Date(value);
+        if (!Number.isNaN(date.getTime())) return date;
+    }
+    return null;
+};
+
+const normalizeGrade = (value) => {
+    const match = String(value || '').match(/[1-6]/);
+    return match ? `ม.${match[0]}` : 'ไม่ระบุ';
+};
+
+const getRiskType = (assessment) => {
+    if (!assessment) return 'unknown';
+
+    const score = Number(assessment.score);
+    if (!Number.isNaN(score)) {
+        if (score >= 15) return 'severe';
+        if (score >= 5) return 'risk';
+        return 'normal';
+    }
+
+    const level = String(assessment.stress_level || '');
+    if (level.includes('รุนแรง') || level.includes('มาก')) return 'severe';
+    if (level.includes('เล็กน้อย') || level.includes('ปานกลาง')) return 'risk';
+    if (level.includes('ไม่มี')) return 'normal';
+    return 'unknown';
+};
+
+const getPsychologistDashboardStats = async (psychologistUserId, year) => {
+    const selectedYear = parseDashboardYear(year);
+    const [appointmentRows] = await db.query(`
+        SELECT
+            a.appointment_id,
+            a.booking_date,
+            a.status,
+            a.topic,
+            a.student_user_id,
+            u.fullname AS student_name,
+            u.education_level,
+            u.dormitory,
+            s.date AS appointment_date
+        FROM appointments a
+        JOIN users u ON a.student_user_id = u.user_id
+        LEFT JOIN schedules s ON a.schedule_id = s.schedule_id
+        WHERE a.psychologist_user_id = ?
+    `, [psychologistUserId]);
+
+    const [assessmentRows] = await db.query(`
+        SELECT a.*, u.fullname AS student_name
+        FROM assessments a
+        JOIN users u ON a.student_user_id = u.user_id
+    `);
+
+    const appointments = appointmentRows.filter((appointment) => {
+        const date = getValidDate(appointment.appointment_date, appointment.booking_date);
+        return date && date.getFullYear() === selectedYear;
+    });
+    const assessments = assessmentRows.filter((assessment) => {
+        const date = getValidDate(assessment.created_at);
+        return date && date.getFullYear() === selectedYear;
+    });
+
+    const statusSummary = [
+        { label: 'ดำเนินการสำเร็จ', count: appointments.filter((item) => String(item.status || '').toLowerCase() === 'completed').length },
+        { label: 'รอพบ / ยืนยันแล้ว', count: appointments.filter((item) => ['pending', 'confirmed'].includes(String(item.status || '').toLowerCase())).length },
+        { label: 'ยกเลิก / ไม่มา', count: appointments.filter((item) => ['cancelled', 'no-show'].includes(String(item.status || '').toLowerCase())).length }
+    ];
+
+    const monthlyConsultations = monthLabels.map((label, index) => ({ month: index + 1, label, count: 0 }));
+    const topicCounts = {};
+    const uniqueStudentMap = new Map();
+    const dormitoryMap = new Map();
+    const gradeMap = new Map(gradeLabels.map((grade) => [grade, { grade, count: 0, appointments: 0 }]));
+
+    appointments.forEach((appointment) => {
+        const date = getValidDate(appointment.appointment_date, appointment.booking_date);
+        if (date) monthlyConsultations[date.getMonth()].count += 1;
+
+        const topic = String(appointment.topic || '').trim() || 'ปรึกษาทั่วไป';
+        topicCounts[topic] = (topicCounts[topic] || 0) + 1;
+
+        const dormitory = String(appointment.dormitory || '').trim() || 'ไม่ระบุ';
+        const grade = normalizeGrade(appointment.education_level);
+        const studentKey = appointment.student_user_id || appointment.student_name || `appointment-${appointment.appointment_id}`;
+
+        if (!dormitoryMap.has(dormitory)) dormitoryMap.set(dormitory, { dormitory, count: 0, appointments: 0 });
+        dormitoryMap.get(dormitory).appointments += 1;
+
+        if (!gradeMap.has(grade)) gradeMap.set(grade, { grade, count: 0, appointments: 0 });
+        gradeMap.get(grade).appointments += 1;
+
+        if (!uniqueStudentMap.has(studentKey)) uniqueStudentMap.set(studentKey, { dormitory, grade });
+    });
+
+    uniqueStudentMap.forEach((student) => {
+        if (dormitoryMap.has(student.dormitory)) dormitoryMap.get(student.dormitory).count += 1;
+        if (gradeMap.has(student.grade)) gradeMap.get(student.grade).count += 1;
+    });
+
+    const issueCategories = Object.keys(topicCounts)
+        .map((name) => ({ name, count: topicCounts[name] }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 5);
+    const dormitoryUsage = Array.from(dormitoryMap.values())
+        .sort((a, b) => b.count - a.count || b.appointments - a.appointments)
+        .slice(0, 10);
+    const gradeUsage = Array.from(gradeMap.values())
+        .filter((item) => item.grade !== 'ไม่ระบุ')
+        .sort((a, b) => gradeLabels.indexOf(a.grade) - gradeLabels.indexOf(b.grade));
+
+    const riskCounts = { normal: 0, risk: 0, severe: 0 };
+    const monthlyRisks = monthLabels.map((label, index) => ({ month: index + 1, label, normal: 0, risk: 0, severe: 0 }));
+    assessments.forEach((assessment) => {
+        const date = getValidDate(assessment.created_at);
+        const riskType = getRiskType(assessment);
+        if (!date || riskType === 'unknown') return;
+        riskCounts[riskType] += 1;
+        monthlyRisks[date.getMonth()][riskType] += 1;
+    });
+
+    return {
+        selectedYear,
+        totalAppointments: appointments.length,
+        completedAppointments: statusSummary[0].count,
+        pendingAppointments: statusSummary[1].count,
+        cancelledAppointments: statusSummary[2].count,
+        totalAssessments: assessments.length,
+        statusSummary,
+        monthlyConsultations,
+        issueCategories,
+        dormitoryUsage,
+        gradeUsage,
+        riskLevels: [
+            { label: 'กลุ่มปกติ', count: riskCounts.normal },
+            { label: 'กลุ่มเสี่ยง', count: riskCounts.risk },
+            { label: 'กลุ่มมีปัญหา', count: riskCounts.severe }
+        ],
+        monthlyRisks
+    };
+};
+
+const renderRows = (rows, columns) => rows.map((row) => `
+    <tr>
+        ${columns.map((column) => `<td>${escapeHtml(row[column.key])}</td>`).join('')}
+    </tr>
+`).join('');
+
+const renderTable = (title, rows, columns) => `
+    <h2>${escapeHtml(title)}</h2>
+    <table>
+        <thead>
+            <tr>${columns.map((column) => `<th>${escapeHtml(column.label)}</th>`).join('')}</tr>
+        </thead>
+        <tbody>${renderRows(rows, columns)}</tbody>
+    </table>
+`;
+
+const buildPsychologistReportHtml = (stats, printable = false) => {
+    const generatedAt = new Date().toLocaleString('th-TH');
+    const summaryRows = [
+        { label: 'ปีข้อมูล', value: stats.selectedYear },
+        { label: 'บันทึกนัดหมายทั้งหมด', value: stats.totalAppointments },
+        { label: 'ดำเนินการสำเร็จ', value: stats.completedAppointments },
+        { label: 'รอพบ / ยืนยันแล้ว', value: stats.pendingAppointments },
+        { label: 'ยกเลิก / ไม่มา', value: stats.cancelledAppointments },
+        { label: 'แบบประเมิน PHQ-A ทั้งหมด', value: stats.totalAssessments }
+    ];
+
+    return `<!doctype html>
+<html lang="th">
+<head>
+    <meta charset="utf-8" />
+    <title>รายงานสถิตินักจิตวิทยา ${escapeHtml(stats.selectedYear)}</title>
+    <style>
+        body { font-family: Tahoma, Arial, sans-serif; color: #1f2937; margin: 32px; }
+        h1 { color: #003566; margin-bottom: 4px; }
+        h2 { color: #003566; font-size: 18px; margin: 28px 0 10px; }
+        .meta { color: #64748b; margin-bottom: 24px; }
+        table { border-collapse: collapse; width: 100%; margin-bottom: 18px; }
+        th { background: #003566; color: #fff; text-align: left; }
+        th, td { border: 1px solid #d7dee8; padding: 9px 10px; font-size: 14px; }
+        tr:nth-child(even) td { background: #f8fafc; }
+        .note { margin-top: 22px; color: #64748b; font-size: 13px; }
+        .print-button { background: #F25C05; border: 0; color: #fff; padding: 10px 16px; border-radius: 8px; font-weight: 700; cursor: pointer; }
+        @media print { .print-button { display: none; } body { margin: 18mm; } }
+    </style>
+</head>
+<body>
+    ${printable ? '<button class="print-button" onclick="window.print()">พิมพ์ / Save as PDF</button>' : ''}
+    <h1>รายงานสถิตินักจิตวิทยา</h1>
+    <div class="meta">ปีข้อมูล: ${escapeHtml(stats.selectedYear)} | สร้างเมื่อ: ${escapeHtml(generatedAt)}</div>
+    ${renderTable('ภาพรวมการนัดหมาย', summaryRows, [{ key: 'label', label: 'รายการ' }, { key: 'value', label: 'จำนวน' }])}
+    ${renderTable('สัดส่วนสถานะการนัดหมาย', stats.statusSummary, [{ key: 'label', label: 'สถานะ' }, { key: 'count', label: 'จำนวน' }])}
+    ${renderTable('แนวโน้มการขอรับคำปรึกษารายเดือน', stats.monthlyConsultations, [{ key: 'label', label: 'เดือน' }, { key: 'count', label: 'จำนวนนัดหมาย' }])}
+    ${renderTable('ประเด็นปัญหาที่พบมากที่สุด', stats.issueCategories, [{ key: 'name', label: 'ประเด็น' }, { key: 'count', label: 'จำนวนเคส' }])}
+    ${renderTable('หอพักที่ใช้บริการมากที่สุด', stats.dormitoryUsage, [{ key: 'dormitory', label: 'หอพัก' }, { key: 'count', label: 'จำนวนนักเรียน' }, { key: 'appointments', label: 'จำนวนนัดหมาย' }])}
+    ${renderTable('ระดับชั้นที่ใช้บริการมากที่สุด', stats.gradeUsage, [{ key: 'grade', label: 'ระดับชั้น' }, { key: 'count', label: 'จำนวนนักเรียน' }, { key: 'appointments', label: 'จำนวนนัดหมาย' }])}
+    ${renderTable('สรุปผลการคัดกรองสุขภาพจิตนักเรียน (PHQ-A)', stats.riskLevels, [{ key: 'label', label: 'ระดับความเสี่ยง' }, { key: 'count', label: 'จำนวน' }])}
+    ${renderTable('แนวโน้มระดับความเสี่ยงรายเดือน (PHQ-A)', stats.monthlyRisks, [{ key: 'label', label: 'เดือน' }, { key: 'normal', label: 'ปกติ' }, { key: 'risk', label: 'เสี่ยง' }, { key: 'severe', label: 'มีปัญหา' }])}
+    <div class="note">หมายเหตุ: สถิตินัดหมายนับจากวันที่นัดหมาย หากไม่มีวันที่นัดหมายจะใช้วันที่จองแทน ส่วน PHQ-A นับแบบประเมินที่ส่งในปีที่เลือก</div>
+</body>
+</html>`;
+};
+
 // ==========================================
 // 1. GET: ดูประวัตินัดหมาย (สำหรับนักจิตวิทยา)
 // ==========================================
@@ -36,17 +259,21 @@ router.get('/psychologist-history', authMiddleware, async (req, res) => {
             SELECT 
                 a.appointment_id, 
                 s.date AS date, 
+                a.booking_date,
                 CONCAT(DATE_FORMAT(s.start_time, '%H:%i'), '-', DATE_FORMAT(s.end_time, '%H:%i')) AS time_slot, 
                 a.status, 
                 a.topic,
+                a.student_user_id,
                 u.fullname AS student_name,
                 u.email AS student_email,
-                u.phone AS student_phone
+                u.phone AS student_phone,
+                u.education_level,
+                u.dormitory
             FROM appointments a
             JOIN users u ON a.student_user_id = u.user_id
-            JOIN schedules s ON a.schedule_id = s.schedule_id
+            LEFT JOIN schedules s ON a.schedule_id = s.schedule_id
             WHERE a.psychologist_user_id = ?
-            ORDER BY s.date DESC, s.start_time ASC
+            ORDER BY COALESCE(s.date, DATE(a.booking_date)) DESC, s.start_time ASC
         `;
         const [rows] = await db.query(sql, [psychologist_user_id]);
         res.json(rows);
@@ -462,6 +689,33 @@ router.put('/no-show/:id', authMiddleware, async (req, res) => {
     } catch (err) {
         console.error("No-Show Error:", err);
         res.status(500).send('Server Error');
+    }
+});
+
+router.get('/psychologist-export/excel', authMiddleware, authorizeRole(['Psychologist']), async (req, res, next) => {
+    try {
+        const psychologistUserId = req.user.id || req.user.user_id;
+        const stats = await getPsychologistDashboardStats(psychologistUserId, req.query.year);
+        const html = buildPsychologistReportHtml(stats, false);
+        const filename = `pcshs-psychologist-report-${stats.selectedYear}.xls`;
+
+        res.setHeader('Content-Type', 'application/vnd.ms-excel; charset=utf-8');
+        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+        res.send('\ufeff' + html);
+    } catch (err) {
+        next(err);
+    }
+});
+
+router.get('/psychologist-export/report', authMiddleware, authorizeRole(['Psychologist']), async (req, res, next) => {
+    try {
+        const psychologistUserId = req.user.id || req.user.user_id;
+        const stats = await getPsychologistDashboardStats(psychologistUserId, req.query.year);
+
+        res.setHeader('Content-Type', 'text/html; charset=utf-8');
+        res.send(buildPsychologistReportHtml(stats, true));
+    } catch (err) {
+        next(err);
     }
 });
 

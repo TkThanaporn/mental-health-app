@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Container, Button, Card, Row, Col, Nav, Navbar, Offcanvas, Badge, Image, Spinner } from 'react-bootstrap';
+import { Container, Button, Card, Row, Col, Nav, Navbar, Offcanvas, Badge, Image, Spinner, Form, Dropdown } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import { 
     FaHome, FaCalendarAlt, FaList, FaSignOutAlt, 
     FaUserEdit, FaClock, FaBars, FaUserCircle,
     FaCalendarCheck, FaStethoscope, FaBullhorn,
-    FaDatabase, FaCheckCircle, FaHourglassHalf, FaTimesCircle, FaClipboardCheck
+    FaDatabase, FaCheckCircle, FaHourglassHalf, FaTimesCircle, FaClipboardCheck,
+    FaBuilding, FaGraduationCap, FaFilter, FaFileExcel, FaPrint
 } from 'react-icons/fa';
 
 // Import Recharts
@@ -25,16 +26,73 @@ import ProfileEditor from './ProfileEditor';
 import NewsManagement from './NewsManagement'; 
 import pcshsLogo from '../../assets/pcshs_logo.png'; 
 
+const GRADE_LABELS = ['ม.1', 'ม.2', 'ม.3', 'ม.4', 'ม.5', 'ม.6'];
+
+const getRiskType = (assessment) => {
+    if (!assessment) return 'unknown';
+
+    const score = Number(assessment.score);
+    if (!Number.isNaN(score)) {
+        if (score >= 15) return 'severe';
+        if (score >= 5) return 'risk';
+        return 'normal';
+    }
+
+    const level = String(assessment.stress_level || '');
+    if (level.includes('รุนแรง') || level.includes('มาก')) return 'severe';
+    if (level.includes('เล็กน้อย') || level.includes('ปานกลาง')) return 'risk';
+    if (level.includes('ไม่มี')) return 'normal';
+    return 'unknown';
+};
+
+const normalizeGrade = (value) => {
+    const match = String(value || '').match(/[1-6]/);
+    return match ? `ม.${match[0]}` : 'ไม่ระบุ';
+};
+
+const normalizeGroupLabel = (value) => {
+    const label = String(value || '').trim();
+    return label || 'ไม่ระบุ';
+};
+
+const getValidDate = (...values) => {
+    for (const value of values) {
+        if (!value) continue;
+        const date = new Date(value);
+        if (!Number.isNaN(date.getTime())) return date;
+    }
+    return null;
+};
+
+const getStudentKey = (app) => (
+    app.student_user_id ||
+    app.student_id ||
+    app.user_id ||
+    app.student_email ||
+    app.student_name ||
+    `appointment-${app.appointment_id}`
+);
+
+const isInYear = (date, year) => date && date.getFullYear() === Number(year);
+
 const PsychologistDashboard = () => {
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('dashboard'); 
     const [showMobileMenu, setShowMobileMenu] = useState(false);
+    const [selectedDashboardYear, setSelectedDashboardYear] = useState(new Date().getFullYear());
+    const [availableDashboardYears, setAvailableDashboardYears] = useState([new Date().getFullYear()]);
+    const [exporting, setExporting] = useState(false);
     
     const [psychologist, setPsychologist] = useState({ fullname: 'กำลังโหลด...', profile_image: '' });
     
     // States สำหรับเก็บข้อมูลสถิติและกราฟ
     const [stats, setStats] = useState({ total: 0, completed: 0, pending: 0, cancelled: 0 });
-    const [chartData, setChartData] = useState({ monthlyTrends: [], issueCategories: [] });
+    const [chartData, setChartData] = useState({
+        monthlyTrends: [],
+        issueCategories: [],
+        dormitoryUsage: [],
+        gradeUsage: []
+    });
     
     // State ข้อมูลแบบประเมิน 
     const [assessmentData, setAssessmentData] = useState({ riskLevels: [], monthlyRisks: [] });
@@ -52,7 +110,7 @@ const PsychologistDashboard = () => {
     useEffect(() => {
         const token = localStorage.getItem('token');
         if (token) fetchDashboardData(token);
-    }, [activeTab]);
+    }, [activeTab, selectedDashboardYear]);
 
     const fetchProfile = async (token) => {
         try {
@@ -78,33 +136,53 @@ const PsychologistDashboard = () => {
 
             const apptData = apptRes.data; 
             const assessData = assessRes.data;
+            const yearOptions = Array.from(new Set([
+                new Date().getFullYear(),
+                ...apptData
+                    .map(app => getValidDate(app.date, app.appointment_date, app.booking_date)?.getFullYear())
+                    .filter(Boolean),
+                ...assessData
+                    .map(assess => getValidDate(assess.created_at)?.getFullYear())
+                    .filter(Boolean)
+            ])).sort((a, b) => b - a);
+
+            setAvailableDashboardYears(yearOptions);
+
+            const filteredApptData = apptData.filter(app => {
+                const appDate = getValidDate(app.date, app.appointment_date, app.booking_date);
+                return isInYear(appDate, selectedDashboardYear);
+            });
+            const filteredAssessData = assessData.filter(assess => {
+                const assessDate = getValidDate(assess.created_at);
+                return isInYear(assessDate, selectedDashboardYear);
+            });
 
             // ==========================================
             // 1. จัดการข้อมูลการนัดหมาย (Appointments)
             // ==========================================
             // 🌟 แก้ไขตรงนี้: ปรับตัวพิมพ์ให้ตรงกับ Database และใช้ toLowerCase() ป้องกัน error
             setStats({
-                total: apptData.length,
-                completed: apptData.filter(a => a.status?.toLowerCase() === 'completed').length,
-                pending: apptData.filter(a => a.status?.toLowerCase() === 'pending' || a.status?.toLowerCase() === 'confirmed').length,
-                cancelled: apptData.filter(a => a.status?.toLowerCase() === 'cancelled').length
+                total: filteredApptData.length,
+                completed: filteredApptData.filter(a => a.status?.toLowerCase() === 'completed').length,
+                pending: filteredApptData.filter(a => a.status?.toLowerCase() === 'pending' || a.status?.toLowerCase() === 'confirmed').length,
+                cancelled: filteredApptData.filter(a => ['cancelled', 'no-show'].includes(a.status?.toLowerCase())).length
             });
 
             const monthNames = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
-            const currentMonth = new Date().getMonth(); 
-            const currentYear = new Date().getFullYear();
+            const dashboardYear = Number(selectedDashboardYear);
             
             let trendsMap = {};
-            // สร้างโครงสร้าง 6 เดือนย้อนหลัง สำหรับการนัดหมาย
-            for(let i=5; i>=0; i--) {
-                let d = new Date(currentYear, currentMonth - i, 1);
+            // สร้างโครงสร้างรายเดือนตามปีที่เลือก สำหรับการนัดหมาย
+            for(let i=0; i<12; i++) {
+                let d = new Date(dashboardYear, i, 1);
                 let key = `${d.getFullYear()}-${d.getMonth()}`;
                 trendsMap[key] = { month: monthNames[d.getMonth()], count: 0, sortKey: d.getTime() };
             }
 
             const topicCounts = {};
-            apptData.forEach(app => {
-                const appDate = new Date(app.date || app.appointment_date || app.booking_date);
+            filteredApptData.forEach(app => {
+                const appDate = getValidDate(app.date, app.appointment_date, app.booking_date);
+                if (!appDate) return;
                 const monthKey = `${appDate.getFullYear()}-${appDate.getMonth()}`;
                 if(trendsMap[monthKey]) trendsMap[monthKey].count += 1;
 
@@ -117,7 +195,82 @@ const PsychologistDashboard = () => {
                 name: key, value: topicCounts[key]
             })).sort((a, b) => b.value - a.value).slice(0, 5); 
 
-            setChartData({ monthlyTrends: realMonthlyTrends, issueCategories: realIssueCategories });
+            const latestAssessmentByStudent = {};
+            filteredAssessData.forEach(assess => {
+                const studentId = assess.student_user_id || assess.student_id || assess.user_id;
+                if (!studentId) return;
+
+                const currentDate = new Date(assess.created_at || 0).getTime();
+                const savedDate = new Date(latestAssessmentByStudent[studentId]?.created_at || 0).getTime();
+                if (!latestAssessmentByStudent[studentId] || currentDate >= savedDate) {
+                    latestAssessmentByStudent[studentId] = assess;
+                }
+            });
+
+            const uniqueStudentMap = new Map();
+            const dormitoryMap = new Map();
+            const gradeMap = new Map(GRADE_LABELS.map(grade => [
+                grade,
+                { grade, count: 0, appointments: 0, risk: 0, severe: 0 }
+            ]));
+
+            const ensureDormitory = (label) => {
+                if (!dormitoryMap.has(label)) {
+                    dormitoryMap.set(label, { dormitory: label, count: 0, appointments: 0, risk: 0, severe: 0 });
+                }
+                return dormitoryMap.get(label);
+            };
+
+            filteredApptData.forEach(app => {
+                const studentKey = getStudentKey(app);
+                const dormitory = normalizeGroupLabel(app.dormitory);
+                const grade = normalizeGrade(app.education_level || app.grade);
+
+                ensureDormitory(dormitory).appointments += 1;
+                if (!gradeMap.has(grade)) {
+                    gradeMap.set(grade, { grade, count: 0, appointments: 0, risk: 0, severe: 0 });
+                }
+                gradeMap.get(grade).appointments += 1;
+
+                if (!uniqueStudentMap.has(studentKey)) {
+                    uniqueStudentMap.set(studentKey, {
+                        dormitory,
+                        grade,
+                        riskType: getRiskType(latestAssessmentByStudent[app.student_user_id])
+                    });
+                }
+            });
+
+            uniqueStudentMap.forEach(student => {
+                const dormitoryItem = ensureDormitory(student.dormitory);
+                const gradeItem = gradeMap.get(student.grade) || gradeMap.get('ไม่ระบุ');
+
+                dormitoryItem.count += 1;
+                if (student.riskType === 'risk') dormitoryItem.risk += 1;
+                if (student.riskType === 'severe') dormitoryItem.severe += 1;
+
+                if (gradeItem) {
+                    gradeItem.count += 1;
+                    if (student.riskType === 'risk') gradeItem.risk += 1;
+                    if (student.riskType === 'severe') gradeItem.severe += 1;
+                }
+            });
+
+            const realDormitoryUsage = Array.from(dormitoryMap.values())
+                .sort((a, b) => b.count - a.count || b.appointments - a.appointments)
+                .slice(0, 10)
+                .map(item => ({ ...item, normal: Math.max(item.count - item.risk - item.severe, 0) }));
+            const realGradeUsage = Array.from(gradeMap.values())
+                .filter(item => item.grade !== 'ไม่ระบุ')
+                .sort((a, b) => GRADE_LABELS.indexOf(a.grade) - GRADE_LABELS.indexOf(b.grade))
+                .map(item => ({ ...item, normal: Math.max(item.count - item.risk - item.severe, 0) }));
+
+            setChartData({
+                monthlyTrends: realMonthlyTrends,
+                issueCategories: realIssueCategories,
+                dormitoryUsage: realDormitoryUsage.length ? realDormitoryUsage : [{ dormitory: 'ไม่มีข้อมูล', count: 0, appointments: 0, normal: 0, risk: 0, severe: 0 }],
+                gradeUsage: realGradeUsage
+            });
 
             // ==========================================
             // 2. จัดการข้อมูลแบบประเมิน (Assessments) 
@@ -126,34 +279,25 @@ const PsychologistDashboard = () => {
             let riskCount = 0;
             let severeCount = 0;
 
-            // โครงสร้าง 6 เดือนย้อนหลัง สำหรับแนวโน้มความเสี่ยง
+            // โครงสร้างรายเดือนตามปีที่เลือก สำหรับแนวโน้มความเสี่ยง
             let assessTrendsMap = {};
-            for(let i=5; i>=0; i--) {
-                let d = new Date(currentYear, currentMonth - i, 1);
+            for(let i=0; i<12; i++) {
+                let d = new Date(dashboardYear, i, 1);
                 let key = `${d.getFullYear()}-${d.getMonth()}`;
                 assessTrendsMap[key] = { month: monthNames[d.getMonth()], normal: 0, risk: 0, severe: 0, sortKey: d.getTime() };
             }
 
-            assessData.forEach(assess => {
-                const aDate = new Date(assess.created_at || new Date()); 
+            filteredAssessData.forEach(assess => {
+                const aDate = getValidDate(assess.created_at); 
+                if (!aDate) return;
                 const aKey = `${aDate.getFullYear()}-${aDate.getMonth()}`;
+                const levelType = getRiskType(assess);
 
-                if (assess.stress_level) {
-                    let levelType = '';
-                    if (assess.stress_level === 'ไม่มีภาวะซึมเศร้า') {
-                        normalCount++;
-                        levelType = 'normal';
-                    } else if (assess.stress_level === 'ภาวะซึมเศร้าเล็กน้อย' || assess.stress_level === 'ภาวะซึมเศร้าปานกลาง') {
-                        riskCount++;
-                        levelType = 'risk';
-                    } else if (assess.stress_level === 'ภาวะซึมเศร้ามาก' || assess.stress_level === 'ภาวะซึมเศร้ารุนแรง') {
-                        severeCount++;
-                        levelType = 'severe';
-                    }
-
-                    if(assessTrendsMap[aKey] && levelType) {
-                        assessTrendsMap[aKey][levelType] += 1;
-                    }
+                if (levelType !== 'unknown') {
+                    if (levelType === 'normal') normalCount++;
+                    if (levelType === 'risk') riskCount++;
+                    if (levelType === 'severe') severeCount++;
+                    if (assessTrendsMap[aKey]) assessTrendsMap[aKey][levelType] += 1;
                 }
             });
 
@@ -183,6 +327,74 @@ const PsychologistDashboard = () => {
     const handleMenuClick = (tabName) => {
         setActiveTab(tabName);
         setShowMobileMenu(false);
+    };
+
+    const handleExportExcel = async () => {
+        const token = localStorage.getItem('token');
+        if (!token) return handleLogout();
+
+        try {
+            setExporting(true);
+            const res = await axios.get(`http://localhost:5000/api/appointments/psychologist-export/excel?year=${selectedDashboardYear}`, {
+                headers: { 'x-auth-token': token },
+                responseType: 'blob'
+            });
+
+            const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/vnd.ms-excel' }));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `pcshs-psychologist-report-${selectedDashboardYear}.xls`);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(url);
+        } catch (err) {
+            console.error("Export Excel Error", err);
+            alert('ไม่สามารถสร้างไฟล์ Excel ได้');
+        } finally {
+            setExporting(false);
+        }
+    };
+
+    const handleOpenPrintableReport = async () => {
+        const token = localStorage.getItem('token');
+        if (!token) return handleLogout();
+
+        try {
+            setExporting(true);
+            const res = await axios.get(`http://localhost:5000/api/appointments/psychologist-export/report?year=${selectedDashboardYear}`, {
+                headers: { 'x-auth-token': token },
+                responseType: 'text'
+            });
+
+            const reportWindow = window.open('', '_blank');
+            if (!reportWindow) {
+                alert('กรุณาอนุญาต pop-up เพื่อเปิดรายงาน');
+                return;
+            }
+            reportWindow.document.open();
+            reportWindow.document.write(res.data);
+            reportWindow.document.close();
+        } catch (err) {
+            console.error("Printable Report Error", err);
+            alert('ไม่สามารถเปิดรายงานได้');
+        } finally {
+            setExporting(false);
+        }
+    };
+
+    const demographicTooltip = ({ active, payload, label }) => {
+        if (!active || !payload?.length) return null;
+        const item = payload[0].payload;
+        return (
+            <div className="psych-chart-tooltip">
+                <div className="fw-bold mb-1">{label || item.dormitory || item.grade}</div>
+                <div>นักเรียนไม่ซ้ำ: {item.count || 0} คน</div>
+                <div>จำนวนนัดหมาย: {item.appointments || 0} ครั้ง</div>
+                <div className="text-warning">กลุ่มเสี่ยง: {item.risk || 0} คน</div>
+                <div className="text-danger">กลุ่มมีปัญหา: {item.severe || 0} คน</div>
+            </div>
+        );
     };
 
     const SidebarContent = () => (
@@ -229,7 +441,7 @@ const PsychologistDashboard = () => {
                             <div className="hero-bg-pattern"></div>
                             <div className="position-relative z-1">
                                 <Badge bg="warning" text="dark" className="mb-2 px-3 rounded-pill fw-bold">Psychologist Panel</Badge>
-                                <h1 className="fw-title display-5 fw-bold mb-2 text-white">สวัสดี, {psychologist.fullname}</h1>
+                                <h1 className="fw-title display-5 fw-bold mb-2 text-white">สวัสดีคุณ {psychologist.fullname}</h1>
                                 <p className="text-white-50 mb-4 fw-light lead" style={{maxWidth: '600px'}}>
                                     ศูนย์รวมข้อมูลสุขภาพจิตนักเรียนและการนัดหมาย <br/>โรงเรียนวิทยาศาสตร์จุฬาภรณราชวิทยาลัย
                                 </p>
@@ -240,7 +452,39 @@ const PsychologistDashboard = () => {
                         </div>
 
                         <div className="px-2 mb-5">
-                            <h4 className="fw-bold mb-4" style={{color: 'var(--pcshs-blue-deep)'}}>ภาพรวมการนัดหมาย</h4>
+                            <div className="dashboard-section-heading mb-4">
+                                <div>
+                                    <h4 className="fw-bold mb-1" style={{color: 'var(--pcshs-blue-deep)'}}>ภาพรวมการนัดหมาย</h4>
+                                    <p className="text-muted mb-0">เลือกปีเพื่อดูข้อมูลและ Export รายงานตามช่วงปีเดียวกัน</p>
+                                </div>
+                                <div className="year-filter">
+                                    <FaFilter className="text-orange" />
+                                    <Form.Select
+                                        value={selectedDashboardYear}
+                                        onChange={(e) => setSelectedDashboardYear(Number(e.target.value))}
+                                        className="year-select shadow-none"
+                                        aria-label="เลือกปีข้อมูล"
+                                    >
+                                        {availableDashboardYears.map(year => (
+                                            <option key={year} value={year}>ปี {Number(year) + 543}</option>
+                                        ))}
+                                    </Form.Select>
+                                </div>
+                                <Dropdown align="end" className="export-dropdown">
+                                    <Dropdown.Toggle className="export-toggle" disabled={exporting}>
+                                        {exporting ? <Spinner animation="border" size="sm" className="me-2" /> : <FaPrint className="me-2" />}
+                                        Export รายงาน
+                                    </Dropdown.Toggle>
+                                    <Dropdown.Menu className="export-menu shadow-sm border-0">
+                                        <Dropdown.Item onClick={handleExportExcel}>
+                                            <FaFileExcel className="me-2 text-success" /> Excel (.xls)
+                                        </Dropdown.Item>
+                                        <Dropdown.Item onClick={handleOpenPrintableReport}>
+                                            <FaPrint className="me-2 text-orange" /> พิมพ์ / Save as PDF
+                                        </Dropdown.Item>
+                                    </Dropdown.Menu>
+                                </Dropdown>
+                            </div>
                             <Row className="g-4">
                                 {[
                                     { title: "บันทึกทั้งหมด", count: stats.total, unit: "รายการ", icon: <FaDatabase/>, type: "stat-navy" },
@@ -268,7 +512,7 @@ const PsychologistDashboard = () => {
                             <div className="text-center py-5"><Spinner animation="border" variant="primary"/></div>
                         ) : (
                             <div className="px-2 pb-4">
-                                <h4 className="fw-bold mb-4" style={{color: 'var(--pcshs-blue-deep)'}}>การวิเคราะห์ข้อมูลนักเรียน</h4>
+                                <h4 className="fw-bold mb-4" style={{color: 'var(--pcshs-blue-deep)'}}>การวิเคราะห์ข้อมูลนักเรียน ปี {Number(selectedDashboardYear) + 543}</h4>
                                 <Row className="g-4">
                                     
                                     {/* 1. สัดส่วนสถานะการนัดหมาย */}
@@ -295,7 +539,7 @@ const PsychologistDashboard = () => {
                                     <Col xs={12} lg={8}>
                                         <Card className="shadow-sm border-0 h-100" style={{borderRadius: '20px'}}>
                                             <Card.Body>
-                                                <h6 className="fw-bold mb-4 text-secondary">แนวโน้มการขอรับคำปรึกษา (6 เดือนล่าสุด)</h6>
+                                                <h6 className="fw-bold mb-4 text-secondary">แนวโน้มการขอรับคำปรึกษารายเดือน</h6>
                                                 <div style={{ width: '100%', height: 250 }}>
                                                     <ResponsiveContainer>
                                                         <LineChart data={chartData.monthlyTrends}>
@@ -358,11 +602,57 @@ const PsychologistDashboard = () => {
                                     </Col>
 
                                     {/* 5. กราฟใหม่: แนวโน้มความเสี่ยงรายเดือน (Stacked Bar Chart) */}
+                                    <Col xs={12} lg={6}>
+                                        <Card className="shadow-sm border-0 h-100 psych-insight-card">
+                                            <Card.Body>
+                                                <h6 className="fw-bold mb-2 text-secondary"><FaBuilding className="me-2"/>หอพักที่ใช้บริการมากที่สุด</h6>
+                                                <p className="text-muted small mb-4">จำนวนนักเรียน พร้อมแยกกลุ่มเสี่ยงจากผล PHQ-A ล่าสุด</p>
+                                                <div style={{ width: '100%', height: 330 }}>
+                                                    <ResponsiveContainer>
+                                                        <BarChart data={chartData.dormitoryUsage} layout="vertical" margin={{ top: 8, right: 24, left: 28, bottom: 8 }}>
+                                                            <CartesianGrid strokeDasharray="3 3" horizontal={false} opacity={0.3} />
+                                                            <XAxis type="number" allowDecimals={false} axisLine={false} tickLine={false} />
+                                                            <YAxis dataKey="dormitory" type="category" axisLine={false} tickLine={false} width={118} />
+                                                            <RechartsTooltip content={demographicTooltip} cursor={{fill: 'rgba(0, 35, 75, 0.04)'}} />
+                                                            <Legend verticalAlign="top" height={32}/>
+                                                            <Bar dataKey="normal" name="กลุ่มปกติ" stackId="dorm" fill="#10B981" radius={[0, 0, 0, 0]} barSize={22} />
+                                                            <Bar dataKey="risk" name="กลุ่มเสี่ยง" stackId="dorm" fill="#F59E0B" barSize={22} />
+                                                            <Bar dataKey="severe" name="กลุ่มมีปัญหา" stackId="dorm" fill="#EF4444" radius={[0, 8, 8, 0]} barSize={22} />
+                                                        </BarChart>
+                                                    </ResponsiveContainer>
+                                                </div>
+                                            </Card.Body>
+                                        </Card>
+                                    </Col>
+
+                                    <Col xs={12} lg={6}>
+                                        <Card className="shadow-sm border-0 h-100 psych-insight-card">
+                                            <Card.Body>
+                                                <h6 className="fw-bold mb-2 text-secondary"><FaGraduationCap className="me-2"/>ระดับชั้นที่ใช้บริการมากที่สุด</h6>
+                                                <p className="text-muted small mb-4">ม.1 ถึง ม.6 นับนักเรียนไม่ซ้ำ และแสดงน้ำหนักกลุ่มเสี่ยง</p>
+                                                <div style={{ width: '100%', height: 330 }}>
+                                                    <ResponsiveContainer>
+                                                        <BarChart data={chartData.gradeUsage} margin={{ top: 8, right: 24, left: 0, bottom: 8 }}>
+                                                            <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.3} />
+                                                            <XAxis dataKey="grade" axisLine={false} tickLine={false} />
+                                                            <YAxis allowDecimals={false} axisLine={false} tickLine={false} />
+                                                            <RechartsTooltip content={demographicTooltip} cursor={{fill: 'rgba(0, 35, 75, 0.04)'}} />
+                                                            <Legend verticalAlign="top" height={32}/>
+                                                            <Bar dataKey="normal" name="กลุ่มปกติ" stackId="grade" fill="#10B981" barSize={42} />
+                                                            <Bar dataKey="risk" name="กลุ่มเสี่ยง" stackId="grade" fill="#F59E0B" barSize={42} />
+                                                            <Bar dataKey="severe" name="กลุ่มมีปัญหา" stackId="grade" fill="#EF4444" radius={[8, 8, 0, 0]} barSize={42} />
+                                                        </BarChart>
+                                                    </ResponsiveContainer>
+                                                </div>
+                                            </Card.Body>
+                                        </Card>
+                                    </Col>
+
                                     <Col xs={12}>
                                         <Card className="shadow-sm border-0 mb-4" style={{borderRadius: '20px', background: 'linear-gradient(to right, #ffffff, #f8f9fa)'}}>
                                             <Card.Body>
                                                 <h6 className="fw-bold mb-2 text-secondary text-center"><FaStethoscope className="me-2"/>แนวโน้มระดับความเสี่ยงสุขภาพจิตรายเดือน (PHQ-A)</h6>
-                                                <p className="text-center text-muted small mb-4">ติดตามจำนวนนักเรียนในแต่ละระดับความเสี่ยงย้อนหลัง 6 เดือน</p>
+                                                <p className="text-center text-muted small mb-4">ติดตามจำนวนนักเรียนในแต่ละระดับความเสี่ยงของปี {Number(selectedDashboardYear) + 543}</p>
                                                 <div style={{ width: '100%', height: 350 }}>
                                                     <ResponsiveContainer>
                                                         <BarChart data={assessmentData.monthlyRisks} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>

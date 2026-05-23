@@ -45,6 +45,7 @@ const CHART_COLORS = {
 };
 
 const DASHBOARD_FALLBACK_YEARS = [...new Set([new Date().getFullYear(), 2025])].sort((a, b) => b - a);
+const toBuddhistYear = (year) => Number(year) + 543;
 
 const AdminDashboard = () => {
     const navigate = useNavigate();
@@ -136,7 +137,7 @@ const AdminDashboard = () => {
             const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/vnd.ms-excel' }));
             const link = document.createElement('a');
             link.href = url;
-            link.setAttribute('download', `pcshs-heartcare-report-${selectedYear}.xls`);
+            link.setAttribute('download', `pcshs-heartcare-report-${toBuddhistYear(selectedYear)}.xls`);
             document.body.appendChild(link);
             link.click();
             link.remove();
@@ -272,7 +273,7 @@ const AdminDashboard = () => {
                                         aria-label="เลือกปีข้อมูล"
                                     >
                                         {availableYears.map((year) => (
-                                            <option key={year} value={year}>ปี {year}</option>
+                                            <option key={year} value={year}>ปี {toBuddhistYear(year)}</option>
                                         ))}
                                     </Form.Select>
                                 </div>
@@ -295,7 +296,7 @@ const AdminDashboard = () => {
                                 {[
                                     { title: "ผู้ใช้ทั้งหมด", count: stats.total_users, unit: "คน", icon: <FaUsers/>, type: "stat-navy" },
                                     { title: "นักเรียนทั้งหมด", count: stats.total_students, unit: "คน", icon: <FaUserGraduate/>, type: "stat-info" },
-                                    { title: `คำขอปี ${selectedYear}`, count: stats.yearly_appointments, unit: "รายการ", icon: <FaCalendarCheck/>, type: "stat-success" },
+                                    { title: `คำขอปี ${toBuddhistYear(selectedYear)}`, count: stats.yearly_appointments, unit: "รายการ", icon: <FaCalendarCheck/>, type: "stat-success" },
                                     { title: "นักจิตวิทยา", count: stats.pending_psychologists, unit: "คน", icon: <FaUserMd/>, type: "stat-warning" }
                                 ].map((item, idx) => (
                                     <Col xs={12} sm={6} lg={3} key={idx}>
@@ -358,7 +359,7 @@ const AdminDashboard = () => {
                                         <div className="chart-card-header">
                                             <div>
                                                 <h5>จำนวนผู้ขอรับคำปรึกษารายเดือน</h5>
-                                                <p>แสดง 12 เดือนของปี {selectedYear}</p>
+                                                <p>แสดง 12 เดือนของปี {toBuddhistYear(selectedYear)}</p>
                                             </div>
                                         </div>
                                         {loadingStats ? (
@@ -385,7 +386,7 @@ const AdminDashboard = () => {
                                             <div>
                                                 <h5>หอพักที่ใช้บริการมากที่สุด</h5>
                                                 {/* นับนักเรียนไม่ซ้ำที่มีคำขอในปี */}
-                                                <p>จำนวนนักเรียนที่มีคำขอในปี {selectedYear}</p>
+                                                <p>จำนวนนักเรียนที่มีคำขอในปี {toBuddhistYear(selectedYear)}</p>
                                             </div>
                                         </div>
                                         {loadingStats ? (
@@ -409,7 +410,7 @@ const AdminDashboard = () => {
                                             <div>
                                                 <h5>ระดับชั้นที่ใช้บริการมากที่สุด</h5>
                                                 {/* ม.1 ถึง ม.6 นับนักเรียนไม่ซ้ำในปี */}
-                                                <p>จำนวนนักเรียน ม.1 ถึง ม.6 ในปี {selectedYear}</p>
+                                                <p>จำนวนนักเรียน ม.1 ถึง ม.6 ในปี {toBuddhistYear(selectedYear)}</p>
                                             </div>
                                         </div>
                                         {loadingStats ? (

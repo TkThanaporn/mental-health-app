@@ -16,6 +16,8 @@ const parseDashboardYear = (year) => {
     return Number.isInteger(requestedYear) ? requestedYear : currentYear;
 };
 
+const toBuddhistYear = (year) => Number(year) + 543;
+
 const normalizeDashboardYears = (years, selectedYear) => {
     const currentYear = new Date().getFullYear();
     return [...new Set([
@@ -165,8 +167,9 @@ const renderTable = (title, rows, columns) => `
 
 const buildReportHtml = (stats, printable = false) => {
     const generatedAt = new Date().toLocaleString('th-TH');
+    const displayYear = toBuddhistYear(stats.selectedYear);
     const summaryRows = [
-        { label: 'ปีข้อมูล', value: stats.selectedYear },
+        { label: 'ปีข้อมูล', value: displayYear },
         { label: 'ผู้ใช้ทั้งหมด', value: stats.total_users },
         { label: 'นักเรียนทั้งหมด', value: stats.total_students },
         { label: 'นักจิตวิทยา', value: stats.pending_psychologists },
@@ -180,7 +183,7 @@ const buildReportHtml = (stats, printable = false) => {
 <html lang="th">
 <head>
     <meta charset="utf-8" />
-    <title>รายงานสถิติระบบให้คำปรึกษา ${escapeHtml(stats.selectedYear)}</title>
+    <title>รายงานสถิติระบบให้คำปรึกษา ${escapeHtml(displayYear)}</title>
     <style>
         body { font-family: Tahoma, Arial, sans-serif; color: #1f2937; margin: 32px; }
         h1 { color: #003566; margin-bottom: 4px; }
@@ -198,7 +201,7 @@ const buildReportHtml = (stats, printable = false) => {
 <body>
     ${printable ? '<button class="print-button" onclick="window.print()">พิมพ์ / Save as PDF</button>' : ''}
     <h1>รายงานสถิติระบบให้คำปรึกษา</h1>
-    <div class="meta">ปีข้อมูล: ${escapeHtml(stats.selectedYear)} | สร้างเมื่อ: ${escapeHtml(generatedAt)}</div>
+    <div class="meta">ปีข้อมูล: ${escapeHtml(displayYear)} | สร้างเมื่อ: ${escapeHtml(generatedAt)}</div>
     ${renderTable('ภาพรวม', summaryRows, [{ key: 'label', label: 'รายการ' }, { key: 'value', label: 'จำนวน' }])}
     ${renderTable('สัดส่วนผู้ใช้งานทั้งหมด', stats.roleSummary, [{ key: 'label', label: 'ประเภทผู้ใช้' }, { key: 'count', label: 'จำนวน' }])}
     ${renderTable('จำนวนผู้ขอรับคำปรึกษารายเดือน', stats.monthlyConsultations, [{ key: 'label', label: 'เดือน' }, { key: 'count', label: 'จำนวนคำขอ' }])}
@@ -337,7 +340,7 @@ router.get('/export/excel', authMiddleware, authorizeRole(['Admin']), async (req
     try {
         const stats = await getDashboardStats(req.query.year);
         const html = buildReportHtml(stats, false);
-        const filename = `pcshs-heartcare-report-${stats.selectedYear}.xls`;
+        const filename = `pcshs-heartcare-report-${toBuddhistYear(stats.selectedYear)}.xls`;
 
         res.setHeader('Content-Type', 'application/vnd.ms-excel; charset=utf-8');
         res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);

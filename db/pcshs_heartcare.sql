@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: May 14, 2026 at 09:38 AM
+-- Generation Time: May 22, 2026 at 12:38 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -35,7 +35,7 @@ CREATE TABLE `appointments` (
   `type` enum('online','onsite') NOT NULL,
   `topic` text DEFAULT NULL,
   `consultation_type` enum('individual','group') NOT NULL,
-  `status` enum('pending','confirmed','completed','cancelled') DEFAULT 'pending',
+  `status` enum('pending','confirmed','completed','cancelled','no-show') DEFAULT 'pending',
   `booking_date` timestamp NOT NULL DEFAULT current_timestamp(),
   `result_summary` text DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -45,7 +45,16 @@ CREATE TABLE `appointments` (
 --
 
 INSERT INTO `appointments` (`appointment_id`, `student_user_id`, `psychologist_user_id`, `schedule_id`, `type`, `topic`, `consultation_type`, `status`, `booking_date`, `result_summary`) VALUES
-(1, 6, 5, 1, 'onsite', 'สอบ', 'individual', 'confirmed', '2026-05-12 04:41:13', NULL);
+(1, 6, 5, 1, 'onsite', 'สอบ', 'individual', 'confirmed', '2026-05-12 04:41:13', NULL),
+(2, 27, 5, 3, 'onsite', 'ทดสอบกราฟ ม.ค.', 'individual', 'confirmed', '2026-01-05 02:00:00', NULL),
+(3, 28, 5, 4, 'online', 'ทดสอบกราฟ ก.พ.', 'individual', 'confirmed', '2026-02-06 02:00:00', NULL),
+(4, 29, 5, 5, 'onsite', 'ทดสอบกราฟ มี.ค.', 'individual', 'completed', '2026-03-07 02:00:00', NULL),
+(5, 30, 5, 6, 'online', 'ทดสอบกราฟ เม.ย.', 'individual', 'confirmed', '2026-04-08 02:00:00', NULL),
+(6, 31, 5, 7, 'onsite', 'ทดสอบกราฟ พ.ค.', 'individual', 'pending', '2026-05-09 02:00:00', NULL),
+(7, 32, 5, 8, 'online', 'ทดสอบกราฟ มิ.ย.', 'individual', 'confirmed', '2026-06-10 02:00:00', NULL),
+(8, 27, 5, 9, 'online', 'ขอซ้ำเพื่อทดสอบ', 'individual', 'confirmed', '2026-07-11 02:00:00', NULL),
+(9, 27, 5, 10, 'online', 'ขอซ้ำเพื่อทดสอบ', 'individual', 'completed', '2026-08-12 02:00:00', NULL),
+(10, 29, 5, 11, 'onsite', 'ขอซ้ำเพื่อทดสอบ', 'individual', 'confirmed', '2026-09-13 02:00:00', NULL);
 
 -- --------------------------------------------------------
 
@@ -75,8 +84,7 @@ CREATE TABLE `assessments` (
 --
 
 INSERT INTO `assessments` (`assessment_id`, `student_user_id`, `question1`, `question2`, `question3`, `question4`, `question5`, `question6`, `question7`, `question8`, `question9`, `score`, `stress_level`, `created_at`) VALUES
-(2, 6, 1, 2, 1, 1, 0, 1, 2, 1, 0, 9, 'ภาวะซึมเศร้าเล็กน้อย', '2026-05-12 04:39:20'),
-(3, 9, 1, 2, 1, 2, 1, 1, 2, 1, 1, 12, 'ภาวะซึมเศร้าปานกลาง', '2026-05-14 06:50:27');
+(2, 6, 1, 2, 1, 1, 0, 1, 2, 1, 0, 9, 'ภาวะซึมเศร้าเล็กน้อย', '2026-05-12 04:39:20');
 
 -- --------------------------------------------------------
 
@@ -150,7 +158,19 @@ CREATE TABLE `schedules` (
 
 INSERT INTO `schedules` (`schedule_id`, `psychologist_user_id`, `date`, `start_time`, `end_time`, `is_available`, `created_at`) VALUES
 (1, 5, '2026-05-14', '09:00:00', '10:00:00', 0, '2026-05-12 04:40:26'),
-(2, 5, '2026-05-14', '14:00:00', '15:00:00', 0, '2026-05-12 04:40:26');
+(2, 5, '2026-05-14', '14:00:00', '15:00:00', 0, '2026-05-12 04:40:26'),
+(3, 5, '2026-01-10', '09:00:00', '10:00:00', 0, '2026-05-21 16:04:46'),
+(4, 5, '2026-02-12', '09:00:00', '10:00:00', 0, '2026-05-21 16:04:46'),
+(5, 5, '2026-03-15', '09:00:00', '10:00:00', 0, '2026-05-21 16:04:46'),
+(6, 5, '2026-04-18', '09:00:00', '10:00:00', 0, '2026-05-21 16:04:46'),
+(7, 5, '2026-05-20', '09:00:00', '10:00:00', 0, '2026-05-21 16:04:46'),
+(8, 5, '2026-06-22', '09:00:00', '10:00:00', 0, '2026-05-21 16:04:46'),
+(9, 5, '2026-07-25', '09:00:00', '10:00:00', 0, '2026-05-21 16:04:46'),
+(10, 5, '2026-08-28', '09:00:00', '10:00:00', 0, '2026-05-21 16:04:46'),
+(11, 5, '2026-09-05', '09:00:00', '10:00:00', 0, '2026-05-21 16:04:46'),
+(12, 5, '2026-10-08', '09:00:00', '10:00:00', 0, '2026-05-21 16:04:46'),
+(13, 5, '2026-11-11', '09:00:00', '10:00:00', 0, '2026-05-21 16:04:46'),
+(14, 5, '2026-12-14', '09:00:00', '10:00:00', 0, '2026-05-21 16:04:46');
 
 -- --------------------------------------------------------
 
@@ -197,26 +217,28 @@ CREATE TABLE `users` (
   `dormitory` varchar(20) DEFAULT NULL,
   `bio` text DEFAULT NULL,
   `profile_image` varchar(255) DEFAULT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `otp_code` varchar(6) DEFAULT NULL,
+  `otp_expires_at` datetime DEFAULT NULL,
+  `is_verified` tinyint(1) DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `users`
 --
 
-INSERT INTO `users` (`user_id`, `email`, `password`, `role`, `fullname`, `phone`, `gender`, `education_level`, `dormitory`, `bio`, `profile_image`, `created_at`) VALUES
-(4, 'admin@gmail.com', '$2b$10$u0umXquZqgCPyFstx8s1T.sIYW1JkWjsuEm5b9j1wbwARHF9Y4s5G', 'Admin', 'แอดมิน', NULL, 'Other', NULL, NULL, NULL, NULL, '2026-05-12 04:32:21'),
-(5, 'thanaporn282548@gmail.com', '$2b$10$z3ARCA9DPoxDg5CgLS/PFuFRzzyFI9ix5Al0AkCLciVIjPGsBA5Am', 'Psychologist', 'คุณหมอแก้ว จิตราภรณ์', NULL, 'Female', NULL, NULL, NULL, 'https://ui-avatars.com/api/?name=%E0%B8%84%E0%B8%B8%E0%B8%93%E0%B8%AB%E0%B8%A1%E0%B8%AD%E0%B9%81%E0%B8%81%E0%B9%89%E0%B8%A7%20%E0%B8%88%E0%B8%B4%E0%B8%95%E0%B8%A3%E0%B8%B2%E0%B8%A0%E0%B8%A3%E0%B8%93%E0%B9%8C&background=random&color=fff', '2026-05-12 04:34:37'),
-(6, 'Stu@gmail.com', '$2b$10$VEZHnKp2zLP1TEYaZukux.HnCL9n3hWwoRtl4OrraSRz6Qmv54ORi', 'Student', 'ธนพร แก้วมีสี', NULL, 'Other', NULL, NULL, NULL, NULL, '2026-05-12 04:38:45'),
-(7, 'a0610531713@gmail.com', '$2b$10$ikpptsvP2peJIj67HsHqBuzOIrpTNDaLKesv.eFq6gzvHPSqSInyK', 'Psychologist', 'อินทิรา ไชยโสดา', NULL, 'Male', NULL, NULL, NULL, NULL, '2026-05-13 14:31:28'),
-(9, 'sb6640248128@lru.ac.th', '$2b$10$6LJbpSfCYH2dUIqSyFHfsOCfVsMtO8Zn6Bz1k9huyCXZp4jTcq/IK', 'Student', 'แบม', NULL, 'Other', NULL, 'dorm_b', NULL, NULL, '2026-05-14 04:51:09');
-
-ALTER TABLE `users`
-  ADD COLUMN `otp_code` varchar(6) DEFAULT NULL,
-  ADD COLUMN `otp_expires_at` datetime DEFAULT NULL,
-  ADD COLUMN `is_verified` tinyint(1) DEFAULT 0;
-
-UPDATE `users` SET `is_verified` = 1 WHERE `otp_code` IS NULL;
+INSERT INTO `users` (`user_id`, `email`, `password`, `role`, `fullname`, `phone`, `gender`, `education_level`, `dormitory`, `bio`, `profile_image`, `created_at`, `otp_code`, `otp_expires_at`, `is_verified`) VALUES
+(4, 'admin@gmail.com', '$2b$10$u0umXquZqgCPyFstx8s1T.sIYW1JkWjsuEm5b9j1wbwARHF9Y4s5G', 'Admin', 'แอดมิน นะจ๊ะ', 'null', 'Female', NULL, NULL, NULL, NULL, '2026-05-12 04:32:21', NULL, NULL, 1),
+(5, 'thanaporn282548@gmail.com', '$2b$10$z3ARCA9DPoxDg5CgLS/PFuFRzzyFI9ix5Al0AkCLciVIjPGsBA5Am', 'Psychologist', 'คุณหมอแก้ว จิตราภรณ์', NULL, 'Female', NULL, NULL, NULL, 'https://ui-avatars.com/api/?name=%E0%B8%84%E0%B8%B8%E0%B8%93%E0%B8%AB%E0%B8%A1%E0%B8%AD%E0%B9%81%E0%B8%81%E0%B9%89%E0%B8%A7%20%E0%B8%88%E0%B8%B4%E0%B8%95%E0%B8%A3%E0%B8%B2%E0%B8%A0%E0%B8%A3%E0%B8%93%E0%B9%8C&background=random&color=fff', '2026-05-12 04:34:37', NULL, NULL, 1),
+(6, 'Stu@gmail.com', '$2b$10$VEZHnKp2zLP1TEYaZukux.HnCL9n3hWwoRtl4OrraSRz6Qmv54ORi', 'Student', 'ธนพร แก้วมีสี', NULL, 'Other', NULL, NULL, NULL, NULL, '2026-05-12 04:38:45', NULL, NULL, 1),
+(7, 'inthira040248@gmail.com', '$2b$10$ikpptsvP2peJIj67HsHqBuzOIrpTNDaLKesv.eFq6gzvHPSqSInyK', 'Psychologist', 'อินทิรา ไชยโสดา', '084xxxxxxx', 'Male', NULL, NULL, 'null', NULL, '2026-05-13 14:31:28', NULL, NULL, 1),
+(27, 'student_m1_a@test.com', '$2b$10$testhash', 'Student', 'นักเรียน ม1 หอ A', '0800000001', 'Other', 'มัธยมศึกษาปีที่ 1', 'หอพัก A', NULL, NULL, '2026-05-21 16:04:03', NULL, NULL, 1),
+(28, 'student_m2_a@test.com', '$2b$10$testhash', 'Student', 'นักเรียน ม2 หอ A', '0800000002', 'Other', 'มัธยมศึกษาปีที่ 2', 'หอพัก A', NULL, NULL, '2026-05-21 16:04:03', NULL, NULL, 1),
+(29, 'student_m3_b@test.com', '$2b$10$testhash', 'Student', 'นักเรียน ม3 หอ B', '0800000003', 'Other', 'มัธยมศึกษาปีที่ 3', 'หอพัก B', NULL, NULL, '2026-05-21 16:04:03', NULL, NULL, 1),
+(30, 'student_m4_b@test.com', '$2b$10$testhash', 'Student', 'นักเรียน ม4 หอ B', '0800000004', 'Other', 'มัธยมศึกษาปีที่ 4', 'หอพัก B', NULL, NULL, '2026-05-21 16:04:03', NULL, NULL, 1),
+(31, 'student_m5_c@test.com', '$2b$10$testhash', 'Student', 'นักเรียน ม5 หอ C', '0800000005', 'Other', 'มัธยมศึกษาปีที่ 5', 'หอพัก C', NULL, NULL, '2026-05-21 16:04:03', NULL, NULL, 1),
+(32, 'student_m6_c@test.com', '$2b$10$testhash', 'Student', 'นักเรียน ม6 หอ C', '0800000006', 'Other', 'มัธยมศึกษาปีที่ 6', 'หอพัก C', NULL, NULL, '2026-05-21 16:04:03', NULL, NULL, 1),
+(33, 'sb6640248128@lru.ac.th', '$2b$10$fHmDqzLsT/H2jLeEvvwEdukweLdIZFNdnP19EVSiSIdRN86Z..WLu', 'Psychologist', 'ทดสอบ', NULL, 'LGBTQ+', NULL, NULL, NULL, 'https://ui-avatars.com/api/?name=%E0%B8%97%E0%B8%94%E0%B8%AA%E0%B8%AD%E0%B8%9A&background=random&color=fff', '2026-05-22 09:36:22', NULL, NULL, 0);
 
 --
 -- Indexes for dumped tables
@@ -292,7 +314,7 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `appointments`
 --
 ALTER TABLE `appointments`
-  MODIFY `appointment_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `appointment_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 
 --
 -- AUTO_INCREMENT for table `assessments`
@@ -322,7 +344,7 @@ ALTER TABLE `groupmembers`
 -- AUTO_INCREMENT for table `schedules`
 --
 ALTER TABLE `schedules`
-  MODIFY `schedule_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `schedule_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
 
 --
 -- AUTO_INCREMENT for table `system_news`
@@ -334,7 +356,7 @@ ALTER TABLE `system_news`
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `user_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
+  MODIFY `user_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=40;
 
 --
 -- Constraints for dumped tables

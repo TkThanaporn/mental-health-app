@@ -214,6 +214,84 @@ h1, h2, h3, h4, h5, h6, .fw-title {
   box-shadow: 0 4px 12px rgba(242, 101, 34, 0.3);
 }
 
+.dashboard-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.year-filter {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 8px 12px;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);
+}
+
+.year-select {
+  min-width: 140px;
+  border: 0;
+  color: var(--pcshs-blue-deep);
+  font-weight: 700;
+  background-color: transparent;
+}
+
+.export-toggle {
+  background: var(--pcshs-orange) !important;
+  border: 0 !important;
+  border-radius: 12px !important;
+  padding: 10px 16px !important;
+  font-weight: 800 !important;
+  box-shadow: 0 4px 16px rgba(242, 101, 34, 0.22);
+}
+
+.export-toggle:hover,
+.export-toggle:focus {
+  background: #d95213 !important;
+}
+
+.export-dropdown {
+  position: relative;
+}
+
+.export-menu {
+  border-radius: 12px;
+  overflow: hidden;
+  padding: 6px;
+  animation: none !important;
+  margin-top: 8px !important;
+}
+
+.export-dropdown .export-menu.show {
+  inset: 100% 0 auto auto !important;
+  transform: none !important;
+}
+
+.export-menu .dropdown-item {
+  border-radius: 8px;
+  font-weight: 700;
+  color: #334155;
+  padding: 10px 12px;
+}
+
+.text-orange {
+  color: var(--pcshs-orange);
+}
+
+@media (max-width: 768px) {
+  .year-filter,
+  .year-select,
+  .export-toggle,
+  .export-dropdown {
+    width: 100%;
+  }
+}
+
 /* --- Mobile Offcanvas Fix --- */
 .offcanvas-custom {
   background-color: var(--pcshs-blue-deep) !important;
@@ -449,4 +527,19 @@ h1, h2, h3, h4, h5, h6, .fw-title {
     font-weight: 600;
     backdrop-filter: blur(4px);
     display: inline-block;
+}
+
+.psych-insight-card {
+    border-radius: 20px !important;
+    background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+}
+
+.psych-chart-tooltip {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 10px 12px;
+    color: #334155;
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
+    font-size: 0.85rem;
 }
