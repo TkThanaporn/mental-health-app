@@ -3,6 +3,9 @@ const router = express.Router();
 const db = require('../config/db');
 const { authMiddleware, authorizeRole } = require('../middleware/auth');
 
+// 👇 1. นำเข้าฟังก์ชัน Sync จาก syncService.js เข้ามาใช้งาน
+const { syncToGoogleCalendar } = require('../services/syncService');
+
 // ==========================================
 // 1. POST: เพิ่มเวลาว่าง (สำหรับนักจิตวิทยา)
 // ==========================================
@@ -27,7 +30,11 @@ router.post('/', authMiddleware, authorizeRole(['Psychologist']), async (req, re
 
         await db.query(sql, [values]);
 
+        // ส่งคำตอบกลับไปให้หน้าเว็บก่อน (ผู้ใช้จะได้ไม่ต้องรอนาน)
         res.json({ msg: 'บันทึกตารางเวลาเรียบร้อยแล้ว' });
+
+        // 👇 2. สั่งให้ซิงค์ขึ้น Google Calendar ทันทีหลังบันทึกเสร็จ!
+        syncToGoogleCalendar();
 
     } catch (err) {
         console.error("❌ ADD SCHEDULE ERROR:", err.message);
@@ -82,6 +89,9 @@ router.delete('/:id', authMiddleware, authorizeRole(['Psychologist']), async (re
 
         res.json({ msg: 'ลบช่วงเวลาเรียบร้อยแล้ว' });
 
+        // 👇 3. สั่งให้ซิงค์เพื่ออัปเดตข้อมูลบน Google Calendar หลังลบทิ้ง
+        syncToGoogleCalendar();
+
     } catch (err) {
         console.error("❌ DELETE SLOT ERROR:", err.message);
         res.status(500).send('Server Error');
@@ -129,6 +139,9 @@ router.put('/:id/status', authMiddleware, authorizeRole(['Psychologist']), async
         await db.query(sql, [is_available, schedule_id, psychologist_user_id]);
 
         res.json({ msg: 'อัปเดตสถานะเรียบร้อยแล้ว' });
+
+        // 👇 4. สั่งให้ซิงค์ขึ้น Google ทันทีเมื่อหมอกดเปลี่ยนสถานะ
+        syncToGoogleCalendar();
 
     } catch (err) {
         console.error("❌ UPDATE STATUS ERROR:", err.message);

@@ -32,7 +32,7 @@ const AppointmentManager = () => {
     const [showResultModal, setShowResultModal] = useState(false);
     const [resultData, setResultData] = useState({ summary: '', needFollowUp: false, date: '', time: '' });
     
-    // ✅ เพิ่ม State ป้องกันการกดปุ่มเบิ้ล
+    // State ป้องกันการกดปุ่มเบิ้ล
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
@@ -80,12 +80,11 @@ const AppointmentManager = () => {
 
     const submitResult = async () => {
         if(!resultData.summary) return alert("กรุณากรอกสรุปผลการให้คำปรึกษา");
-        // ✅ ดักจับกรณีเลือก Follow up แต่กรอกข้อมูลไม่ครบ
         if(resultData.needFollowUp && (!resultData.date || !resultData.time)) {
             return alert("กรุณาระบุวันที่และเวลาสำหรับการนัดติดตามอาการให้ครบถ้วน");
         }
 
-        setIsSubmitting(true); // ล็อกปุ่ม
+        setIsSubmitting(true);
         try {
             const token = localStorage.getItem('token');
             await axios.post(`http://localhost:5000/api/appointments/complete/${selectedApptDetails.appointment_id}`, {
@@ -102,7 +101,7 @@ const AppointmentManager = () => {
         } catch (err) { 
             alert("เกิดข้อผิดพลาดในการบันทึก"); 
         } finally {
-            setIsSubmitting(false); // ปลดล็อกปุ่ม
+            setIsSubmitting(false);
         }
     };
 
@@ -139,7 +138,12 @@ const AppointmentManager = () => {
         } catch (error) { return false; }
     };
 
-    let filteredAppointments = appointments;
+    // 🚩 --- ส่วนที่ปรับปรุง: กรองเอาเฉพาะงานที่ "ยังไม่เสร็จ" ออกมาแสดง ---
+    let filteredAppointments = appointments.filter(a => {
+        const s = String(a.status).toLowerCase();
+        return s !== 'completed' && s !== 'cancelled' && s !== 'no-show';
+    });
+    
     if (filterStatus === 'pending') filteredAppointments = filteredAppointments.filter(a => String(a.status).toLowerCase() === 'pending');
     else if (filterStatus === 'today') filteredAppointments = filteredAppointments.filter(a => String(a.status).toLowerCase() === 'confirmed' && isToday(a.date || a.appointment_date));
     else if (filterStatus === 'confirmed') filteredAppointments = filteredAppointments.filter(a => String(a.status).toLowerCase() === 'confirmed');
@@ -160,15 +164,26 @@ const AppointmentManager = () => {
         });
     }
 
+    // จัดเรียงข้อมูลตามวันที่และเวลา
+    filteredAppointments.sort((a, b) => {
+        const dateA = new Date(a.date || a.appointment_date);
+        const dateB = new Date(b.date || b.appointment_date);
+        if (dateA < dateB) return -1;
+        if (dateA > dateB) return 1;
+        const timeA = a.start_time || a.appointment_time || '00:00';
+        const timeB = b.start_time || b.appointment_time || '00:00';
+        return timeA.localeCompare(timeB); 
+    });
+
     const opStats = {
-        all: appointments.length,
+        all: filteredAppointments.length, // สถิติอิงจากรายการที่ยังไม่จบ
         newRequests: appointments.filter(a => String(a.status).toLowerCase() === 'pending').length,
         todaySchedule: appointments.filter(a => String(a.status).toLowerCase() === 'confirmed' && isToday(a.date || a.appointment_date)).length,
         confirmedUpcoming: appointments.filter(a => String(a.status).toLowerCase() === 'confirmed').length,
     };
 
     const statCardsData = [
-        { title: "นัดหมายทั้งหมด", count: opStats.all, unit: "รายการ", icon: <FaClipboardList/>, type: "stat-blue", filterKey: 'all' },
+        { title: "นัดหมายที่เปิดอยู่", count: opStats.all, unit: "รายการ", icon: <FaClipboardList/>, type: "stat-blue", filterKey: 'all' },
         { title: "คำขอใหม่ (รอยืนยัน)", count: opStats.newRequests, unit: "รายการ", icon: <FaUserClock/>, type: "stat-purple", filterKey: 'pending' },
         { title: "นัดหมายวันนี้", count: opStats.todaySchedule, unit: "ราย", icon: <FaCalendarDay/>, type: "stat-ocean", filterKey: 'today' },
         { title: "ยืนยันแล้ว (รอพบ)", count: opStats.confirmedUpcoming, unit: "คิว", icon: <FaUserCheck/>, type: "stat-sweet", filterKey: 'confirmed' }
@@ -177,20 +192,14 @@ const AppointmentManager = () => {
     const getStatusBadge = (status) => {
         const s = status ? String(status).toLowerCase() : '';
         if (s === 'confirmed' || s === 'ยืนยัน') return <Badge bg="success" className="px-3 py-2 rounded-pill fw-normal shadow-sm"><FaCheck className="me-1"/> ยืนยันแล้ว</Badge>;
-        if (s === 'cancelled' || s === 'ยกเลิก') return <Badge bg="danger" className="px-3 py-2 rounded-pill fw-normal shadow-sm"><FaTimes className="me-1"/> ยกเลิกแล้ว</Badge>;
         if (s === 'pending' || s === 'รอดำเนินการ') return <Badge bg="warning" text="dark" className="px-3 py-2 rounded-pill fw-normal shadow-sm"><FaClock className="me-1"/> รอดำเนินการ</Badge>;
-        if (s === 'completed' || s === 'เสร็จสิ้น') return <Badge bg="secondary" className="px-3 py-2 rounded-pill fw-normal shadow-sm"><FaHistory className="me-1"/> เสร็จสิ้น</Badge>;
-        if (s === 'no-show' || s === 'ขาดนัด') return <Badge bg="dark" className="px-3 py-2 rounded-pill fw-normal shadow-sm"><FaUserTimes className="me-1"/> ขาดนัด</Badge>;
         return <Badge bg="secondary" className="px-3 py-2 rounded-pill fw-normal shadow-sm"><FaCircle className="me-1"/> {status || 'ไม่ระบุ'}</Badge>;
     };
 
     const getStatusColor = (status) => {
         const s = status ? String(status).toLowerCase() : '';
         if (s === 'confirmed' || s === 'ยืนยัน') return '#198754';
-        if (s === 'cancelled' || s === 'ยกเลิก') return '#dc3545';
         if (s === 'pending' || s === 'รอดำเนินการ') return '#ffc107';
-        if (s === 'completed' || s === 'เสร็จสิ้น') return '#6c757d';
-        if (s === 'no-show' || s === 'ขาดนัด') return '#212529'; 
         return '#6c757d';
     };
 
@@ -228,13 +237,8 @@ const AppointmentManager = () => {
                     </Button>
                 </div>
             );
-        } else {
-            return (
-                <Button variant="light" className="w-100 fw-bold border text-muted btn-action" onClick={() => openDetails(app)}>
-                    <FaInfoCircle className="me-1"/> ดูรายละเอียด
-                </Button>
-            );
         }
+        return null;
     };
 
     if (loading) return (
@@ -248,7 +252,7 @@ const AppointmentManager = () => {
             <div className="d-flex flex-column flex-lg-row justify-content-between align-items-lg-end mb-4 gap-4">
                 <div className="d-flex align-items-center">
                     <div className="brand-icon-box me-3"><FaCalendarAlt /></div>
-                    <div><h2 className="fw-bold m-0 text-navy">จัดการการนัดหมาย</h2><p className="text-muted m-0 small">คลิกที่การ์ดด้านล่างเพื่อกรองข้อมูลตามสถานะ</p></div>
+                    <div><h2 className="fw-bold m-0 text-navy">จัดการการนัดหมาย</h2><p className="text-muted m-0 small">จัดการคำขอและบันทึกผลการเข้าปรึกษา</p></div>
                 </div>
             </div>
 
@@ -285,7 +289,7 @@ const AppointmentManager = () => {
             </div>
 
             {filteredAppointments.length === 0 ? (
-                <div className="empty-state"><FaHistory className="mb-3 opacity-25" size={40}/><h5>ไม่พบข้อมูลนัดหมาย</h5></div>
+                <div className="empty-state text-center p-5 bg-white rounded-4 shadow-sm"><FaHistory className="mb-3 opacity-25" size={40}/><h5>ไม่พบงานที่ต้องดำเนินการ</h5></div>
             ) : (
                 <>
                     {viewMode === 'card' ? (
@@ -374,30 +378,22 @@ const AppointmentManager = () => {
                 </Modal.Body>
                 <Modal.Footer className="border-0 pt-0">
                     <Button variant="success" className="w-100 rounded-pill fw-bold shadow-sm" onClick={submitResult} disabled={isSubmitting}>
-                        {isSubmitting ? <Spinner size="sm" animation="border" /> : "บันคาึกผลและเสร็จสิ้นการนัดหมาย"}
+                        {isSubmitting ? <Spinner size="sm" animation="border" /> : "บันทึกผลและเสร็จสิ้นการนัดหมาย"}
                     </Button>
                 </Modal.Footer>
             </Modal>
 
-            {/* รายละเอียด Modal */}
-            <Modal show={showDetails} onHide={() => setShowDetails(false)} size="md" centered className="details-modal">
-                <Modal.Header closeButton className="border-0 pb-0"><Modal.Title className="fw-bold text-navy"><FaClipboardList className="me-2 text-primary"/>รายละเอียดนัดหมาย</Modal.Title></Modal.Header>
-                <Modal.Body className="pt-3">
-                    {selectedApptDetails && (
-                        <div className="details-content">
-                            <div className="text-center mb-4"><div className="avatar-circle mx-auto mb-2" style={{width: '60px', height: '60px', fontSize: '1.5rem'}}><FaUserGraduate/></div><h5 className="fw-bold m-0">{selectedApptDetails.student_name || selectedApptDetails.fullname}</h5><div className="mt-3 d-flex justify-content-center gap-2">{getStatusBadge(selectedApptDetails.status)}{getMeetingTypeBadge(selectedApptDetails.type || selectedApptDetails.meeting_type)}</div></div>
-                            <div className="info-box bg-light p-3 rounded-3 mb-3"><Row className="g-3"><Col xs={6}><div className="text-muted small">วันที่นัดหมาย</div><div className="fw-bold"><FaCalendarAlt className="me-2 text-primary"/>{new Date(selectedApptDetails.date || selectedApptDetails.appointment_date).toLocaleDateString('th-TH')}</div></Col><Col xs={6}><div className="text-muted small">เวลา</div><div className="fw-bold"><FaClock className="me-2 text-primary"/>{formatTimeSlot(selectedApptDetails.start_time, selectedApptDetails.end_time, selectedApptDetails.appointment_time)} น.</div></Col></Row></div>
-                            <div className="info-group mb-3"><div className="text-muted small mb-1">หัวข้อการปรึกษา</div><div className="fw-semibold text-dark p-2 border rounded-3">{selectedApptDetails.topic || 'ไม่ระบุ'}</div></div>
-                            <div className="info-group border-start border-danger border-4 ps-3 py-2 bg-white shadow-sm rounded-end"><div className="text-danger small fw-bold mb-1"><FaFileMedical className="me-1"/> ผลประเมินสุขภาพจิตล่าสุด</div><div className="fw-semibold text-dark">{selectedApptDetails.stress_level || selectedApptDetails.latest_assessment || 'ไม่มีข้อมูล'}</div></div>
-                            {selectedApptDetails.result_summary && (<div className="info-group border-start border-success border-4 ps-3 py-2 bg-white shadow-sm rounded-end mt-3"><div className="text-success small fw-bold mb-1"><FaCheckCircle className="me-1"/> สรุปผลการให้คำปรึกษา</div><div className="fw-semibold text-dark">{selectedApptDetails.result_summary}</div></div>)}
-                        </div>
-                    )}
-                </Modal.Body>
-            </Modal>
-
             {/* Chat Modal */}
             <Modal show={showChat && selectedChatAppt} onHide={() => setShowChat(false)} size="lg" centered className="chat-modal-custom">
-                <Modal.Header closeButton className="border-0 bg-light"><Modal.Title className="d-flex align-items-center gap-3"><div className="avatar-circle bg-primary text-white"><FaUserGraduate/></div><div><div className="fs-5 fw-bold">{selectedChatAppt?.student_name || selectedChatAppt?.fullname}</div><div className="fs-6 text-muted fw-normal">หัวข้อ: {selectedChatAppt?.topic || 'ปรึกษาทั่วไป'}</div></div></Modal.Title></Modal.Header>
+                <Modal.Header closeButton className="border-0 bg-light">
+                    <Modal.Title className="d-flex align-items-center gap-3">
+                        <div className="avatar-circle bg-primary text-white"><FaUserGraduate/></div>
+                        <div>
+                            <div className="fs-5 fw-bold">{selectedChatAppt?.student_name || selectedChatAppt?.fullname}</div>
+                            <div className="fs-6 text-muted fw-normal">หัวข้อ: {selectedChatAppt?.topic || 'ปรึกษาทั่วไป'}</div>
+                        </div>
+                    </Modal.Title>
+                </Modal.Header>
                 <Modal.Body className="p-0" style={{ height: '500px', background: '#f8f9fa' }}>
                     <ChatRoom roomID={`appt-${selectedChatAppt?.appointment_id}`} userId={String(currentUserId)} username="นักจิตวิทยา" otherName={selectedChatAppt?.student_name || selectedChatAppt?.fullname} />
                 </Modal.Body>
@@ -405,4 +401,5 @@ const AppointmentManager = () => {
         </div>
     );
 };
+
 export default AppointmentManager;

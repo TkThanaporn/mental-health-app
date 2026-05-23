@@ -1,18 +1,18 @@
-/* global google */
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { Card, Form, Button, Row, Col, Alert, Spinner, Table } from 'react-bootstrap';
 import { 
     FaGoogle, FaTrash, FaClock, FaCheckCircle, 
     FaPlusCircle, FaHistory, FaArrowLeft, FaCalendarCheck,
-    FaLock, FaLockOpen, FaUserCheck 
+    FaLock, FaLockOpen, FaUserCheck, FaUnlink 
 } from 'react-icons/fa';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 import './ScheduleManager.css';
 
 const ScheduleManager = () => {
     const navigate = useNavigate();
+    const location = useLocation();
     
     // --- State ---
     const [selectedDate, setSelectedDate] = useState('');
@@ -21,9 +21,11 @@ const ScheduleManager = () => {
     const [deleteIds, setDeleteIds] = useState([]); 
     const [message, setMessage] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [syncing, setSyncing] = useState(false);
     const [deleting, setDeleting] = useState(false);
-    const GOOGLE_CLIENT_ID = "236473618158-1epvinqshfo3r2p9tgk7uhc6df7hjigo.apps.googleusercontent.com"; 
+    const [isGoogleSynced, setIsGoogleSynced] = useState(false); 
+
+    // ป้องกัน React ยิง API เบิ้ล 2 รอบในโหมด Development
+    const calledOnce = useRef(false);
 
     const availableTimeSlots = [
         "09:00-10:00", "10:00-11:00", "11:00-12:00",
@@ -31,7 +33,58 @@ const ScheduleManager = () => {
         "16:00-17:00", "17:00-18:00"
     ];
 
-    useEffect(() => { fetchMySlots(); }, []);
+    // --- 1. ฟังก์ชันเช็คสถานะ Google Calendar จาก Database ---
+    const checkGoogleStatus = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const res = await axios.get('http://localhost:5000/api/calendar/status', { 
+                headers: { 'x-auth-token': token } 
+            });
+            setIsGoogleSynced(res.data.is_google_synced); // อัปเดตปุ่มตามจริง
+        } catch (err) {
+            console.error("เช็คสถานะ Google ไม่สำเร็จ", err);
+        }
+    };
+
+    useEffect(() => { 
+        fetchMySlots(); 
+        checkGoogleStatus(); // เรียกใช้ตอนโหลดหน้าเว็บ
+        
+        if (!calledOnce.current) {
+            handleGoogleRedirect();
+            calledOnce.current = true;
+        }
+    }, []);
+
+    // --- 2. ตรวจสอบ URL เมื่อ Google Redirect กลับมา ---
+    const handleGoogleRedirect = async () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const code = urlParams.get('code');
+
+        if (code) {
+            // ลบ ?code ออกจาก URL ทันที เพื่อไม่ให้รีเฟรชแล้วยิงซ้ำ
+            window.history.replaceState({}, document.title, window.location.pathname);
+            
+            setLoading(true);
+            try {
+                const token = localStorage.getItem('token');
+                const res = await axios.post('http://localhost:5000/api/calendar/save-token', 
+                    { code }, 
+                    { headers: { 'x-auth-token': token } }
+                );
+                
+                if (res.data.success) {
+                    setMessage({ type: 'success', text: '✅ เชื่อมต่อ Google Calendar สำเร็จ! ระบบจะ Auto Sync ให้คุณ' });
+                    setIsGoogleSynced(true);
+                }
+            } catch (err) {
+                const errorMsg = err.response?.data?.message || 'เกิดข้อผิดพลาดในการเชื่อมต่อ Google';
+                setMessage({ type: 'danger', text: `❌ ${errorMsg}` });
+            } finally {
+                setLoading(false);
+            }
+        }
+    };
 
     // --- API Functions ---
     const fetchMySlots = async () => {
@@ -40,172 +93,77 @@ const ScheduleManager = () => {
             const res = await axios.get('http://localhost:5000/api/schedule', { headers: { 'x-auth-token': token } });
             setMySlots(res.data);
             setLoading(false);
-        } catch (err) { setLoading(false); }
+        } catch (err) { 
+            setLoading(false); 
+        }
     };
 
-    // เปลี่ยนสถานะ (ว่าง <-> ติดธุระ)
     const handleToggleStatus = async (slot) => {
         if (slot.appointment_id) return alert("รายการนี้ถูกจองโดยนักเรียนแล้ว ไม่สามารถปิดได้ครับ");
-
         try {
             const token = localStorage.getItem('token');
-            const newStatus = slot.is_available === 1 ? 0 : 1; // สลับค่า
-
+            const newStatus = slot.is_available === 1 ? 0 : 1;
             await axios.put(`http://localhost:5000/api/schedule/${slot.schedule_id}/status`, 
                 { is_available: newStatus },
                 { headers: { 'x-auth-token': token } }
             );
-
-            // อัปเดต UI ทันที
-            setMySlots(prev => prev.map(s => 
-                s.schedule_id === slot.schedule_id ? { ...s, is_available: newStatus } : s
-            ));
+            setMySlots(prev => prev.map(s => s.schedule_id === slot.schedule_id ? { ...s, is_available: newStatus } : s));
         } catch (err) {
-            console.error(err);
             alert("เกิดข้อผิดพลาดในการเปลี่ยนสถานะ");
         }
     };
 
-    const toggleDeleteId = (id) => {
-        setDeleteIds(prev => prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]);
-    };
+    const toggleDeleteId = (id) => setDeleteIds(prev => prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]);
 
     const handleSelectAll = () => {
         const deletableSlots = mySlots.filter(s => !s.appointment_id).map(s => s.schedule_id);
-        
-        if (deleteIds.length === deletableSlots.length && deletableSlots.length > 0) {
-            setDeleteIds([]);
-        } else {
-            setDeleteIds(deletableSlots);
-        }
+        if (deleteIds.length === deletableSlots.length && deletableSlots.length > 0) setDeleteIds([]);
+        else setDeleteIds(deletableSlots);
     };
 
-    const handleBatchDelete = () => {
+    const handleBatchDelete = async () => {
         if (deleteIds.length === 0) return alert("กรุณาเลือกรายการที่จะลบ");
-        if (!window.confirm(`ยืนยันการลบ ${deleteIds.length} รายการ?`)) return;
+        if (!window.confirm(`ยืนยันการลบ ${deleteIds.length} รายการ? (ระบบ Auto Sync จะลบออกจาก Google Calendar ด้วย)`)) return;
         
-        const tokenClient = google.accounts.oauth2.initTokenClient({
-            client_id: GOOGLE_CLIENT_ID,
-            scope: 'https://www.googleapis.com/auth/calendar.events',
-            callback: async (tokenResponse) => {
-                if (tokenResponse && tokenResponse.access_token) await executeBatchDelete(tokenResponse.access_token);
-            },
-        });
-        tokenClient.requestAccessToken();
-    };
-
-    const executeBatchDelete = async (accessToken) => {
         setDeleting(true);
         let deletedCount = 0;
         const token = localStorage.getItem('token');
         try {
             for (const id of deleteIds) {
                 try {
-                    await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events/pcshsapp${id}`, {
-                        method: 'DELETE', headers: { 'Authorization': `Bearer ${accessToken}` }
-                    });
-                } catch (e) {}
-                try {
                     await axios.delete(`http://localhost:5000/api/schedule/${id}`, { headers: { 'x-auth-token': token } });
                     deletedCount++;
                 } catch (e) {}
             }
             setMessage({ type: 'success', text: `✅ ลบสำเร็จ ${deletedCount} รายการ` });
-            setDeleteIds([]); fetchMySlots();
-        } catch (err) { setMessage({ type: 'danger', text: '❌ ผิดพลาด' }); }
-        finally { setDeleting(false); }
+            setDeleteIds([]); 
+            fetchMySlots();
+        } catch (err) { 
+            setMessage({ type: 'danger', text: '❌ เกิดข้อผิดพลาดในการลบ' }); 
+        } finally { 
+            setDeleting(false); 
+        }
     };
 
-    const handleGoogleSync = () => {
-        if (mySlots.length === 0) return alert("ไม่มีข้อมูล");
-        const tokenClient = google.accounts.oauth2.initTokenClient({
-            client_id: GOOGLE_CLIENT_ID,
-            scope: 'https://www.googleapis.com/auth/calendar.events',
-            callback: async (res) => { if (res && res.access_token) await pushEventsToGoogle(res.access_token); },
-        });
-        tokenClient.requestAccessToken();
-    };
-
-   const pushEventsToGoogle = async (accessToken) => {
-        setSyncing(true);
-        let updatedCount = 0;
-        let errorCount = 0;
-
+    const handleConnectGoogle = async () => {
         try {
-            for (const slot of mySlots) {
-                const [startT, endT] = slot.time_slot.split('-');
-                const d = new Date(slot.date);
-                const dateStr = d.getFullYear() + '-' + 
-                                String(d.getMonth() + 1).padStart(2, '0') + '-' + 
-                                String(d.getDate()).padStart(2, '0');
-                
-                const eventId = `pcshsapp${slot.schedule_id}`;
-                
-                let summaryText = "";
-                let colorId = "";
-                let description = "";
-
-                if (slot.appointment_id) {
-                    summaryText = `🔴 จองแล้ว: ${slot.student_name} (${slot.time_slot})`;
-                    colorId = "11"; 
-                    description = `มีการจองโดยนักเรียน: ${slot.student_name}`;
-                } else if (slot.is_available === 0) {
-                    summaryText = `⛔ ติดธุระ/งดรับ (${slot.time_slot})`;
-                    colorId = "8"; 
-                    description = "ปิดรับคิวชั่วคราว (Psychologist Busy)";
-                } else {
-                    summaryText = `🟢 เปิดคิวว่าง ${slot.time_slot}`;
-                    colorId = "10"; 
-                    description = "ช่วงเวลาที่คุณเปิดให้บริการให้คำปรึกษาในระบบ";
-                }
-
-                const event = {
-                    'id': eventId,
-                    'summary': summaryText,
-                    'description': description,
-                    'start': {
-                        'dateTime': `${dateStr}T${startT.trim()}:00`,
-                        'timeZone': 'Asia/Bangkok',
-                    },
-                    'end': {
-                        'dateTime': `${dateStr}T${endT.trim()}:00`,
-                        'timeZone': 'Asia/Bangkok',
-                    },
-                    'colorId': colorId
-                };
-
-                let response = await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events/${eventId}`, {
-                    method: 'PUT',
-                    headers: {
-                        'Authorization': `Bearer ${accessToken}`,
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(event),
-                });
-
-                if (response.status === 404) {
-                    response = await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events', {
-                        method: 'POST',
-                        headers: {
-                            'Authorization': `Bearer ${accessToken}`,
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify(event),
-                    });
-                }
-
-                if (response.ok) updatedCount++;
-                else errorCount++;
-            }
-
-            if (updatedCount > 0) setMessage({ type: 'success', text: `✅ อัปเดตสถานะปฏิทินสำเร็จ ${updatedCount} รายการ` });
-            else setMessage({ type: 'warning', text: '⚠️ ไม่มีการเปลี่ยนแปลงข้อมูล' });
-
+            const token = localStorage.getItem('token');
+            const res = await axios.get('http://localhost:5000/api/calendar/auth-url', { headers: { 'x-auth-token': token } });
+            window.location.href = res.data.url;
         } catch (error) {
-            console.error("System Error:", error);
-            setMessage({ type: 'danger', text: '❌ เกิดข้อผิดพลาดในการเชื่อมต่อ' });
-        } finally {
-            setSyncing(false);
+            setMessage({ type: 'danger', text: '❌ ไม่สามารถดึงลิงก์เชื่อมต่อ Google ได้' });
+        }
+    };
+
+    const handleDisconnectGoogle = async () => {
+        if (!window.confirm('คุณต้องการยกเลิกการซิงค์ตารางงานกับ Google Calendar ใช่หรือไม่?')) return;
+        try {
+            const token = localStorage.getItem('token');
+            await axios.post('http://localhost:5000/api/calendar/disconnect', {}, { headers: { 'x-auth-token': token } });
+            setIsGoogleSynced(false);
+            setMessage({ type: 'success', text: '✅ ยกเลิกการเชื่อมต่อสำเร็จ ระบบหยุดซิงค์อัตโนมัติแล้ว' });
+        } catch (error) {
+            setMessage({ type: 'danger', text: '❌ เกิดข้อผิดพลาดในการยกเลิก' });
         }
     };
 
@@ -217,17 +175,19 @@ const ScheduleManager = () => {
         try {
             const token = localStorage.getItem('token');
             await axios.post('http://localhost:5000/api/schedule', { date: selectedDate, time_slots: selectedSlots }, { headers: { 'x-auth-token': token } });
-            setMessage({ type: 'success', text: '✅ บันทึกสำเร็จ' });
-            setSelectedSlots([]); fetchMySlots(); setTimeout(() => setMessage(null), 3000);
-        } catch (err) { setMessage({ type: 'danger', text: '❌ บันทึกไม่สำเร็จ' }); }
+            setMessage({ type: 'success', text: '✅ บันทึกสำเร็จ ระบบกำลังซิงค์ขึ้น Google Calendar...' });
+            setSelectedSlots([]); 
+            fetchMySlots(); 
+            setTimeout(() => setMessage(null), 3000);
+        } catch (err) { 
+            setMessage({ type: 'danger', text: '❌ บันทึกไม่สำเร็จ' }); 
+        }
     };
 
     if (loading) return <div className="text-center py-5"><Spinner animation="border" variant="primary"/></div>;
 
     return (
         <div className="container-fluid px-4 px-lg-5 py-5" style={{maxWidth: '1300px'}}>
-            
-            {/* Header */}
             <div className="d-flex justify-content-between align-items-center mb-5">
                 <div className="header-banner">
                     <div className="header-icon-square">
@@ -298,14 +258,19 @@ const ScheduleManager = () => {
                             <div className="d-flex gap-2">
                                 {deleteIds.length > 0 && (
                                     <Button variant="danger" className="btn-sm rounded-pill px-3 shadow-sm border-0" onClick={handleBatchDelete} disabled={deleting}>
-                                        {deleting ? <Spinner size="sm"/> : <FaTrash className="me-1"/>} 
-                                        ลบ ({deleteIds.length})
+                                        {deleting ? <Spinner size="sm"/> : <FaTrash className="me-1"/>} ลบ ({deleteIds.length})
                                     </Button>
                                 )}
-                                <button className="btn-pcshs-sync" onClick={handleGoogleSync} disabled={syncing}>
-                                    {syncing ? <Spinner size="sm" className="me-2"/> : <FaGoogle className="me-2" />}
-                                    Sync Google
-                                </button>
+                                
+                                {isGoogleSynced ? (
+                                    <Button variant="outline-danger" className="rounded-pill px-3 shadow-sm" onClick={handleDisconnectGoogle}>
+                                        <FaUnlink className="me-2" /> ยกเลิกการเชื่อมต่อ
+                                    </Button>
+                                ) : (
+                                    <Button className="btn-pcshs-sync rounded-pill px-3 shadow-sm" onClick={handleConnectGoogle}>
+                                        <FaGoogle className="me-2" /> เชื่อมต่อ Google Calendar
+                                    </Button>
+                                )}
                             </div>
                         </div>
                         <Card.Body className="p-0">
@@ -375,7 +340,6 @@ const ScheduleManager = () => {
                                                     <td className="text-end pe-4">
                                                         {!isBooked && (
                                                             <Button 
-                                                                // ปรับสีปุ่ม: แดง=ล็อคอยู่, เขียว=ว่าง
                                                                 variant={isClosed ? "outline-danger" : "outline-success"}
                                                                 size="sm"
                                                                 className="rounded-circle btn-icon-only"
@@ -383,7 +347,6 @@ const ScheduleManager = () => {
                                                                 title={isClosed ? "เปิดรับคิว" : "ปิดรับชั่วคราว"}
                                                                 style={{width: '32px', height: '32px', padding: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center'}}
                                                             >
-                                                                {/* ปรับไอคอน: แม่กุญแจล็อค=ปิด, แม่กุญแจเปิด=ว่าง */}
                                                                 {isClosed ? <FaLock size={14} /> : <FaLockOpen size={14} />}
                                                             </Button>
                                                         )}
