@@ -3,15 +3,14 @@ import axios from 'axios';
 import { Card, Form, Button, Row, Col, Alert, Spinner, Table } from 'react-bootstrap';
 import { 
     FaGoogle, FaTrash, FaClock, FaCheckCircle, 
-    FaPlusCircle, FaHistory, FaArrowLeft, FaCalendarCheck,
-    FaLock, FaLockOpen, FaUserCheck, FaUnlink 
+    FaPlusCircle, FaHistory, FaCalendarCheck,
+    FaLock, FaLockOpen, FaUserCheck, FaUnlink, FaFilter
 } from 'react-icons/fa';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 
 import './ScheduleManager.css';
 
 const ScheduleManager = () => {
-    const navigate = useNavigate();
     const location = useLocation();
     
     // --- State ---
@@ -23,6 +22,32 @@ const ScheduleManager = () => {
     const [loading, setLoading] = useState(true);
     const [deleting, setDeleting] = useState(false);
     const [isGoogleSynced, setIsGoogleSynced] = useState(false); 
+
+    // --- ข้อมูลเดือนภาษาไทย ---
+    const thaiMonths = [
+        { value: '01', name: 'มกราคม' },
+        { value: '02', name: 'กุมภาพันธ์' },
+        { value: '03', name: 'มีนาคม' },
+        { value: '04', name: 'เมษายน' },
+        { value: '05', name: 'พฤษภาคม' },
+        { value: '06', name: 'มิถุนายน' },
+        { value: '07', name: 'กรกฎาคม' },
+        { value: '08', name: 'สิงหาคม' },
+        { value: '09', name: 'กันยายน' },
+        { value: '10', name: 'ตุลาคม' },
+        { value: '11', name: 'พฤศจิกายน' },
+        { value: '12', name: 'ธันวาคม' }
+    ];
+
+    // --- รายการปีสำหรับการเลือก (ย้อนหลัง 1 ปี และล่วงหน้า 3 ปี) ---
+    const currentYear = new Date().getFullYear();
+    const availableYears = Array.from({ length: 5 }, (_, i) => currentYear - 1 + i);
+
+    // --- State สำหรับตัวกรอง (Filters) แยกปีและเดือนภาษาไทย ---
+    const [filterYear, setFilterYear] = useState(() => String(new Date().getFullYear()));
+    const [filterMonth, setFilterMonth] = useState(() => String(new Date().getMonth() + 1).padStart(2, '0'));
+    const [filterDate, setFilterDate] = useState('');
+    const [filterTime, setFilterTime] = useState('');
 
     // ป้องกัน React ยิง API เบิ้ล 2 รอบในโหมด Development
     const calledOnce = useRef(false);
@@ -62,7 +87,6 @@ const ScheduleManager = () => {
         const code = urlParams.get('code');
 
         if (code) {
-            // ลบ ?code ออกจาก URL ทันที เพื่อไม่ให้รีเฟรชแล้วยิงซ้ำ
             window.history.replaceState({}, document.title, window.location.pathname);
             
             setLoading(true);
@@ -98,6 +122,22 @@ const ScheduleManager = () => {
         }
     };
 
+    // --- Logic การกรองข้อมูลตารางปฏิบัติงาน (Client-side Filtering) ---
+    const filteredSlots = mySlots.filter(slot => {
+        if (!slot.date) return true;
+        
+        // แยกเอาส่วน YYYY-MM-DD
+        const slotDateStr = slot.date.split('T')[0]; 
+        const [sYear, sMonth, sDay] = slotDateStr.split('-'); // จะได้สัดส่วนปี เดือน วัน แยกกัน
+
+        const matchYear = filterYear ? sYear === filterYear : true;
+        const matchMonth = filterMonth ? sMonth === filterMonth : true;
+        const matchDate = filterDate ? slotDateStr === filterDate : true;
+        const matchTime = filterTime ? slot.time_slot === filterTime : true;
+
+        return matchYear && matchMonth && matchDate && matchTime;
+    });
+
     const handleToggleStatus = async (slot) => {
         if (slot.appointment_id) return alert("รายการนี้ถูกจองโดยนักเรียนแล้ว ไม่สามารถปิดได้ครับ");
         try {
@@ -115,10 +155,14 @@ const ScheduleManager = () => {
 
     const toggleDeleteId = (id) => setDeleteIds(prev => prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]);
 
+    // เลือกทั้งหมดเฉพาะรายการที่ถูกกรองและสามารถลบได้เท่านั้น
     const handleSelectAll = () => {
-        const deletableSlots = mySlots.filter(s => !s.appointment_id).map(s => s.schedule_id);
-        if (deleteIds.length === deletableSlots.length && deletableSlots.length > 0) setDeleteIds([]);
-        else setDeleteIds(deletableSlots);
+        const deletableSlots = filteredSlots.filter(s => !s.appointment_id).map(s => s.schedule_id);
+        if (deleteIds.length === deletableSlots.length && deletableSlots.length > 0) {
+            setDeleteIds([]);
+        } else {
+            setDeleteIds(deletableSlots);
+        }
     };
 
     const handleBatchDelete = async () => {
@@ -184,6 +228,13 @@ const ScheduleManager = () => {
         }
     };
 
+    const clearFilters = () => {
+        setFilterYear('');
+        setFilterMonth('');
+        setFilterDate('');
+        setFilterTime('');
+    };
+
     if (loading) return <div className="text-center py-5"><Spinner animation="border" variant="primary"/></div>;
 
     return (
@@ -198,10 +249,7 @@ const ScheduleManager = () => {
                         <p>ระบบจัดการเวลาปฏิบัติงาน PCSHS Health Care</p>
                     </div>
                 </div>
-                
-                <Button className="btn-back-custom" onClick={() => navigate('/psychologist/dashboard')}>
-                    <FaArrowLeft className="me-2" /> กลับหน้าหลัก
-                </Button>
+                {/* นำปุ่ม กลับหน้าหลัก ออกจากตรงนี้แล้ว */}
             </div>
 
             <Row className="g-4">
@@ -252,7 +300,7 @@ const ScheduleManager = () => {
                     <Card className="glass-card-modern">
                         <div className="card-header-premium d-flex justify-content-between align-items-center">
                             <h6 className="mb-0 fw-bold header-title" style={{color: '#00234B'}}>
-                                <FaClock className="me-2" /> รายการที่บันทึก ({mySlots.length})
+                                <FaClock className="me-2" /> รายการที่บันทึก ({filteredSlots.length}/{mySlots.length})
                             </h6>
                             
                             <div className="d-flex gap-2">
@@ -273,11 +321,95 @@ const ScheduleManager = () => {
                                 )}
                             </div>
                         </div>
+
+                        {/* --- โซนตัวกรองการแสดงผล (แยก ปี - เดือนภาษาไทย) --- */}
+                        <div className="p-3 bg-light border-bottom">
+                            <Row className="g-2 align-items-end">
+                                <Col xs={6} md={3}>
+                                    <Form.Group>
+                                        <Form.Label className="small fw-bold text-secondary mb-1">
+                                            <FaFilter className="me-1 small"/> เลือกปี (ค.ศ.)
+                                        </Form.Label>
+                                        <Form.Select 
+                                            value={filterYear} 
+                                            onChange={(e) => {
+                                                setFilterYear(e.target.value);
+                                                setFilterDate(''); // ล้างการระบุวันที่
+                                            }}
+                                            className="form-select-sm"
+                                        >
+                                            <option value="">ทั้งหมด</option>
+                                            {availableYears.map(year => (
+                                                <option key={year} value={year}>{year}</option>
+                                            ))}
+                                        </Form.Select>
+                                    </Form.Group>
+                                </Col>
+                                <Col xs={6} md={3}>
+                                    <Form.Group>
+                                        <Form.Label className="small fw-bold text-secondary mb-1">เลือกเดือน</Form.Label>
+                                        <Form.Select 
+                                            value={filterMonth} 
+                                            onChange={(e) => {
+                                                setFilterMonth(e.target.value);
+                                                setFilterDate(''); // ล้างการระบุวันที่
+                                            }}
+                                            className="form-select-sm"
+                                        >
+                                            <option value="">ทั้งหมด</option>
+                                            {thaiMonths.map(month => (
+                                                <option key={month.value} value={month.value}>{month.name}</option>
+                                            ))}
+                                        </Form.Select>
+                                    </Form.Group>
+                                </Col>
+                                <Col xs={12} md={3}>
+                                    <Form.Group>
+                                        <Form.Label className="small fw-bold text-secondary mb-1">ระบุวันที่เจาะจง</Form.Label>
+                                        <Form.Control 
+                                            type="date" 
+                                            value={filterDate} 
+                                            onChange={(e) => {
+                                                setFilterDate(e.target.value);
+                                                if (e.target.value) {
+                                                    setFilterYear('');  // ล้างค่าตัวกรองปีใหญ่
+                                                    setFilterMonth(''); // ล้างค่าตัวกรองเดือนใหญ่
+                                                }
+                                            }}
+                                            className="form-control-sm"
+                                        />
+                                    </Form.Group>
+                                </Col>
+                                <Col xs={12} md={3}>
+                                    <Form.Group>
+                                        <Form.Label className="small fw-bold text-secondary mb-1">กรองช่วงเวลา</Form.Label>
+                                        <Form.Select 
+                                            value={filterTime} 
+                                            onChange={(e) => setFilterTime(e.target.value)}
+                                            className="form-select-sm"
+                                        >
+                                            <option value="">ทั้งหมด</option>
+                                            {availableTimeSlots.map(slot => (
+                                                <option key={slot} value={slot}>{slot} น.</option>
+                                            ))}
+                                        </Form.Select>
+                                    </Form.Group>
+                                </Col>
+                            </Row>
+                            {(filterYear || filterMonth || filterDate || filterTime) && (
+                                <div className="text-end mt-2">
+                                    <Button variant="link" size="sm" className="text-decoration-none p-0 text-muted small" onClick={clearFilters}>
+                                        ล้างตัวกรองทั้งหมด
+                                    </Button>
+                                </div>
+                            )}
+                        </div>
+
                         <Card.Body className="p-0">
-                            {mySlots.length === 0 ? (
+                            {filteredSlots.length === 0 ? (
                                 <div className="text-center py-5">
                                     <FaHistory size={40} className="text-muted opacity-25 mb-2" />
-                                    <p className="text-muted">ยังไม่มีข้อมูลตารางงาน</p>
+                                    <p className="text-muted mb-0">ไม่พบข้อมูลตารางงานในเงื่อนไขที่เลือก</p>
                                 </div>
                             ) : (
                                 <Table hover responsive className="pcshs-table mb-0">
@@ -286,7 +418,7 @@ const ScheduleManager = () => {
                                             <th className="ps-4 text-center" style={{width: '60px'}}>
                                                 <Form.Check 
                                                     type="checkbox" 
-                                                    checked={deleteIds.length > 0 && deleteIds.length === mySlots.filter(s => !s.appointment_id).length}
+                                                    checked={deleteIds.length > 0 && deleteIds.length === filteredSlots.filter(s => !s.appointment_id).length}
                                                     onChange={handleSelectAll}
                                                 />
                                             </th>
@@ -296,7 +428,7 @@ const ScheduleManager = () => {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {mySlots.map((slot) => {
+                                        {filteredSlots.map((slot) => {
                                             const isBooked = slot.appointment_id ? true : false;
                                             const isClosed = !isBooked && slot.is_available === 0;
 
