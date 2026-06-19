@@ -5,30 +5,18 @@ import { useNavigate } from 'react-router-dom';
 import { 
     FaHome, FaSignOutAlt, FaBars, FaUserCircle,
     FaUserGraduate, FaChalkboardTeacher, FaNewspaper, FaChartPie,
-    FaUserMd, FaCalendarCheck, FaUserShield, FaFileExcel, FaPrint // ✅ นำเข้า FaUserShield เพิ่ม
+    FaUserMd, FaCalendarCheck, FaUserShield, FaFileExcel, FaPrint, FaBell ,FaUserPlus
 } from 'react-icons/fa';
 import { FaFilter, FaUsers } from 'react-icons/fa';
 import {
-    Bar,
-    BarChart,
-    CartesianGrid,
-    Cell,
-    Legend,
-    Line,
-    LineChart,
-    Pie,
-    PieChart,
-    ResponsiveContainer,
-    Tooltip,
-    XAxis,
-    YAxis
+    Bar, BarChart, CartesianGrid, Cell, Legend, Line, LineChart, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis
 } from 'recharts';
 
 import './AdminDashboard.css'; 
 
 import UserManagement from './UserManagement'; 
 import NewsManagement from '../psychologist/NewsManagement'; 
-import AdminProfile from './AdminProfile'; // ✅ 1. นำเข้า Component หน้าจัดการโปรไฟล์ที่เราเพิ่งสร้าง
+import AdminProfile from './AdminProfile'; 
 import pcshsLogo from '../../assets/pcshs_logo.png'; 
 
 const ROLE_COLORS = {
@@ -57,6 +45,10 @@ const AdminDashboard = () => {
         fullname: 'Administrator', 
         profile_image: ''
     });
+
+    // ✅ State สำหรับเก็บการแจ้งเตือนผู้ใช้ใหม่
+    const [notifications, setNotifications] = useState([]);
+    const [unreadCount, setUnreadCount] = useState(0);
 
     // State สำหรับเก็บสถิติ Admin
     const [stats, setStats] = useState({
@@ -87,6 +79,7 @@ const AdminDashboard = () => {
         
         fetchProfile(token);
         fetchStats(token);
+        fetchNotifications(token); 
     }, [activeTab, selectedYear]);
 
     const fetchProfile = async (token) => {
@@ -110,6 +103,52 @@ const AdminDashboard = () => {
             console.error("Stats Error", err);
             setLoadingStats(false);
         }
+    };
+
+    // ✅ ฟังก์ชันดึงข้อมูลผู้ใช้ใหม่ (และใช้ LocalStorage เช็กสถานะการอ่าน)
+    const fetchNotifications = async (token) => {
+        try {
+            const res = await axios.get('http://localhost:5000/api/admin/notifications/new-users', {
+                headers: { 'x-auth-token': token }
+            });
+
+            // ดึงประวัติ ID ที่เคยกดอ่านจาก LocalStorage
+            const localReadIds = JSON.parse(localStorage.getItem('readNotifications')) || [];
+
+            // ตรวจสอบว่าแต่ละ ID เคยถูกเปิดอ่านหรือยัง
+            const notificationsData = res.data.map(user => ({
+                ...user,
+                is_read: localReadIds.includes(user.id)
+            }));
+
+            setNotifications(notificationsData);
+            // นับจำนวนคนสมัครใหม่ที่ยังไม่อ่าน เพื่อนำไปสั่นกระดิ่งและโชว์เลขแจ้งเตือน
+            setUnreadCount(notificationsData.filter(n => !n.is_read).length);
+        } catch (err) { 
+            console.error("Notifications Error", err); 
+        }
+    };
+
+    // ✅ ฟังก์ชันเมื่อกดคลิกดูแจ้งเตือนรายคน (บันทึกจำลงเครื่องทันที ตัวเลขและจุดแดงจะลดลงและหายไป)
+    const handleNotificationClick = (notif) => {
+        if (notif.is_read) {
+            setActiveTab('users');
+            return; 
+        }
+
+        // 1. อัปเดตสถานะในตัวแปร State ทันทีเพื่อให้ตัวเลขลดลงแบบ Real-time
+        setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, is_read: true } : n));
+        setUnreadCount(prev => Math.max(0, prev - 1));
+
+        // 2. บันทึก ID ผู้ใช้คนนี้ลง LocalStorage เพื่อให้ระบบรู้ว่าอ่านแล้วในการเปิดครั้งถัดไป
+        const localReadIds = JSON.parse(localStorage.getItem('readNotifications')) || [];
+        if (!localReadIds.includes(notif.id)) {
+            localReadIds.push(notif.id);
+            localStorage.setItem('readNotifications', JSON.stringify(localReadIds));
+        }
+
+        // 3. เปลี่ยนหน้าแท็บไปยังหน้าจัดการผู้ใช้งาน
+        setActiveTab('users');
     };
 
     const handleLogout = () => {
@@ -215,7 +254,7 @@ const AdminDashboard = () => {
                     { id: 'dashboard', icon: FaHome, label: 'ภาพรวมระบบ' },
                     { id: 'users', icon: FaUserGraduate, label: 'จัดการผู้ใช้งาน' },
                     { id: 'news', icon: FaNewspaper, label: 'จัดการข่าวสาร' },
-                    { id: 'profile', icon: FaUserShield, label: 'โปรไฟล์ของฉัน' } // ✅ 2. เพิ่มเมนูจัดการโปรไฟล์ใน Sidebar
+                    { id: 'profile', icon: FaUserShield, label: 'โปรไฟล์ของฉัน' }
                 ].map((item) => (
                     <div key={item.id} onClick={() => handleMenuClick(item.id)} className={`nav-item-custom ${activeTab === item.id ? 'active' : ''}`}>
                         <item.icon className="me-3" /> {item.label}
@@ -319,7 +358,6 @@ const AdminDashboard = () => {
                                         <div className="chart-card-header">
                                             <div>
                                                 <h5>สัดส่วนผู้ใช้งานทั้งหมด</h5>
-                                                {/* นับจาก role ในตาราง users */}
                                                 <p>จำนวนผู้ใช้งานทั้งหมด</p>
                                             </div>
                                             <span className="chart-total-pill">{roleTotal} คน</span>
@@ -385,7 +423,6 @@ const AdminDashboard = () => {
                                         <div className="chart-card-header">
                                             <div>
                                                 <h5>หอพักที่ใช้บริการมากที่สุด</h5>
-                                                {/* นับนักเรียนไม่ซ้ำที่มีคำขอในปี */}
                                                 <p>จำนวนนักเรียนที่มีคำขอในปี {toBuddhistYear(selectedYear)}</p>
                                             </div>
                                         </div>
@@ -409,7 +446,6 @@ const AdminDashboard = () => {
                                         <div className="chart-card-header">
                                             <div>
                                                 <h5>ระดับชั้นที่ใช้บริการมากที่สุด</h5>
-                                                {/* ม.1 ถึง ม.6 นับนักเรียนไม่ซ้ำในปี */}
                                                 <p>จำนวนนักเรียน ม.1 ถึง ม.6 ในปี {toBuddhistYear(selectedYear)}</p>
                                             </div>
                                         </div>
@@ -434,7 +470,7 @@ const AdminDashboard = () => {
                 );
             case 'users': return <UserManagement />; 
             case 'news': return <NewsManagement />; 
-            case 'profile': return <AdminProfile />; // ✅ 3. ผูกคำสั่งเมื่อกดแท็บ 'profile' ให้ดึงหน้า AdminProfile มาแสดง
+            case 'profile': return <AdminProfile />; 
             default: return null;
         }
     };
@@ -456,12 +492,75 @@ const AdminDashboard = () => {
                             <span style={{color: '#003566'}}>Admin</span> Console
                         </h5>
                     </div>
+                    
                     <div className="d-flex align-items-center gap-3">
+                       {/* ✅ Notification Bell Popup (Modern UI) */}
+                        <Dropdown align="end" className="notification-dropdown">
+                            <Dropdown.Toggle variant="link" className="text-dark p-0 position-relative border-0" style={{boxShadow: 'none'}}>
+                                <FaBell size={22} color="#003566" className={unreadCount > 0 ? "bell-ringing" : ""} />
+                                {unreadCount > 0 && (
+                                    <Badge bg="danger" pill className="position-absolute top-0 start-100 translate-middle notification-dot-badge" style={{fontSize: '0.65rem'}}>
+                                        {unreadCount}
+                                    </Badge>
+                                )}
+                            </Dropdown.Toggle>
+                            
+                            <Dropdown.Menu className="border-0 notification-popup-menu shadow-lg">
+                                {/* Header สี Gradient */}
+                                <div className="notification-popup-header">
+                                    <div className="d-flex justify-content-between align-items-center">
+                                        <h6 className="mb-0 text-white fw-bold d-flex align-items-center gap-2">
+                                            <FaUserPlus /> แจ้งเตือนผู้ใช้ใหม่
+                                        </h6>
+                                        <Badge bg="light" text="dark" className="rounded-pill px-2 shadow-sm">
+                                            {unreadCount} รายการ
+                                        </Badge>
+                                    </div>
+                                </div>
+                                
+                                {/* Body ส่วนรายการแจ้งเตือน */}
+                                <div className="notification-popup-body">
+                                    {notifications.length === 0 ? (
+                                        <div className="text-center py-5 text-muted">
+                                            <FaBell size={40} className="mb-3 opacity-25" />
+                                            <p className="mb-0 fw-bold">ไม่มีการแจ้งเตือนใหม่</p>
+                                        </div>
+                                    ) : (
+                                        notifications.map(notif => (
+                                            <div 
+                                                key={notif.id} 
+                                                onClick={() => handleNotificationClick(notif)}
+                                                className={`notification-popup-item ${notif.is_read ? 'read' : 'unread'}`}
+                                            >
+                                                {/* อวาตาร์ตัวอักษรนำหน้าชื่อ */}
+                                                <div className="notification-avatar">
+                                                    {notif.fullname ? notif.fullname.charAt(0) : 'U'}
+                                                </div>
+                                                <div className="notification-info">
+                                                    <div className="notification-name">
+                                                        {notif.fullname || 'สมาชิกใหม่'}
+                                                    </div>
+                                                    <div className="notification-email">{notif.email}</div>
+                                                </div>
+                                                {/* จุดสีแดงด้านขวาสุด */}
+                                                {!notif.is_read && <div className="notification-unread-dot"></div>}
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+
+                                {/* Footer ปุ่มดูทั้งหมด */}
+                                <div className="notification-popup-footer" onClick={() => handleMenuClick('users')}>
+                                    ดูผู้ใช้งานทั้งหมด
+                                </div>
+                            </Dropdown.Menu>
+                        </Dropdown>
+
                         <div className="text-end d-none d-md-block line-height-sm">
                             <div className="fw-bold text-dark" style={{fontSize: '0.9rem'}}>{adminProfile.fullname}</div>
                             <small className="text-danger fw-bold" style={{fontSize: '0.75rem'}}>● System Admin</small>
                         </div>
-                        {/* ✅ 4. เพิ่ม onClick ที่รูปโปรไฟล์ด้านบนขวา ให้คลิกแล้วเปิดหน้าโปรไฟล์ได้ด้วย */}
+                        
                         <div className="position-relative cursor-pointer" onClick={() => handleMenuClick('profile')} style={{cursor: 'pointer'}}>
                             {adminProfile.profile_image ? (
                                 <Image src={adminProfile.profile_image} roundedCircle style={{width: '40px', height: '40px', objectFit: 'cover', border: '2px solid #003566'}} />

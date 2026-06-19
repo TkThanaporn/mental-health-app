@@ -360,6 +360,28 @@ router.get('/export/report', authMiddleware, authorizeRole(['Admin']), async (re
     }
 });
 
+
+// ==========================================
+// 1.5 🔔 ดึงรายชื่อผู้ใช้ใหม่ล่าสุด (สำหรับแจ้งเตือนกระดิ่ง)
+// ==========================================
+router.get('/notifications/new-users', authMiddleware, authorizeRole(['Admin']), async (req, res) => {
+    try {
+        const sql = `
+            SELECT user_id AS id, fullname, email, created_at 
+            FROM users 
+            WHERE role = 'Student' 
+            ORDER BY created_at DESC 
+            LIMIT 10
+        `;
+        const [rows] = await db.query(sql);
+        res.json(rows);
+    } catch (err) {
+        console.error("Notifications API Error:", err);
+        res.status(500).json({ error: 'Database Error' });
+    }
+});
+
+
 // ==========================================
 // 2. 👥 ดึงรายชื่อผู้ใช้ทั้งหมด (สำหรับหน้าจัดการ Users)
 // ==========================================
