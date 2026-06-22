@@ -1,4 +1,6 @@
-/* Layout หลัก */
+/* =========================================
+   Layout หลัก และ Sidebar
+   ========================================= */
 .dashboard-wrapper {
     display: flex;
     min-height: 100vh;
@@ -7,7 +9,6 @@
     overflow-x: hidden;
 }
 
-/* Sidebar */
 .pcshs-sidebar {
     width: 280px;
     background: linear-gradient(180deg, #003566 0%, #002147 100%);
@@ -61,7 +62,9 @@
     color: #ffcccc !important;
 }
 
-/* Main Content */
+/* =========================================
+   พื้นที่เนื้อหาหลัก (Main Content) และ Navbar
+   ========================================= */
 .main-content {
     flex: 1;
     transition: margin-left 0.3s ease;
@@ -81,7 +84,9 @@
     }
 }
 
-/* Hero Section */
+/* =========================================
+   ส่วนประกอบภายใน Dashboard (Hero & Cards)
+   ========================================= */
 .hero-welcome {
     background: linear-gradient(135deg, #003566 0%, #00509d 100%);
     color: white;
@@ -118,7 +123,6 @@
     100% { transform: translateY(0px); }
 }
 
-/* Stat Cards */
 .premium-stat-card {
     border: none;
     border-radius: 20px;
@@ -179,7 +183,7 @@
     font-weight: 600;
 }
 
-/* Color Variants for Stats */
+/* แถบสีสถานะการ์ดสถิติ */
 .stat-navy { border-left: 6px solid #003566; }
 .stat-navy .stat-value-huge { color: #003566; }
 
@@ -195,17 +199,9 @@
 .stat-danger { border-left: 6px solid #ef4444; }
 .stat-danger .stat-value-huge { color: #ef4444; }
 
-/* Utilities */
-.line-height-sm { line-height: 1.2; }
-.cursor-pointer { cursor: pointer; }
-.fw-title { font-family: 'Prompt', sans-serif; }
-
-.fade-in { animation: fadeIn 0.5s ease-out forwards; }
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
+/* =========================================
+   การจัดการข้อมูล กราฟ และฟิลเตอร์ ตัวส่งออกข้อมูล
+   ========================================= */
 .dashboard-section-heading {
     display: flex;
     align-items: center;
@@ -223,6 +219,14 @@
     border-radius: 12px;
     padding: 8px 12px;
     box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);
+}
+
+.year-select {
+    min-width: 130px;
+    border: 0;
+    color: #003566;
+    font-weight: 700;
+    background-color: transparent;
 }
 
 .export-toggle {
@@ -247,7 +251,6 @@
     border-radius: 12px;
     overflow: hidden;
     padding: 6px;
-    animation: none !important;
     margin-top: 8px !important;
 }
 
@@ -261,18 +264,6 @@
     font-weight: 700;
     color: #334155;
     padding: 10px 12px;
-}
-
-.text-orange {
-    color: #F25C05;
-}
-
-.year-select {
-    min-width: 130px;
-    border: 0;
-    color: #003566;
-    font-weight: 700;
-    background-color: transparent;
 }
 
 .dashboard-chart-card {
@@ -359,26 +350,167 @@
     box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
 }
 
-.recharts-default-legend {
-    margin-top: 8px !important;
+/* =========================================
+   ✅ ระบบ Notification Bell & Modern Popup UI (แบบทางการ / Formal)
+   ========================================= */
+
+/* อนิเมชันกระดิ่งสั่น */
+@keyframes ring {
+    0% { transform: rotate(0); }
+    10% { transform: rotate(15deg); }
+    20% { transform: rotate(-10deg); }
+    30% { transform: rotate(15deg); }
+    40% { transform: rotate(-10deg); }
+    50% { transform: rotate(0); }
+    100% { transform: rotate(0); }
 }
 
-@media (max-width: 575.98px) {
-    .dashboard-chart-card {
-        padding: 16px;
-    }
+.bell-ringing {
+    animation: ring 2s ease infinite;
+    transform-origin: top center;
+    display: inline-block;
+}
 
-    .year-filter,
-    .year-select,
-    .export-toggle {
-        width: 100%;
-    }
+.notification-dot-badge {
+    box-shadow: 0 0 0 2px white;
+}
 
-    .dropdown {
-        width: 100%;
-    }
+/* ซ่อนลูกศร Dropdown ของกระดิ่ง */
+.notification-dropdown .dropdown-toggle::after {
+    display: none;
+}
 
-    .chart-card-header {
-        flex-direction: column;
-    }
+/* กรอบหน้าต่าง Popup แจ้งเตือน */
+.notification-popup-menu {
+    width: 350px !important;
+    padding: 0 !important;
+    border-radius: 12px !important;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12) !important;
+    overflow: hidden;
+    margin-top: 15px !important;
+    border: 1px solid #e2e8f0 !important;
+    animation: slideDownFade 0.2s ease-out;
+}
+
+@keyframes slideDownFade {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* ส่วนหัวหน้าต่างแจ้งเตือน (ทางการ - สีน้ำเงินเข้ม Solid สุภาพ) */
+.notification-popup-header {
+    background: #003566;
+    padding: 16px 20px;
+    color: white;
+    border-bottom: 1px solid #002147;
+}
+
+/* ส่วนแสดงรายการ */
+.notification-popup-body {
+    max-height: 350px;
+    overflow-y: auto;
+    background: #ffffff;
+}
+
+.notification-popup-body::-webkit-scrollbar {
+    width: 6px;
+}
+.notification-popup-body::-webkit-scrollbar-thumb {
+    background-color: #cbd5e1;
+    border-radius: 10px;
+}
+
+/* กล่องรายการแจ้งเตือนแต่ละคน */
+.notification-popup-item {
+    display: flex;
+    align-items: center;
+    padding: 14px 20px;
+    border-bottom: 1px solid #f1f5f9;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    position: relative;
+    background-color: #ffffff;
+}
+
+.notification-popup-item:hover {
+    background-color: #f8fafc;
+}
+
+/* สไตล์เมื่อยังไม่ได้อ่าน (ดูเป็นทางการแบบ Enterprise) */
+.notification-popup-item.unread {
+    background-color: #f4f7fa; /* สีเทาอมฟ้าอ่อนๆ ดูสบายตา */
+    border-left: 4px solid #F25C05; /* ใช้แถบเส้นขอบสีส้มนำสายตา แทนพื้นหลังสีสด */
+    padding-left: 16px; /* ชดเชยความกว้างของ border */
+}
+
+.notification-popup-item.read {
+    opacity: 0.7;
+}
+
+/* รูป Avatar ตัวอักษร (ทางการ - สีเทาเข้ม Slate) */
+.notification-avatar {
+    width: 40px;
+    height: 40px;
+    background: #334155; 
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 1.1rem;
+    margin-right: 15px;
+    flex-shrink: 0;
+}
+
+/* เมื่ออ่านแล้วเปลี่ยน Avatar เป็นสีเทาอ่อน */
+.notification-popup-item.read .notification-avatar {
+    background: #e2e8f0;
+    color: #64748b;
+}
+
+.notification-name {
+    font-weight: 600;
+    color: #1e293b;
+    font-size: 0.95rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.notification-email {
+    color: #64748b;
+    font-size: 0.8rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-top: 2px;
+}
+
+/* จุดแจ้งเตือนด้านขวาสุด (คุมโทนสีส้มแอดมิน ลดแสงเงาให้ดูเรียบ) */
+.notification-unread-dot {
+    width: 10px;
+    height: 10px;
+    background-color: #F25C05; 
+    border-radius: 50%;
+    margin-left: 10px;
+    flex-shrink: 0;
+}
+
+/* Footer แบบเรียบหรู */
+.notification-popup-footer {
+    padding: 14px;
+    text-align: center;
+    background: #ffffff;
+    color: #003566;
+    font-weight: 600;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    border-top: 1px solid #e2e8f0;
+}
+
+.notification-popup-footer:hover {
+    background: #f8fafc;
+    text-decoration: underline;
 }

@@ -8,11 +8,71 @@ import {
     FaComments, FaUserMd, FaClock, FaCalendarAlt, FaHistory, 
     FaCheckCircle, FaTimesCircle, FaExclamationCircle, FaListUl, FaAtom,
     FaThLarge, FaBars, FaInfoCircle, FaCheck, FaTimes, FaCircle,
-    FaVideo, FaBuilding, FaClipboardList, FaStar, FaUserTimes
+    FaVideo, FaBuilding, FaClipboardList, FaStar, FaUserTimes,
+    FaCalendarPlus 
 } from 'react-icons/fa';
 
 import './StudentAppointments.css';
 import PCSHSNavbar from '../common/Navbar/PCSHSNavbar';
+
+// ✅ ฟังก์ชันช่วยสร้างลิงก์เพิ่มลง Google Calendar (แก้บั๊กวันที่เบี้ยวเรียบร้อย)
+const generateGoogleCalendarLink = (appt) => {
+    if (!appt) return '#';
+    try {
+        const dateStr = appt.date || appt.appointment_date;
+        if (!dateStr) return '#';
+        
+        // 1. 🔥 แก้บั๊กวันที่: สร้าง Date Object เพื่อแปลงเป็นเวลาท้องถิ่น (ประเทศไทย)
+        const apptDate = new Date(dateStr);
+        const year = apptDate.getFullYear();
+        const month = String(apptDate.getMonth() + 1).padStart(2, '0');
+        const day = String(apptDate.getDate()).padStart(2, '0'); 
+        const dateOnly = `${year}${month}${day}`; // ผลลัพธ์จะเป็น 20260622 เสมอ
+        
+        // 2. จัดการเวลาสำหรับระบบปฏิทิน
+        let startTimeStr = appt.start_time || appt.appointment_time || "00:00:00";
+        let endTimeStr = appt.end_time;
+        
+        // หากไม่มีเวลาสิ้นสุด ให้บวกเพิ่มไป 1 ชั่วโมงอัตโนมัติ
+        if (!endTimeStr) {
+            let [h, m] = startTimeStr.split(':').map(Number);
+            endTimeStr = `${String(h + 1).padStart(2, '0')}:${String(m).padStart(2, '0')}:00`;
+        }
+
+        const startTime = startTimeStr.substring(0, 5).replace(':', '') + '00';
+        const endTime = endTimeStr.substring(0, 5).replace(':', '') + '00';
+
+        const startFormat = `${dateOnly}T${startTime}`;
+        const endFormat = `${dateOnly}T${endTime}`;
+
+        // 3. แปลงรูปแบบข้อความเวลาสำหรับใช้แสดงบนหัวเรื่อง (เช่น 13.00-14.00)
+        const showStart = startTimeStr.substring(0, 5).replace(':', '.');
+        const showEnd = endTimeStr.substring(0, 5).replace(':', '.');
+        const timeDisplay = `${showStart}-${showEnd}`;
+
+        // 4. เปลี่ยนชื่อกิจกรรมให้ขึ้นต้นด้วยเวลา
+        const title = encodeURIComponent(`ปรึกษาสุขภาพจิต PCSHS เวลา ${timeDisplay} น.`);
+        
+        // 5. จัดรูปแบบส่วนรายละเอียด (Description)
+        const detailsText = 
+`✨ รายละเอียดการนัดหมายปรึกษาจิตวิทยา ✨
+━━━━━━━━━━━━━━━━━━━━
+📌 หัวข้อการปรึกษา: ${appt.topic || appt.note || 'ทั่วไป'}
+👨‍⚕️ นักจิตวิทยา: ${appt.psychologist_name || 'ไม่ระบุ'}
+💻 รูปแบบการพบ: ${appt.type || appt.meeting_type}
+⏰ เวลานัดหมาย: ${timeDisplay} น.
+━━━━━━━━━━━━━━━━━━━━
+🔔 *คำแนะนำ: กรุณาเตรียมตัวและสแตนด์บายก่อนเวลานัดหมาย 5 นาที*`;
+
+        const details = encodeURIComponent(detailsText);
+        const location = encodeURIComponent(String(appt.type || appt.meeting_type).toLowerCase() === 'online' ? 'ออนไลน์ (ผ่านระบบ PCSHS)' : 'ห้องแนะแนว / ให้คำปรึกษา');
+
+        // 🔥 เพิ่ม &ctz=Asia/Bangkok ป้องกันปัญหา Google Calendar แสดงเวลาผิดเพี้ยน
+        return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${startFormat}/${endFormat}&details=${details}&location=${location}&ctz=Asia/Bangkok`;
+    } catch (error) {
+        return '#';
+    }
+};
 
 const StudentAppointments = () => {
     const navigate = useNavigate();
@@ -112,7 +172,6 @@ const StudentAppointments = () => {
         } catch (error) { return false; }
     };
 
-// ✅ อัปเดตป้ายสถานะ
     const getStatusBadge = (status) => {
         const s = status ? String(status).toLowerCase() : '';
         
@@ -122,7 +181,6 @@ const StudentAppointments = () => {
         if (s === 'cancelled' || s === 'ยกเลิก') 
             return <span style={{ backgroundColor: '#DC3545' }} className="badge px-3 py-2 rounded-pill fw-normal shadow-sm text-white"><FaTimes className="me-1"/> ยกเลิกแล้ว</span>;
         
-        // 🛠️ แก้ไขตรงนี้: บังคับพิมพ์คำว่า "รออนุมัติ" ทับลงไปเลย ไม่เอาข้อความจากตัวแปร status มาแสดงแล้ว
         if (s === 'pending' || s === 'รอดำเนินการ' || s === 'รออนุมัติ') 
             return <span style={{ backgroundColor: '#FFC107' }} className="badge px-3 py-2 rounded-pill fw-normal shadow-sm text-dark"><FaClock className="me-1"/> รออนุมัติ</span>;
         
@@ -134,7 +192,7 @@ const StudentAppointments = () => {
         
         return <span className="badge bg-secondary px-3 py-2 rounded-pill fw-normal shadow-sm"><FaCircle className="me-1"/> {status || 'ไม่ระบุ'}</span>;
     };
-    // ✅ อัปเดตสีเส้นขอบการ์ดให้ตรงกัน
+
     const getStatusColor = (status) => {
         const s = status ? String(status).toLowerCase() : '';
         if (s === 'confirmed' || s === 'ยืนยัน' || s === 'ยืนยันแล้ว') return '#198754';
@@ -145,7 +203,6 @@ const StudentAppointments = () => {
         return '#6C757D'; 
     };
 
-    // ✅ ปรับรูปแบบให้เป็นทางการ ไม่มีสีพื้นหลัง
     const getMeetingTypeBadge = (type) => {
         const t = type ? String(type).toLowerCase() : '';
         if(t === 'online' || t === 'ออนไลน์') {
@@ -190,13 +247,25 @@ const StudentAppointments = () => {
                         <FaInfoCircle className="me-1"/> ข้อมูล
                     </Button>
 
+                    {/* ✅ ปุ่มเพิ่มลง Google Calendar */}
+                    {(status === 'confirmed' || status === 'ยืนยัน' || status === 'ยืนยันแล้ว') && (
+                        <Button 
+                            variant="outline-primary" 
+                            className="flex-grow-1 fw-bold btn-action" 
+                            onClick={() => window.open(generateGoogleCalendarLink(appt), '_blank')}
+                            title="เพิ่มลง Google Calendar"
+                        >
+                            <FaCalendarPlus className="me-1 mb-1"/> ปฏิทิน
+                        </Button>
+                    )}
+
                     {(type === 'online' || type === 'ออนไลน์') ? (
                         <Button variant={chatOpen ? "primary" : "secondary"} className="flex-grow-1 fw-bold btn-action" onClick={() => {setSelectedChatAppt(appt); setShowChat(true);}} disabled={!chatOpen}>
-                            <FaComments className="me-1"/> {chatOpen ? 'แชท' : 'ยังไม่ถึงเวลา'}
+                            <FaComments className="me-1"/> {chatOpen ? 'แชท' : 'รอเวลา'}
                         </Button>
                     ) : (
                         <Button variant="secondary" className="flex-grow-1 fw-bold btn-action" disabled>
-                            <FaBuilding className="me-1"/> รอพบตามนัด
+                            <FaBuilding className="me-1"/> รอพบ
                         </Button>
                     )}
                 </>
@@ -261,7 +330,7 @@ const StudentAppointments = () => {
                                                         <div className="small mt-1">{getMeetingTypeBadge(appt.type || appt.meeting_type)}</div>
                                                     </div>
                                                 </div>
-                                                <h5 className="fw-bold mb-3 text-navy text-truncate">{appt.topic || 'การปรึกษาทั่วไป'}</h5>
+                                                <h5 className="fw-bold mb-3 text-navy text-truncate">{appt.topic || appt.note || 'การปรึกษาทั่วไป'}</h5>
                                                 <div className="info-box bg-light p-3 rounded-3 mb-3 flex-grow-1">
                                                     <div className="mb-2 d-flex align-items-center"><FaUserMd className="text-primary me-2"/><span className="fw-semibold text-dark">{appt.psychologist_name || 'รอจัดสรรนักจิตวิทยา'}</span></div>
                                                     <div className="d-flex align-items-center text-muted small"><FaClock className="text-primary me-2"/> เวลา: <strong className="text-dark ms-1">{timeStr} น.</strong></div>
@@ -277,7 +346,6 @@ const StudentAppointments = () => {
                         </Row>
                     ) : (
                         <div className="table-responsive bg-white rounded-4 shadow-sm fade-in-up p-3">
-                            {/* ✅ แก้ไขหัวตารางให้แยก รูปแบบ ออกจาก สถานะ และใช้ text-nowrap เพื่อให้ไม่บีบ */}
                             <Table hover className="m-0 pcshs-modern-table align-middle">
                                 <thead>
                                     <tr>
@@ -296,16 +364,14 @@ const StudentAppointments = () => {
                                                 <div className="fw-bold text-navy">{new Date(appt.date || appt.appointment_date).toLocaleDateString('th-TH', {day: 'numeric', month: 'short', year: 'numeric'})}</div>
                                                 <small className="text-muted"><FaClock className="me-1"/>{formatTimeSlot(appt.start_time, appt.end_time, appt.appointment_time)} น.</small>
                                             </td>
-                                            <td className="fw-semibold text-dark text-nowrap">{appt.topic || 'การปรึกษาทั่วไป'}</td>
+                                            <td className="fw-semibold text-dark text-nowrap">{appt.topic || appt.note || 'การปรึกษาทั่วไป'}</td>
                                             <td className="text-nowrap">
                                                 <div className="d-flex align-items-center gap-2">
                                                     <div className="bg-light text-primary rounded-circle d-flex align-items-center justify-content-center" style={{width:'30px', height:'30px'}}><FaUserMd/></div>
                                                     <span>{appt.psychologist_name || 'รอดำเนินการ'}</span>
                                                 </div>
                                             </td>
-                                            {/* ✅ แสดงรูปแบบแบบทางการ */}
                                             <td className="text-nowrap">{getMeetingTypeBadge(appt.type || appt.meeting_type)}</td>
-                                            {/* ✅ แสดงสถานะพร้อมสี */}
                                             <td className="text-nowrap">{getStatusBadge(appt.status)}</td>
                                             <td className="text-end pe-3 text-nowrap">
                                                 <div className="d-flex gap-2 justify-content-end">{renderActionButtons(appt)}</div>
@@ -371,7 +437,7 @@ const StudentAppointments = () => {
                                     </Col>
                                 </Row>
                             </div>
-                            <div className="info-group mb-3"><div className="text-muted small mb-1">หัวข้อการปรึกษา</div><div className="fw-semibold text-dark p-2 border rounded-3 bg-white">{selectedApptDetails.topic || 'การปรึกษาทั่วไป'}</div></div>
+                            <div className="info-group mb-3"><div className="text-muted small mb-1">หัวข้อการปรึกษา</div><div className="fw-semibold text-dark p-2 border rounded-3 bg-white">{selectedApptDetails.topic || selectedApptDetails.note || 'การปรึกษาทั่วไป'}</div></div>
                             {selectedApptDetails.result_summary && (<div className="info-group border-start border-success border-4 ps-3 py-2 bg-white shadow-sm rounded-end mt-3"><div className="text-success small fw-bold mb-1"><FaCheckCircle className="me-1"/> สรุปผลการให้คำปรึกษา</div><div className="fw-semibold text-dark">{selectedApptDetails.result_summary}</div></div>)}
                         </div>
                     )}
@@ -380,7 +446,7 @@ const StudentAppointments = () => {
 
             {/* Chat Modal */}
             <Modal show={showChat && selectedChatAppt} onHide={() => setShowChat(false)} size="lg" centered className="pcshs-modal">
-                <Modal.Header closeButton className="bg-light border-0"><Modal.Title className="d-flex align-items-center gap-3"><div className="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style={{width:40, height:40}}><FaUserMd/></div><div><div className="fw-bold text-navy fs-5">{selectedChatAppt?.psychologist_name || 'นักจิตวิทยา'}</div><div className="small text-muted fw-normal">หัวข้อ: {selectedChatAppt?.topic || 'ปรึกษาทั่วไป'}</div></div></Modal.Title></Modal.Header>
+                <Modal.Header closeButton className="bg-light border-0"><Modal.Title className="d-flex align-items-center gap-3"><div className="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style={{width:40, height:40}}><FaUserMd/></div><div><div className="fw-bold text-navy fs-5">{selectedChatAppt?.psychologist_name || 'นักจิตวิทยา'}</div><div className="small text-muted fw-normal">หัวข้อ: {selectedChatAppt?.topic || selectedChatAppt?.note || 'ปรึกษาทั่วไป'}</div></div></Modal.Title></Modal.Header>
                 <Modal.Body className="p-0 bg-light" style={{ height: '500px' }}>
                     {selectedChatAppt && currentUserId && (
                         <ChatRoom roomID={`appt-${selectedChatAppt.appointment_id}`} userId={String(currentUserId)} username={currentUserName} otherName={selectedChatAppt.psychologist_name || 'นักจิตวิทยา'} />
