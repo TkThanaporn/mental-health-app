@@ -1,0 +1,16 @@
+{
+  "files": {
+    "main.css": "/static/css/main.6864156b.css",
+    "main.js": "/static/js/main.9533be5a.js",
+    "static/js/453.d456ce70.chunk.js": "/static/js/453.d456ce70.chunk.js",
+    "static/media/pcshs_logo.png": "/static/media/pcshs_logo.277874d1d1bf68aef61b.png",
+    "index.html": "/index.html",
+    "main.6864156b.css.map": "/static/css/main.6864156b.css.map",
+    "main.9533be5a.js.map": "/static/js/main.9533be5a.js.map",
+    "453.d456ce70.chunk.js.map": "/static/js/453.d456ce70.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.6864156b.css",
+    "static/js/main.9533be5a.js"
+  ]
+}
