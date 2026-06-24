@@ -126,7 +126,7 @@ const Profile = ({ show, handleClose }) => {
                                         value={formData.fullname || ''} 
                                         onChange={(e) => setFormData({...formData, fullname: e.target.value})} 
                                         required 
-                                        disabled // ล็อคชื่อไว้ไม่ให้แก้ (ถ้าต้องการให้แก้ได้ เอาคำว่า disabled ออกครับ)
+                                        disabled // ล็อคชื่อไว้ไม่ให้แก้
                                     />
                                 </Form.Group>
                             </Col>
@@ -184,15 +184,22 @@ const Profile = ({ show, handleClose }) => {
                                                 </Form.Select>
                                             </Col>
                                             <Col md={6}>
+                                                {/* ✅ แก้ไขส่วนหอพักเป็น Dropdown ตามภาพ */}
                                                 <Form.Label className="label-custom small">หอพัก <span className="text-danger">*</span></Form.Label>
-                                                <Form.Control 
+                                                <Form.Select 
                                                     className="input-custom border-0 shadow-sm"
-                                                    type="text" 
-                                                    placeholder="ชื่อหอพัก หรือ ไป-กลับ" 
                                                     value={formData.dormitory || ''} 
                                                     onChange={(e) => setFormData({...formData, dormitory: e.target.value})} 
                                                     required
-                                                />
+                                                >
+                                                    <option value="">-- ระบุหอพัก --</option>
+                                                    <option value="หอสกลนคร (A)">หอสกลนคร (A)</option>
+                                                    <option value="หอบึงกาฬ (B)">หอบึงกาฬ (B)</option>
+                                                    <option value="หออุดรธานี (C)">หออุดรธานี (C)</option>
+                                                    <option value="หอขอนแก่น (D)">หอขอนแก่น (D)</option>
+                                                    <option value="หอหนองคาย (E)">หอหนองคาย (E)</option>
+                                                    <option value="หอหนองบัวลำภู (F)">หอหนองบัวลำภู (F)</option>
+                                                </Form.Select>
                                             </Col>
                                         </Row>
                                     </div>

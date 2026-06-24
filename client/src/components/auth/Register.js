@@ -2,8 +2,10 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
-import { Form, Button, Row, Col, InputGroup, Spinner } from 'react-bootstrap';
-import { FaEnvelope, FaLock, FaUser, FaKey, FaArrowLeft } from 'react-icons/fa';
+// เพิ่ม Modal ตรงนี้
+import { Form, Button, Row, Col, InputGroup, Spinner, Modal } from 'react-bootstrap';
+// เพิ่ม FaCheckCircle ตรงนี้
+import { FaEnvelope, FaLock, FaUser, FaKey, FaArrowLeft, FaCheckCircle } from 'react-icons/fa';
 
 import pcshsLogo from '../../assets/pcshs_logo.png'; 
 
@@ -20,6 +22,9 @@ const Register = () => {
     const [step, setStep] = useState(1); // step 1 = กรอกข้อมูล, step 2 = กรอก OTP
     const [otp, setOtp] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+
+    // 🚨 State สำหรับหน้าต่างแจ้งเตือนสมัครสำเร็จ
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
 
     const [showPassword, setShowPassword] = useState(false);
     const navigate = useNavigate();
@@ -70,8 +75,8 @@ const Register = () => {
                 email: formData.email,
                 otp: otp
             });
-            alert('ยืนยันตัวตนสำเร็จ! สมัครสมาชิกเรียบร้อยแล้ว');
-            navigate('/login');
+            // เรียก Modal สมัครสำเร็จ แทนการใช้ alert() แบบเดิม
+            setShowSuccessModal(true);
         } catch (err) {
             const msg = err.response && err.response.data && err.response.data.msg 
                         ? err.response.data.msg 
@@ -80,6 +85,12 @@ const Register = () => {
         } finally {
             setIsLoading(false);
         }
+    };
+
+    // ฟังก์ชันปิดหน้าต่างและไปหน้า Login
+    const handleCloseModal = () => {
+        setShowSuccessModal(false);
+        navigate('/login');
     };
 
     const inputStyle = { backgroundColor: '#f8f9fa', border: 'none', fontSize: '1rem' };
@@ -259,6 +270,27 @@ const Register = () => {
                     </Col>
                 </Row>
             </div>
+
+            {/* ================= Modal แจ้งเตือนสมัครสำเร็จ ================= */}
+            <Modal show={showSuccessModal} onHide={handleCloseModal} centered backdrop="static" keyboard={false}>
+                <Modal.Body className="text-center p-5">
+                    <div className="mb-4">
+                        <FaCheckCircle style={{ fontSize: '5rem', color: '#198754' }} />
+                    </div>
+                    <h3 className="fw-bold mb-3" style={{ color: themeColors.textDark }}>ลงทะเบียนสำเร็จ!</h3>
+                    <p className="text-muted mb-4" style={{ fontSize: '1.1rem' }}>
+                        ยินดีต้อนรับเข้าสู่ระบบ PCSHS HeartCare<br/>คุณสามารถเข้าสู่ระบบเพื่อใช้งานได้ทันที
+                    </p>
+                    <Button 
+                        variant="success" 
+                        className="w-100 py-3 rounded-pill fw-bold text-white" 
+                        onClick={handleCloseModal}
+                        style={{ fontSize: '1.1rem', backgroundColor: '#198754', border: 'none' }}
+                    >
+                        เข้าสู่ระบบ
+                    </Button>
+                </Modal.Body>
+            </Modal>
         </div>
     );
 };
