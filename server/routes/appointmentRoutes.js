@@ -367,6 +367,7 @@ router.get("/psychologist-history", authMiddleware, async (req, res) => {
             SELECT 
                 a.appointment_id, 
                 a.student_user_id,
+                a.type,
                 s.date AS date, 
                 a.booking_date,
                 CONCAT(DATE_FORMAT(s.start_time, '%H:%i'), '-', DATE_FORMAT(s.end_time, '%H:%i')) AS time_slot, 
