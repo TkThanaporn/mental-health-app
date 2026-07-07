@@ -85,6 +85,9 @@ const PsychologistDashboard = () => {
     
     const [psychologist, setPsychologist] = useState({ fullname: 'กำลังโหลด...', profile_image: '' });
     
+    // 🌟 1. เพิ่ม State เก็บจำนวนแจ้งเตือน
+    const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
+
     // States สำหรับเก็บข้อมูลสถิติและกราฟ
     const [stats, setStats] = useState({ total: 0, completed: 0, pending: 0, cancelled: 0 });
     const [chartData, setChartData] = useState({
@@ -105,6 +108,7 @@ const PsychologistDashboard = () => {
             return;
         }
         fetchProfile(token);
+        fetchPendingCount(token); // 🌟 2. เรียกฟังก์ชันนับจำนวนตอนเปิดหน้าเว็บ
     }, []);
 
     useEffect(() => {
@@ -120,6 +124,19 @@ const PsychologistDashboard = () => {
             setPsychologist(res.data);
         } catch (err) { 
             if (err.response && (err.response.status === 401 || err.response.status === 403)) handleLogout();
+        }
+    };
+
+    // 🌟 3. ฟังก์ชันดึงจำนวนคิวที่รอยืนยัน (Pending)
+    const fetchPendingCount = async (token) => {
+        try {
+            const res = await axios.get('http://localhost:5000/api/appointments/psychologist-appointments', {
+                headers: { 'x-auth-token': token }
+            });
+            const count = res.data.filter(a => String(a.status).toLowerCase() === 'pending').length;
+            setPendingRequestsCount(count);
+        } catch (err) {
+            console.error("Error fetching pending count", err);
         }
     };
 
@@ -160,7 +177,6 @@ const PsychologistDashboard = () => {
             // ==========================================
             // 1. จัดการข้อมูลการนัดหมาย (Appointments)
             // ==========================================
-            // 🌟 แก้ไขตรงนี้: ปรับตัวพิมพ์ให้ตรงกับ Database และใช้ toLowerCase() ป้องกัน error
             setStats({
                 total: filteredApptData.length,
                 completed: filteredApptData.filter(a => a.status?.toLowerCase() === 'completed').length,
@@ -279,7 +295,6 @@ const PsychologistDashboard = () => {
             let riskCount = 0;
             let severeCount = 0;
 
-            // โครงสร้างรายเดือนตามปีที่เลือก สำหรับแนวโน้มความเสี่ยง
             let assessTrendsMap = {};
             for(let i=0; i<12; i++) {
                 let d = new Date(dashboardYear, i, 1);
@@ -397,6 +412,7 @@ const PsychologistDashboard = () => {
         );
     };
 
+    // 🌟 4. แก้ไขโครงสร้างเมนู ให้รับตัวเลข Badge ไปแสดง
     const SidebarContent = () => (
         <div className="d-flex flex-column h-100">
             <div className="logo-section">
@@ -407,14 +423,21 @@ const PsychologistDashboard = () => {
             <Nav className="flex-column w-100 mt-3 px-2">
                 {[
                     { id: 'dashboard', icon: FaHome, label: 'หน้าหลัก' },
-                    { id: 'appointments', icon: FaCalendarAlt, label: 'จัดการนัดหมาย' },
+                    { id: 'appointments', icon: FaCalendarAlt, label: 'จัดการนัดหมาย', badge: pendingRequestsCount }, // เพิ่ม badge ตรงนี้
                     { id: 'news', icon: FaBullhorn, label: 'ประกาศข่าวสาร' },
                     { id: 'all-list', icon: FaList, label: 'ประวัติทั้งหมด' },
                     { id: 'schedule', icon: FaClock, label: 'ตั้งค่าตารางเวลา' },
                     { id: 'profile', icon: FaUserEdit, label: 'ข้อมูลส่วนตัว' }
                 ].map((item) => (
                     <div key={item.id} onClick={() => handleMenuClick(item.id)} className={`nav-item-custom ${activeTab === item.id ? 'active' : ''}`}>
-                        <item.icon className="me-3" /> {item.label}
+                        <div className="d-flex justify-content-between align-items-center w-100">
+                            <div><item.icon className="me-3" /> {item.label}</div>
+                            {item.badge > 0 && (
+                                <Badge bg="danger" pill style={{ fontSize: '0.75rem', padding: '0.35em 0.65em' }}>
+                                    {item.badge}
+                                </Badge>
+                            )}
+                        </div>
                     </div>
                 ))}
             </Nav>
@@ -425,6 +448,12 @@ const PsychologistDashboard = () => {
             </div>
         </div>
     );
+
+    // 🌟 5. ฟังก์ชันสำหรับอัปเดตตัวเลขแจ้งเตือนเมื่อจัดการนัดหมายเสร็จ
+    const handleAppointmentUpdate = () => {
+        const token = localStorage.getItem('token');
+        if (token) fetchPendingCount(token);
+    };
 
     const renderContent = () => {
         switch (activeTab) {
@@ -601,7 +630,7 @@ const PsychologistDashboard = () => {
                                         </Card>
                                     </Col>
 
-                                    {/* 5. กราฟใหม่: แนวโน้มความเสี่ยงรายเดือน (Stacked Bar Chart) */}
+                                    {/* 5. กราฟแนวโน้มความเสี่ยงรายเดือน */}
                                     <Col xs={12} lg={6}>
                                         <Card className="shadow-sm border-0 h-100 psych-insight-card">
                                             <Card.Body>
@@ -661,7 +690,6 @@ const PsychologistDashboard = () => {
                                                             <YAxis axisLine={false} tickLine={false} allowDecimals={false} />
                                                             <RechartsTooltip cursor={{fill: 'rgba(0,0,0,0.05)'}} />
                                                             <Legend verticalAlign="top" height={36}/>
-                                                            {/* ซ้อนกราฟแท่งด้วย stackId เดียวกัน */}
                                                             <Bar dataKey="normal" name="กลุ่มปกติ" stackId="a" fill="#10B981" barSize={40} />
                                                             <Bar dataKey="risk" name="กลุ่มเสี่ยง" stackId="a" fill="#F59E0B" />
                                                             <Bar dataKey="severe" name="กลุ่มมีปัญหา" stackId="a" fill="#EF4444" radius={[10, 10, 0, 0]} />
@@ -677,7 +705,7 @@ const PsychologistDashboard = () => {
                         )}
                     </div>
                 );
-            case 'appointments': return <AppointmentManager />;
+            case 'appointments': return <AppointmentManager onAppointmentUpdate={handleAppointmentUpdate} />; // 🌟 6. ส่ง Prop ให้คอยอัปเดตแจ้งเตือน
             case 'news': return <NewsManagement />;
             case 'schedule': return <ScheduleManager />;
             case 'all-list': return <AllAppointmentList />;
@@ -728,4 +756,4 @@ const PsychologistDashboard = () => {
     );
 };
 
-export default PsychologistDashboard;  
+export default PsychologistDashboard;

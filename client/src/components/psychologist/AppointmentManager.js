@@ -13,7 +13,8 @@ import {
 
 import './AppointmentManager.css'; 
 
-const AppointmentManager = () => {
+// 🌟 1. รับ onAppointmentUpdate มา
+const AppointmentManager = ({ onAppointmentUpdate }) => {
     const [viewMode, setViewMode] = useState('card');
     const [appointments, setAppointments] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -63,7 +64,8 @@ const AppointmentManager = () => {
         try {
             const token = localStorage.getItem('token');
             await axios.put(`http://localhost:5000/api/appointments/status/${id}`, { status }, { headers: { 'x-auth-token': token } });
-            fetchAppointments(); 
+            await fetchAppointments(); 
+            if (onAppointmentUpdate) onAppointmentUpdate(); // 🌟 อัปเดต Sidebar ตัวเลข
         } catch (err) { alert(`Error updating status`); }
     };
 
@@ -74,7 +76,8 @@ const AppointmentManager = () => {
             await axios.put(`http://localhost:5000/api/appointments/no-show/${id}`, { 
                 note: 'นักเรียนขาดนัด (No-show)' 
             }, { headers: { 'x-auth-token': token } });
-            fetchAppointments(); 
+            await fetchAppointments(); 
+            if (onAppointmentUpdate) onAppointmentUpdate(); // 🌟 อัปเดต Sidebar ตัวเลข
         } catch (err) { alert("เกิดข้อผิดพลาดในการบันทึกสถานะ"); }
     };
 
@@ -97,7 +100,8 @@ const AppointmentManager = () => {
             alert("บันทึกผลและเสร็จสิ้นเคสเรียบร้อย!");
             setShowResultModal(false);
             setResultData({ summary: '', needFollowUp: false, date: '', time: '' });
-            fetchAppointments();
+            await fetchAppointments();
+            if (onAppointmentUpdate) onAppointmentUpdate(); // 🌟 อัปเดต Sidebar ตัวเลข
         } catch (err) { 
             alert("เกิดข้อผิดพลาดในการบันทึก"); 
         } finally {
@@ -138,7 +142,6 @@ const AppointmentManager = () => {
         } catch (error) { return false; }
     };
 
-    // 🚩 --- ส่วนที่ปรับปรุง: กรองเอาเฉพาะงานที่ "ยังไม่เสร็จ" ออกมาแสดง ---
     let filteredAppointments = appointments.filter(a => {
         const s = String(a.status).toLowerCase();
         return s !== 'completed' && s !== 'cancelled' && s !== 'no-show';
@@ -164,7 +167,6 @@ const AppointmentManager = () => {
         });
     }
 
-    // จัดเรียงข้อมูลตามวันที่และเวลา
     filteredAppointments.sort((a, b) => {
         const dateA = new Date(a.date || a.appointment_date);
         const dateB = new Date(b.date || b.appointment_date);
@@ -176,7 +178,7 @@ const AppointmentManager = () => {
     });
 
     const opStats = {
-        all: filteredAppointments.length, // สถิติอิงจากรายการที่ยังไม่จบ
+        all: filteredAppointments.length, 
         newRequests: appointments.filter(a => String(a.status).toLowerCase() === 'pending').length,
         todaySchedule: appointments.filter(a => String(a.status).toLowerCase() === 'confirmed' && isToday(a.date || a.appointment_date)).length,
         confirmedUpcoming: appointments.filter(a => String(a.status).toLowerCase() === 'confirmed').length,
