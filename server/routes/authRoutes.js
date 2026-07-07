@@ -226,7 +226,7 @@ router.post('/forgot-password', async (req, res) => {
                             <div style="margin-top: 35px; padding: 15px; background-color: #f8f9fa; border-radius: 8px; border-left: 4px solid #dc3545; text-align: left;">
                                 <p style="margin: 0; color: #dc3545; font-size: 14px; font-weight: bold;">⚠️ ข้อควรระวัง</p>
                                 <p style="margin: 5px 0 0 0; color: #555555; font-size: 14px; line-height: 1.5;">
-                                    รหัสนี้จะหมดอายุภายใน <strong>15 นาที</strong> หากคุณไม่ได้เป็นคนขอรีเซ็ตรหัสผ่าน โปรดเปลี่ยนรหัสผ่านอีเมลของคุณทันที
+                                    รหัสนี้จะหมดอายุภายใน <strong>5 นาที</strong> หากคุณไม่ได้เป็นคนขอรีเซ็ตรหัสผ่าน โปรดเปลี่ยนรหัสผ่านอีเมลของคุณทันที
                                 </p>
                             </div>
                         </div>
