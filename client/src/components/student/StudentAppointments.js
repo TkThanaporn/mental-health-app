@@ -9,31 +9,28 @@ import {
     FaCheckCircle, FaTimesCircle, FaExclamationCircle, FaListUl, FaAtom,
     FaThLarge, FaBars, FaInfoCircle, FaCheck, FaTimes, FaCircle,
     FaVideo, FaBuilding, FaClipboardList, FaStar, FaUserTimes,
-    FaCalendarPlus 
+    FaCalendarPlus, FaUserFriends, FaUserGraduate, FaEnvelope // เพิ่ม Icon สำหรับ Modal
 } from 'react-icons/fa';
 
 import './StudentAppointments.css';
 import PCSHSNavbar from '../common/Navbar/PCSHSNavbar';
 
-// ✅ ฟังก์ชันช่วยสร้างลิงก์เพิ่มลง Google Calendar (แก้บั๊กวันที่เบี้ยวเรียบร้อย)
+// ✅ ฟังก์ชันช่วยสร้างลิงก์เพิ่มลง Google Calendar (อิงตามโค้ดต้นฉบับของคุณ)
 const generateGoogleCalendarLink = (appt) => {
     if (!appt) return '#';
     try {
         const dateStr = appt.date || appt.appointment_date;
         if (!dateStr) return '#';
         
-        // 1. 🔥 แก้บั๊กวันที่: สร้าง Date Object เพื่อแปลงเป็นเวลาท้องถิ่น (ประเทศไทย)
         const apptDate = new Date(dateStr);
         const year = apptDate.getFullYear();
         const month = String(apptDate.getMonth() + 1).padStart(2, '0');
         const day = String(apptDate.getDate()).padStart(2, '0'); 
-        const dateOnly = `${year}${month}${day}`; // ผลลัพธ์จะเป็น 20260622 เสมอ
+        const dateOnly = `${year}${month}${day}`; 
         
-        // 2. จัดการเวลาสำหรับระบบปฏิทิน
         let startTimeStr = appt.start_time || appt.appointment_time || "00:00:00";
         let endTimeStr = appt.end_time;
         
-        // หากไม่มีเวลาสิ้นสุด ให้บวกเพิ่มไป 1 ชั่วโมงอัตโนมัติ
         if (!endTimeStr) {
             let [h, m] = startTimeStr.split(':').map(Number);
             endTimeStr = `${String(h + 1).padStart(2, '0')}:${String(m).padStart(2, '0')}:00`;
@@ -45,15 +42,12 @@ const generateGoogleCalendarLink = (appt) => {
         const startFormat = `${dateOnly}T${startTime}`;
         const endFormat = `${dateOnly}T${endTime}`;
 
-        // 3. แปลงรูปแบบข้อความเวลาสำหรับใช้แสดงบนหัวเรื่อง (เช่น 13.00-14.00)
         const showStart = startTimeStr.substring(0, 5).replace(':', '.');
         const showEnd = endTimeStr.substring(0, 5).replace(':', '.');
         const timeDisplay = `${showStart}-${showEnd}`;
 
-        // 4. เปลี่ยนชื่อกิจกรรมให้ขึ้นต้นด้วยเวลา
         const title = encodeURIComponent(`ปรึกษาสุขภาพจิต PCSHS เวลา ${timeDisplay} น.`);
         
-        // 5. จัดรูปแบบส่วนรายละเอียด (Description)
         const detailsText = 
 `✨ รายละเอียดการนัดหมายปรึกษาจิตวิทยา ✨
 ━━━━━━━━━━━━━━━━━━━━
@@ -67,7 +61,6 @@ const generateGoogleCalendarLink = (appt) => {
         const details = encodeURIComponent(detailsText);
         const location = encodeURIComponent(String(appt.type || appt.meeting_type).toLowerCase() === 'online' ? 'ออนไลน์ (ผ่านระบบ PCSHS)' : 'ห้องแนะแนว / ให้คำปรึกษา');
 
-        // 🔥 เพิ่ม &ctz=Asia/Bangkok ป้องกันปัญหา Google Calendar แสดงเวลาผิดเพี้ยน
         return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${startFormat}/${endFormat}&details=${details}&location=${location}&ctz=Asia/Bangkok`;
     } catch (error) {
         return '#';
@@ -83,6 +76,8 @@ const StudentAppointments = () => {
     
     const [showChat, setShowChat] = useState(false);
     const [selectedChatAppt, setSelectedChatAppt] = useState(null);
+    
+    // State สำหรับ Modal
     const [showDetails, setShowDetails] = useState(false);
     const [selectedApptDetails, setSelectedApptDetails] = useState(null);
 
@@ -174,22 +169,16 @@ const StudentAppointments = () => {
 
     const getStatusBadge = (status) => {
         const s = status ? String(status).toLowerCase() : '';
-        
         if (s === 'confirmed' || s === 'ยืนยัน' || s === 'ยืนยันแล้ว') 
             return <span style={{ backgroundColor: '#198754' }} className="badge px-3 py-2 rounded-pill fw-normal shadow-sm text-white"><FaCheck className="me-1"/> ยืนยันแล้ว</span>;
-        
         if (s === 'cancelled' || s === 'ยกเลิก') 
             return <span style={{ backgroundColor: '#DC3545' }} className="badge px-3 py-2 rounded-pill fw-normal shadow-sm text-white"><FaTimes className="me-1"/> ยกเลิกแล้ว</span>;
-        
         if (s === 'pending' || s === 'รอดำเนินการ' || s === 'รออนุมัติ') 
             return <span style={{ backgroundColor: '#FFC107' }} className="badge px-3 py-2 rounded-pill fw-normal shadow-sm text-dark"><FaClock className="me-1"/> รออนุมัติ</span>;
-        
         if (s === 'completed' || s === 'เสร็จสิ้น') 
             return <span style={{ backgroundColor: '#6C757D' }} className="badge px-3 py-2 rounded-pill fw-normal shadow-sm text-white"><FaHistory className="me-1"/> เสร็จสิ้น</span>;
-        
         if (s === 'no-show' || s === 'ขาดนัด') 
             return <span style={{ backgroundColor: '#212529' }} className="badge px-3 py-2 rounded-pill fw-normal shadow-sm text-white"><FaUserTimes className="me-1"/> ขาดนัด</span>;
-        
         return <span className="badge bg-secondary px-3 py-2 rounded-pill fw-normal shadow-sm"><FaCircle className="me-1"/> {status || 'ไม่ระบุ'}</span>;
     };
 
@@ -209,6 +198,15 @@ const StudentAppointments = () => {
             return <span className="text-dark fw-semibold d-flex align-items-center"><FaVideo className="text-muted me-2"/> ออนไลน์</span>;
         }
         return <span className="text-dark fw-semibold d-flex align-items-center"><FaBuilding className="text-muted me-2"/> พบตัว (On-site)</span>;
+    };
+
+    // Helper เฉพาะสำหรับ Modal 
+    const getConsultationTypeBadge = (cType) => {
+        const t = cType ? String(cType).toLowerCase() : '';
+        if (t === 'group' || t === 'กลุ่ม') {
+            return <span style={{ backgroundColor: '#6f42c1' }} className="badge px-3 py-2 rounded-pill fw-normal shadow-sm text-white"><FaUserFriends className="me-1"/> แบบกลุ่ม</span>;
+        }
+        return <span className="badge bg-light text-dark border px-3 py-2 rounded-pill fw-normal shadow-sm"><FaUserGraduate className="me-1"/> รายบุคคล</span>;
     };
 
     const filterOptions = [
@@ -247,7 +245,6 @@ const StudentAppointments = () => {
                         <FaInfoCircle className="me-1"/> ข้อมูล
                     </Button>
 
-                    {/* ✅ ปุ่มเพิ่มลง Google Calendar */}
                     {(status === 'confirmed' || status === 'ยืนยัน' || status === 'ยืนยันแล้ว') && (
                         <Button 
                             variant="outline-primary" 
@@ -411,20 +408,25 @@ const StudentAppointments = () => {
                 </Modal.Footer>
             </Modal>
 
-            {/* Details Modal */}
+            {/* 🌟 Details Modal ที่ถูกอัปเกรดเนื้อหา 🌟 */}
             <Modal show={showDetails} onHide={() => setShowDetails(false)} size="md" centered className="details-modal">
-                <Modal.Header closeButton className="border-0 pb-0"><Modal.Title className="fw-bold text-navy"><FaClipboardList className="me-2 text-primary"/>รายละเอียดการนัดหมาย</Modal.Title></Modal.Header>
+                <Modal.Header closeButton className="border-0 pb-0">
+                    <Modal.Title className="fw-bold text-navy"><FaClipboardList className="me-2 text-primary"/>รายละเอียดการนัดหมาย</Modal.Title>
+                </Modal.Header>
                 <Modal.Body className="pt-3">
                     {selectedApptDetails && (
                         <div className="details-content">
                             <div className="text-center mb-4">
                                 <div className="bg-light text-primary rounded-circle mx-auto d-flex align-items-center justify-content-center mb-2" style={{width: '60px', height: '60px', fontSize: '1.5rem'}}><FaUserMd/></div>
                                 <h5 className="fw-bold m-0">{selectedApptDetails.psychologist_name || 'รอจัดสรรนักจิตวิทยา'}</h5>
-                                <div className="mt-3 d-flex justify-content-center gap-3 align-items-center">
+                                
+                                <div className="mt-3 d-flex flex-wrap justify-content-center gap-2 align-items-center">
                                     {getMeetingTypeBadge(selectedApptDetails.type || selectedApptDetails.meeting_type)}
+                                    {getConsultationTypeBadge(selectedApptDetails.consultation_type)}
                                     {getStatusBadge(selectedApptDetails.status)}
                                 </div>
                             </div>
+                            
                             <div className="info-box bg-light p-3 rounded-3 mb-3">
                                 <Row className="g-3">
                                     <Col xs={6}>
@@ -437,8 +439,41 @@ const StudentAppointments = () => {
                                     </Col>
                                 </Row>
                             </div>
-                            <div className="info-group mb-3"><div className="text-muted small mb-1">หัวข้อการปรึกษา</div><div className="fw-semibold text-dark p-2 border rounded-3 bg-white">{selectedApptDetails.topic || selectedApptDetails.note || 'การปรึกษาทั่วไป'}</div></div>
-                            {selectedApptDetails.result_summary && (<div className="info-group border-start border-success border-4 ps-3 py-2 bg-white shadow-sm rounded-end mt-3"><div className="text-success small fw-bold mb-1"><FaCheckCircle className="me-1"/> สรุปผลการให้คำปรึกษา</div><div className="fw-semibold text-dark">{selectedApptDetails.result_summary}</div></div>)}
+
+                            {/* 🌟 แสดงรายชื่อเพื่อน หากเป็นการนัดหมายแบบกลุ่ม */}
+                            {(selectedApptDetails.consultation_type?.toLowerCase() === 'group' || selectedApptDetails.consultation_type === 'กลุ่ม') && (
+                                <div className="info-group mb-3 p-3 rounded-4" style={{backgroundColor: '#f9f6ff', border: '1px solid #e1d5f5'}}>
+                                    <div className="text-purple small fw-bold mb-2 d-flex align-items-center" style={{color: '#6f42c1'}}>
+                                        <FaUserFriends className="me-2"/> อีเมลเพื่อนร่วมกลุ่ม
+                                    </div>
+                                    {selectedApptDetails.group_members && selectedApptDetails.group_members.length > 0 ? (
+                                        <div className="d-flex flex-column gap-2">
+                                            {selectedApptDetails.group_members.map((email, i) => (
+                                                <div key={i} className="small d-flex align-items-center gap-2 bg-white px-3 py-2 rounded-3 border-0 shadow-sm">
+                                                    <FaEnvelope className="text-muted text-secondary"/>
+                                                    <span className="fw-medium text-dark">{email}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <div className="small text-muted italic py-1">ไม่มีข้อมูลรายชื่ออีเมลเพื่อนในระบบ</div>
+                                    )}
+                                </div>
+                            )}
+
+                            <div className="info-group mb-3">
+                                <div className="text-muted small mb-1">หัวข้อการปรึกษา</div>
+                                <div className="fw-semibold text-dark p-2 border rounded-3 bg-white">
+                                    {selectedApptDetails.topic || selectedApptDetails.note || 'การปรึกษาทั่วไป'}
+                                </div>
+                            </div>
+
+                            {selectedApptDetails.result_summary && (
+                                <div className="info-group border-start border-success border-4 ps-3 py-2 bg-white shadow-sm rounded-end mt-3">
+                                    <div className="text-success small fw-bold mb-1"><FaCheckCircle className="me-1"/> สรุปผลการให้คำปรึกษา</div>
+                                    <div className="fw-semibold text-dark">{selectedApptDetails.result_summary}</div>
+                                </div>
+                            )}
                         </div>
                     )}
                 </Modal.Body>
