@@ -5,7 +5,8 @@ import { useNavigate } from 'react-router-dom';
 import { 
     FaHome, FaSignOutAlt, FaBars, FaUserCircle,
     FaUserGraduate, FaChalkboardTeacher, FaNewspaper, FaChartPie,
-    FaUserMd, FaCalendarCheck, FaUserShield, FaFileExcel, FaPrint, FaBell ,FaUserPlus
+    FaUserMd, FaCalendarCheck, FaUserShield, FaFileExcel, FaPrint, FaBell, FaUserPlus,
+    FaKey // 🌟 เพิ่ม FaKey สำหรับไอคอนเปลี่ยนรหัสผ่าน
 } from 'react-icons/fa';
 import { FaFilter, FaUsers } from 'react-icons/fa';
 import {
@@ -157,7 +158,12 @@ const AdminDashboard = () => {
         navigate('/login');
     };
 
+    // 🌟 ปรับปรุงฟังก์ชัน: เช็กสิทธิ์หากกดที่เมนู 'change-password' ให้เด้งไปหน้าเปลี่ยนรหัสผ่านทันที
     const handleMenuClick = (tabName) => {
+        if (tabName === 'change-password') {
+            navigate('/change-password');
+            return;
+        }
         setActiveTab(tabName);
         setShowMobileMenu(false);
     };
@@ -254,7 +260,8 @@ const AdminDashboard = () => {
                     { id: 'dashboard', icon: FaHome, label: 'ภาพรวมระบบ' },
                     { id: 'users', icon: FaUserGraduate, label: 'จัดการผู้ใช้งาน' },
                     { id: 'news', icon: FaNewspaper, label: 'จัดการข่าวสาร' },
-                    { id: 'profile', icon: FaUserShield, label: 'โปรไฟล์ของฉัน' }
+                    { id: 'profile', icon: FaUserShield, label: 'โปรไฟล์ของฉัน' },
+                    { id: 'change-password', icon: FaKey, label: 'เปลี่ยนรหัสผ่าน' } // 🌟 เพิ่มปุ่มเปลี่ยนรหัสผ่านตรงนี้
                 ].map((item) => (
                     <div key={item.id} onClick={() => handleMenuClick(item.id)} className={`nav-item-custom ${activeTab === item.id ? 'active' : ''}`}>
                         <item.icon className="me-3" /> {item.label}

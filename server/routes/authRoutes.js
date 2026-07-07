@@ -18,7 +18,7 @@ router.post('/register-request', async (req, res) => {
 
     try {
         // 1. ตรวจสอบว่าอีเมลนี้ถูกใช้งานไปหรือยัง
-        const [existingUsers] = await db.execute('SELECT user_id, is_verified FROM users WHERE email = ?', [email]);
+        const [existingUsers] = await db.execute('SELECT user_id, is_verified FROM users AWHERE email = ?', [email]);
         
         if (existingUsers.length > 0) {
             // ถ้ามีอีเมลในระบบ และยืนยันตัวตนแล้ว -> สมัครซ้ำไม่ได้
@@ -276,6 +276,59 @@ router.post('/reset-password', async (req, res) => {
     } catch (err) {
         console.error("RESET PASSWORD ERROR:", err.message);
         res.status(500).json({ msg: 'เกิดข้อผิดพลาดของระบบ' });
+    }
+});
+// ==========================================
+// ✅ 6. PUT: ผู้ใช้งานเปลี่ยนรหัสผ่านเอง (ตรวจสอบ Token ด้วยตัวเอง)
+// ==========================================
+router.put('/change-password', async (req, res) => {
+    // 1. รับ Token จาก Headers
+    const token = req.header('x-auth-token');
+    
+    // ถ้าไม่มี Token แนบมา
+    if (!token) {
+        return res.status(401).json({ msg: 'ไม่พบข้อมูลยืนยันตัวตน (Token) ปฏิเสธการเข้าถึง' });
+    }
+
+    try {
+        // 2. ถอดรหัส Token หา userId
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const userId = decoded.user.id; 
+
+        // 3. เริ่มกระบวนการเปลี่ยนรหัสผ่าน
+        const { oldPassword, newPassword } = req.body;
+
+        const [users] = await db.execute('SELECT password FROM users WHERE user_id = ?', [userId]);
+        
+        if (users.length === 0) {
+            return res.status(404).json({ msg: 'ไม่พบผู้ใช้งานในระบบ' });
+        }
+
+        // เช็คว่ารหัสผ่านเดิมที่กรอกมา ถูกต้องหรือไม่
+        const isMatch = await bcrypt.compare(oldPassword, users[0].password);
+        if (!isMatch) {
+            return res.status(400).json({ msg: 'รหัสผ่านปัจจุบันไม่ถูกต้อง' });
+        }
+
+        // เข้ารหัสรหัสผ่านใหม่
+        const salt = await bcrypt.genSalt(10);
+        const newHashedPassword = await bcrypt.hash(newPassword, salt);
+
+        // บันทึกลงฐานข้อมูล
+        await db.execute(
+            'UPDATE users SET password = ? WHERE user_id = ?', 
+            [newHashedPassword, userId]
+        );
+
+        res.json({ msg: 'เปลี่ยนรหัสผ่านสำเร็จ!' });
+
+    } catch (err) {
+        // ดัก Error กรณี Token หมดอายุ หรือไม่ถูกต้อง
+        if (err.name === 'JsonWebTokenError' || err.name === 'TokenExpiredError') {
+            return res.status(401).json({ msg: 'Token ไม่ถูกต้อง หรือหมดอายุ กรุณาล็อกอินใหม่' });
+        }
+        console.error('Change Password Error:', err);
+        res.status(500).json({ msg: 'เกิดข้อผิดพลาดที่เซิร์ฟเวอร์' });
     }
 });
 

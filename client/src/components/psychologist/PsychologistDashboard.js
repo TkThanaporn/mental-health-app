@@ -7,7 +7,7 @@ import {
     FaUserEdit, FaClock, FaBars, FaUserCircle,
     FaCalendarCheck, FaStethoscope, FaBullhorn,
     FaDatabase, FaCheckCircle, FaHourglassHalf, FaTimesCircle, FaClipboardCheck,
-    FaBuilding, FaGraduationCap, FaFilter, FaFileExcel, FaPrint
+    FaBuilding, FaGraduationCap, FaFilter, FaFileExcel, FaPrint, FaKey // 🌟 เพิ่ม FaKey
 } from 'react-icons/fa';
 
 // Import Recharts
@@ -339,7 +339,12 @@ const PsychologistDashboard = () => {
         navigate('/login');
     };
 
+    // 🌟 ปรับปรุง: ถ้ากดเมนูเปลี่ยนรหัสผ่าน ให้ไปยังหน้า /change-password
     const handleMenuClick = (tabName) => {
+        if (tabName === 'change-password') {
+            navigate('/change-password');
+            return;
+        }
         setActiveTab(tabName);
         setShowMobileMenu(false);
     };
@@ -412,7 +417,7 @@ const PsychologistDashboard = () => {
         );
     };
 
-    // 🌟 4. แก้ไขโครงสร้างเมนู ให้รับตัวเลข Badge ไปแสดง
+    // 🌟 4. แก้ไขโครงสร้างเมนู ให้รับตัวเลข Badge ไปแสดง และเพิ่มเมนูเปลี่ยนรหัสผ่าน
     const SidebarContent = () => (
         <div className="d-flex flex-column h-100">
             <div className="logo-section">
@@ -427,7 +432,8 @@ const PsychologistDashboard = () => {
                     { id: 'news', icon: FaBullhorn, label: 'ประกาศข่าวสาร' },
                     { id: 'all-list', icon: FaList, label: 'ประวัติทั้งหมด' },
                     { id: 'schedule', icon: FaClock, label: 'ตั้งค่าตารางเวลา' },
-                    { id: 'profile', icon: FaUserEdit, label: 'ข้อมูลส่วนตัว' }
+                    { id: 'profile', icon: FaUserEdit, label: 'ข้อมูลส่วนตัว' },
+                    { id: 'change-password', icon: FaKey, label: 'เปลี่ยนรหัสผ่าน' } // 🌟 เพิ่มเมนูเปลี่ยนรหัสผ่านตรงนี้
                 ].map((item) => (
                     <div key={item.id} onClick={() => handleMenuClick(item.id)} className={`nav-item-custom ${activeTab === item.id ? 'active' : ''}`}>
                         <div className="d-flex justify-content-between align-items-center w-100">

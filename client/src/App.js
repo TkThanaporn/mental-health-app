@@ -17,6 +17,10 @@ import AppointmentManager from './components/psychologist/AppointmentManager';
 import NewsManagement from './components/psychologist/NewsManagement'; 
 import ScheduleManager from './components/psychologist/ScheduleManager';
 
+import ChangePassword from './components/common/ChangePassword'; // ปรับ path ให้ถูกต้อง
+
+// 2. นำไปแทรกใน <Routes> ... </Routes>
+
 import StudentDashboard from './components/student/StudentDashboard';
 import AssessmentForm from './components/student/AssessmentForm'; 
 import AppointmentBooking from './components/student/AppointmentBooking';
@@ -34,6 +38,7 @@ const App = () => {
     <Router>
       <AuthProvider>
         <Routes>
+          <Route path="/change-password" element={<ChangePassword />} />
 
           {/* ===== Public Routes ===== */}
           <Route path="/" element={<Navigate to="/login" replace />} />
