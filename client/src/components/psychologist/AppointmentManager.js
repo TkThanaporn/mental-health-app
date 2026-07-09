@@ -1,17 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Container, Card, Button, Row, Col, Modal, InputGroup, Form, Badge, Dropdown, Spinner } from 'react-bootstrap';
+import { Container, Card, Button, Row, Col, Modal, InputGroup, Form, Spinner } from 'react-bootstrap';
 import { jwtDecode } from "jwt-decode";
 import ChatRoom from '../common/ChatRoom';
 import { 
     FaComments, FaCheck, FaTimes, FaHistory, FaUserGraduate, 
     FaClock, FaSearch, FaCircle, FaCalendarAlt, FaUserClock, 
-    FaCalendarDay, FaRegCalendarCheck, FaUserCheck, FaCheckCircle,
-    FaVideo, FaBuilding, FaFileMedical, FaInfoCircle, FaClipboardList, FaFilter,
-    FaUserTimes, FaUserFriends, FaEnvelope
+    FaCalendarDay, FaUserCheck, FaCheckCircle, FaVideo, FaBuilding, 
+    FaFileMedical, FaInfoCircle, FaClipboardList, FaFilter, FaUserTimes, 
+    FaUserFriends, FaEnvelope
 } from 'react-icons/fa';
 
 import './AppointmentManager.css'; 
+import './AllAppointmentList.css'; // 👈 นำเข้าไฟล์สไตล์สำหรับคลาสพรีเมียม
 
 const AppointmentManager = ({ onAppointmentUpdate }) => {
     const [viewMode, setViewMode] = useState('card');
@@ -194,11 +195,12 @@ const AppointmentManager = ({ onAppointmentUpdate }) => {
         { title: "ยืนยันแล้ว (รอพบ)", count: opStats.confirmedUpcoming, unit: "คิว", icon: <FaUserCheck/>, type: "stat-sweet", filterKey: 'confirmed' }
     ];
 
+    // --- 🎨 ปรับปรุงฟังก์ชันแปลงป้ายกำกับให้เรียกใช้ Premium CSS Classes ---
     const getStatusBadge = (status) => {
         const s = status ? String(status).toLowerCase() : '';
-        if (s === 'confirmed' || s === 'ยืนยัน') return <Badge bg="success" className="px-3 py-2 rounded-pill fw-normal shadow-sm"><FaCheck className="me-1"/> ยืนยันแล้ว</Badge>;
-        if (s === 'pending' || s === 'รอดำเนินการ') return <Badge bg="warning" text="dark" className="px-3 py-2 rounded-pill fw-normal shadow-sm"><FaClock className="me-1"/> รอดำเนินการ</Badge>;
-        return <Badge bg="secondary" className="px-3 py-2 rounded-pill fw-normal shadow-sm"><FaCircle className="me-1"/> {status || 'ไม่ระบุ'}</Badge>;
+        if (s === 'confirmed' || s === 'ยืนยัน') return <span className="status-chip chip-conf"><FaCheck className="me-1"/> ยืนยันแล้ว</span>;
+        if (s === 'pending' || s === 'รอดำเนินการ') return <span className="status-chip chip-pen"><FaClock className="me-1"/> รอดำเนินการ</span>;
+        return <span className="status-chip chip-dark"><FaCircle className="me-1"/> {status || 'ไม่ระบุ'}</span>;
     };
 
     const getStatusColor = (status) => {
@@ -209,23 +211,20 @@ const AppointmentManager = ({ onAppointmentUpdate }) => {
     };
 
     const getMeetingTypeBadge = (type) => {
-        if (!type) return <Badge bg="secondary" className="px-3 py-2 rounded-pill fw-normal shadow-sm">ไม่ระบุสถานที่</Badge>;
-        
+        if (!type) return <span className="info-pill text-muted">ไม่ระบุสถานที่</span>;
         const t = String(type).toLowerCase().trim();
         if (t === 'online' || t === 'ออนไลน์' || t === 'video') {
-            return <Badge bg="primary" className="px-3 py-2 rounded-pill fw-normal shadow-sm"><FaVideo className="me-1"/> ออนไลน์</Badge>;
-        } else if (t === 'on-site' || t === 'onsite' || t === 'ออนไซต์' || t === 'room' || t === 'พบตัว') {
-            return <Badge bg="info" text="dark" className="px-3 py-2 rounded-pill fw-normal shadow-sm"><FaBuilding className="me-1"/> On-site</Badge>;
+            return <span className="info-pill"><FaVideo className="me-1 text-primary"/> แชทออนไลน์</span>;
         }
-        return <Badge bg="secondary" className="px-3 py-2 rounded-pill fw-normal shadow-sm">{type}</Badge>;
+        return <span className="info-pill"><FaBuilding className="me-1 text-info"/> เข้าพบที่ห้องให้คำปรึกษา</span>;
     };
 
     const getConsultationTypeBadge = (cType) => {
         const t = cType ? String(cType).toLowerCase() : '';
         if (t === 'group' || t === 'กลุ่ม') {
-            return <Badge style={{ backgroundColor: '#6f42c1' }} className="px-3 py-2 rounded-pill fw-normal shadow-sm text-white"><FaUserFriends className="me-1"/> แบบกลุ่ม</Badge>;
+            return <span className="info-pill" style={{ color: '#6f42c1', backgroundColor: '#f4eeff' }}><FaUserFriends className="me-1"/> แบบกลุ่ม</span>;
         }
-        return <Badge bg="light" text="dark" className="border px-3 py-2 rounded-pill fw-normal shadow-sm"><FaUserGraduate className="me-1"/> รายบุคคล</Badge>;
+        return <span className="info-pill"><FaUserGraduate className="me-1 text-secondary"/> รายบุคคล</span>;
     };
 
     const renderActionButtons = (app) => {
@@ -235,7 +234,7 @@ const AppointmentManager = ({ onAppointmentUpdate }) => {
         const isOnline = (type === 'online' || type === 'ออนไลน์' || type === 'video');
 
         const detailsBtn = (
-            <Button variant="light" className="flex-grow-1 text-primary fw-bold border btn-action" onClick={() => openDetails(app)}>
+            <Button variant="light" className="flex-grow-1 text-primary fw-bold border btn-action rounded-pill shadow-sm" onClick={() => openDetails(app)}>
                 <FaInfoCircle className="me-1"/> ข้อมูล
             </Button>
         );
@@ -244,8 +243,8 @@ const AppointmentManager = ({ onAppointmentUpdate }) => {
             return (
                 <div className="d-flex flex-wrap gap-2 w-100">
                     {detailsBtn}
-                    <Button variant="success" className="flex-grow-1 fw-bold btn-action" onClick={() => handleStatusChange(app.appointment_id, 'Confirmed')}><FaCheck/> ยืนยัน</Button>
-                    <Button variant="danger" className="flex-grow-1 fw-bold btn-action" onClick={() => handleStatusChange(app.appointment_id, 'Cancelled')}><FaTimes/> ปฏิเสธ</Button>
+                    <Button variant="success" className="flex-grow-1 fw-bold btn-action rounded-pill shadow-sm" onClick={() => handleStatusChange(app.appointment_id, 'Confirmed')}><FaCheck/> ยืนยัน</Button>
+                    <Button variant="danger" className="flex-grow-1 fw-bold btn-action rounded-pill shadow-sm" onClick={() => handleStatusChange(app.appointment_id, 'Cancelled')}><FaTimes/> ปฏิเสธ</Button>
                 </div>
             );
         } else if (status === 'confirmed') {
@@ -253,14 +252,14 @@ const AppointmentManager = ({ onAppointmentUpdate }) => {
                 <div className="d-flex flex-wrap gap-2 w-100">
                     {detailsBtn}
                     {isOnline && (
-                        <Button variant={chatOpen ? "primary" : "secondary"} className="flex-grow-1 fw-bold btn-action" onClick={() => openChat(app)} disabled={!chatOpen}>
+                        <Button variant={chatOpen ? "primary" : "secondary"} className="flex-grow-1 fw-bold btn-action rounded-pill shadow-sm" onClick={() => openChat(app)} disabled={!chatOpen}>
                             <FaComments className="me-1"/> {chatOpen ? 'แชท' : 'ยังไม่ถึงเวลา'}
                         </Button>
                     )}
-                    <Button variant="warning" className="flex-grow-1 fw-bold text-dark btn-action" onClick={() => { setSelectedApptDetails(app); setShowResultModal(true); }}>
+                    <Button variant="warning" className="flex-grow-1 fw-bold text-dark btn-action rounded-pill shadow-sm" onClick={() => { setSelectedApptDetails(app); setShowResultModal(true); }}>
                         <FaClipboardList className="me-1"/> บันทึกผล
                     </Button>
-                    <Button variant="outline-dark" className="fw-bold btn-action flex-grow-1" onClick={() => handleNoShow(app.appointment_id)}>
+                    <Button variant="outline-dark" className="fw-bold btn-action flex-grow-1 rounded-pill shadow-sm" onClick={() => handleNoShow(app.appointment_id)}>
                         <FaUserTimes /> ขาดนัด
                     </Button>
                 </div>
@@ -270,20 +269,25 @@ const AppointmentManager = ({ onAppointmentUpdate }) => {
     };
 
     if (loading) return (
-        <div className="d-flex flex-column align-items-center justify-content-center vh-100">
-            <div className="spinner-border text-primary" role="status"></div><span className="mt-3 text-muted fw-bold">กำลังโหลดข้อมูล...</span>
+        <div className="loading-science-container text-center py-5" style={{minHeight: '80vh', display: 'flex', flexDirection: 'column', justifyContent: 'center'}}>
+            <Spinner animation="grow" variant="primary" style={{width: '3rem', height: '3rem'}} />
+            <div className="loading-text mt-4 fw-bold pcshs-navy fs-5">กำลังเรียกข้อมูลการนัดหมาย...</div>
         </div>
     );
 
     return (
-        <div className="appt-container px-3 px-lg-5 py-4">
+        <div className="pcshs-archive-container fade-in-up px-3 px-lg-5 py-4">
             <div className="d-flex flex-column flex-lg-row justify-content-between align-items-lg-end mb-4 gap-4">
                 <div className="d-flex align-items-center">
                     <div className="brand-icon-box me-3"><FaCalendarAlt /></div>
-                    <div><h2 className="fw-bold m-0 text-navy">จัดการการนัดหมาย</h2><p className="text-muted m-0 small">จัดการคำขอและบันทึกผลการเข้าปรึกษา</p></div>
+                    <div>
+                        <h2 className="fw-bold m-0 text-navy display-6 fw-bold" style={{letterSpacing: '-1px'}}>จัดการการนัดหมาย</h2>
+                        <p className="text-muted m-0 mt-1 lead fs-6">จัดการคำขอเร่งด่วนและบันทึกผลการเข้าปรึกษาทางจิตวิทยา</p>
+                    </div>
                 </div>
             </div>
 
+            {/* แผง Stat สไตล์พรีเมียม */}
             <Row className="g-3 mb-4">
                 {statCardsData.map((item, idx) => (
                     <Col xs={12} sm={6} lg={3} key={idx}>
@@ -297,7 +301,8 @@ const AppointmentManager = ({ onAppointmentUpdate }) => {
                 ))}
             </Row>
 
-            <div className="filter-bar bg-white p-3 rounded-4 shadow-sm mb-4 d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">
+            {/* แผงตัวกรองดีไซน์กระจก (Glassmorphism) */}
+            <div className="filter-bar glass-panel p-3 mb-4 d-flex flex-column flex-md-row justify-content-between align-items-center gap-3 border-0 shadow-sm">
                 <div className="d-flex gap-3 w-100 align-items-center flex-wrap">
                     <InputGroup className="search-box-modern flex-grow-1" style={{ maxWidth: '400px' }}>
                         <InputGroup.Text className="bg-light border-0 ps-3 text-muted"><FaSearch/></InputGroup.Text>
@@ -306,7 +311,7 @@ const AppointmentManager = ({ onAppointmentUpdate }) => {
                     <InputGroup style={{ maxWidth: '200px' }}>
                         <InputGroup.Text className="bg-light border-0 text-muted"><FaFilter/></InputGroup.Text>
                         <Form.Select className="bg-light border-0 shadow-none fw-bold text-secondary" value={filterMeetingType} onChange={(e) => setFilterMeetingType(e.target.value)}>
-                            <option value="all">รูปแบบ (ทั้งหมด)</option><option value="online">ออนไลน์</option><option value="onsite">On-site</option>
+                            <option value="all">รูปแบบ (ทั้งหมด)</option><option value="online">ออนไลน์</option><option value="onsite">พบตัวจริง</option>
                         </Form.Select>
                     </InputGroup>
                 </div>
@@ -317,7 +322,7 @@ const AppointmentManager = ({ onAppointmentUpdate }) => {
             </div>
 
             {filteredAppointments.length === 0 ? (
-                <div className="empty-state text-center p-5 bg-white rounded-4 shadow-sm"><FaHistory className="mb-3 opacity-25" size={40}/><h5>ไม่พบรายการที่ต้องดำเนินการ</h5></div>
+                <div className="empty-state text-center p-5 bg-white rounded-4 shadow-sm glass-panel border-0"><FaHistory className="mb-3 opacity-25" size={40}/><h5>ไม่พบรายการที่ต้องดำเนินการ</h5></div>
             ) : (
                 <>
                     {viewMode === 'card' ? (
@@ -327,12 +332,13 @@ const AppointmentManager = ({ onAppointmentUpdate }) => {
                                 const timeStr = formatTimeSlot(app.start_time, app.end_time, app.appointment_time);
                                 return (
                                     <Col lg={4} md={6} key={app.appointment_id}>
-                                        <Card className="appt-card h-100 border-0">
+                                        <Card className="appt-card h-100 border-0 shadow-sm glass-panel">
                                             <div className="status-line" style={{ backgroundColor: getStatusColor(app.status) }}></div>
                                             <Card.Body className="p-4 d-flex flex-column">
                                                 <div className="d-flex justify-content-between mb-3 align-items-start">
                                                     <div className="date-badge">
-                                                        <span className="d-day">{appDate.getDate()}</span><span className="d-month">{appDate.toLocaleDateString('th-TH', {month: 'short'})}</span>
+                                                        <span className="date-day d-block">{appDate.getDate()}</span>
+                                                        <span className="date-month">{appDate.toLocaleDateString('th-TH', {month: 'short'})}</span>
                                                     </div>
                                                     <div className="text-end d-flex flex-column gap-2 align-items-end">
                                                         {getStatusBadge(app.status)}
@@ -342,10 +348,16 @@ const AppointmentManager = ({ onAppointmentUpdate }) => {
                                                 <div className="text-muted small mb-3 bg-light p-2 rounded-3 d-inline-block" style={{ width: 'fit-content' }}>
                                                     <FaClock className="me-2 text-primary"/>เวลา: <strong className="text-dark">{timeStr} น.</strong>
                                                 </div>
-                                                {/* ซ่อนหัวข้อจากการแสดงผลแบบ Card */}
                                                 <div className="student-box mb-3">
-                                                    <div className="d-flex align-items-center mb-2"><div className="avatar-circle me-2"><FaUserGraduate/></div><div className="fw-bold text-dark">{app.student_name || app.fullname}</div></div>
-                                                    <div className="assessment-row"><FaFileMedical className="text-danger me-1"/> <span className="text-muted small me-1">ผลประเมิน:</span> <span className="fw-bold text-dark small">{app.stress_level || app.latest_assessment || 'ไม่มีข้อมูล'}</span></div>
+                                                    <div className="d-flex align-items-center mb-2">
+                                                        <div className="student-avatar-glow me-2" style={{width: '35px', height: '35px', fontSize: '1rem'}}><FaUserGraduate/></div>
+                                                        <div className="fw-bold text-dark">{app.student_name || app.fullname}</div>
+                                                    </div>
+                                                    <div className="topic-badge mt-2">
+                                                        <FaFileMedical className="text-danger me-1"/> 
+                                                        <span className="text-muted small me-1">ผลประเมิน:</span> 
+                                                        <span className="fw-bold text-dark small">{app.stress_level || app.latest_assessment || 'ไม่มีข้อมูล'}</span>
+                                                    </div>
                                                 </div>
                                                 <div className="mt-auto pt-3 border-top d-flex flex-wrap gap-2">
                                                     {renderActionButtons(app)}
@@ -357,35 +369,72 @@ const AppointmentManager = ({ onAppointmentUpdate }) => {
                             })}
                         </Row>
                     ) : (
-                        <div className="table-glass-container">
-                            <table className="table-modern">
-                                <thead>
-                                    {/* ปรับแก้ Header ของตารางให้เหลือแค่ ผลประเมิน */}
-                                    <tr><th className="ps-4">วัน-เวลา</th><th>นักเรียน</th><th>ผลประเมิน</th><th>สถานะ & ประเภท</th><th className="text-end pe-4">จัดการ</th></tr>
-                                </thead>
-                                <tbody>
-                                    {filteredAppointments.map(app => (
-                                        <tr key={app.appointment_id} className="table-row-hover">
-                                            <td className="ps-4">
-                                                <div className="fw-bold text-navy">{new Date(app.date || app.appointment_date).toLocaleDateString('th-TH', {day: 'numeric', month: 'short'})}</div>
-                                                <small className="text-muted"><FaClock className="me-1"/>{formatTimeSlot(app.start_time, app.end_time, app.appointment_time)} น.</small>
-                                            </td>
-                                            <td><div className="d-flex align-items-center gap-2"><div className="avatar-circle small"><FaUserGraduate/></div><span className="fw-bold text-dark">{app.student_name || app.fullname}</span></div></td>
-                                            {/* ซ่อนหัวข้อจากการแสดงผลแบบ Table เหลือเพียงแค่ผลประเมิน */}
-                                            <td>
-                                                <div className="text-danger small"><FaFileMedical className="me-1"/>{app.stress_level || app.latest_assessment || 'ไม่มีข้อมูล'}</div>
-                                            </td>
-                                            <td><div className="d-flex flex-column gap-1 align-items-start">{getStatusBadge(app.status)}{getMeetingTypeBadge(app.type || app.meeting_type)}</div></td>
-                                            <td className="text-end pe-4 d-flex flex-wrap gap-2 justify-content-end">{renderActionButtons(app)}</td>
+                        /* --- 📑 เปลี่ยนเป็นระบบตารางพรีเมียมแบบเดียวกับคลังประวัติ --- */
+                        <div className="glass-panel modern-table-container p-3">
+                            <div className="table-responsive px-2 pb-2 overflow-visible">
+                                <table className="pcshs-archive-table w-100">
+                                    <thead>
+                                        <tr>
+                                            <th className="ps-4">วัน-เวลา</th>
+                                            <th>นักเรียน</th>
+                                            <th>ผลประเมิน</th>
+                                            <th>สถานะ & ประเภท</th>
+                                            <th className="text-end pe-4">จัดการ</th>
                                         </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                                    </thead>
+                                    <tbody>
+                                        {filteredAppointments.map(app => {
+                                            const appDate = new Date(app.date || app.appointment_date);
+                                            return (
+                                                <tr key={app.appointment_id} className="archive-row-card">
+                                                    <td className="ps-4">
+                                                        <div className="date-badge">
+                                                            <span className="date-day d-block">{appDate.getDate()}</span>
+                                                            <span className="date-month">{appDate.toLocaleDateString('th-TH', {day: 'numeric', month: 'short'}).replace(appDate.getDate(),'')}</span>
+                                                        </div>
+                                                        <div className="time-sub-modern">
+                                                            <FaClock className="me-1"/>
+                                                            {formatTimeSlot(app.start_time, app.end_time, app.appointment_time)} น.
+                                                        </div>
+                                                    </td>
+                                                    <td>
+                                                        <div className="d-flex align-items-center gap-3">
+                                                            <div className="student-avatar-glow"><FaUserGraduate/></div>
+                                                            <div>
+                                                                <span className="fw-bold text-dark d-block fs-6">{app.student_name || app.fullname}</span>
+                                                                <span className="info-pill mt-1 text-muted">ID: #{String(app.appointment_id).padStart(6, '0')}</span>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td>
+                                                        <div className="topic-badge">
+                                                            <FaFileMedical className="me-1 text-danger"/>
+                                                            {app.stress_level || app.latest_assessment || 'ไม่มีข้อมูล'}
+                                                        </div>
+                                                    </td>
+                                                    <td>
+                                                        <div className="d-flex flex-column gap-2 align-items-start">
+                                                            {getStatusBadge(app.status)}
+                                                            {getMeetingTypeBadge(app.type || app.meeting_type)}
+                                                        </div>
+                                                    </td>
+                                                    <td className="text-end pe-4">
+                                                        <div className="d-flex gap-2 justify-content-end align-items-center">
+                                                            {renderActionButtons(app)}
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     )}
                 </>
             )}
 
+            {/* Modal บันทึกผล */}
             <Modal show={showResultModal} onHide={() => setShowResultModal(false)} centered>
                 <Modal.Header closeButton className="border-0 pb-0">
                     <Modal.Title className="fw-bold"><FaClipboardList className="me-2 text-warning"/> บันทึกผลการให้คำปรึกษา</Modal.Title>
@@ -414,6 +463,7 @@ const AppointmentManager = ({ onAppointmentUpdate }) => {
                 </Modal.Footer>
             </Modal>
 
+            {/* Modal รายละเอียด */}
             <Modal show={showDetails} onHide={() => setShowDetails(false)} size="md" centered className="details-modal">
                 <Modal.Header closeButton className="border-0 pb-0">
                     <Modal.Title className="fw-bold text-navy"><FaClipboardList className="me-2 text-primary"/>รายละเอียดการนัดหมาย</Modal.Title>
@@ -422,7 +472,7 @@ const AppointmentManager = ({ onAppointmentUpdate }) => {
                     {selectedApptDetails && (
                         <div className="details-content">
                             <div className="text-center mb-4">
-                                <div className="bg-light text-primary rounded-circle mx-auto d-flex align-items-center justify-content-center mb-2" style={{width: '60px', height: '60px', fontSize: '1.5rem'}}><FaUserGraduate/></div>
+                                <div className="student-avatar-glow mx-auto mb-2" style={{width: '70px', height: '70px', fontSize: '1.8rem'}}><FaUserGraduate/></div>
                                 <h5 className="fw-bold m-0">{selectedApptDetails.student_name || selectedApptDetails.fullname || 'ไม่ระบุชื่อนักเรียน'}</h5>
                                 
                                 <div className="mt-3 d-flex flex-wrap justify-content-center gap-2 align-items-center">
@@ -432,7 +482,7 @@ const AppointmentManager = ({ onAppointmentUpdate }) => {
                                 </div>
                             </div>
                             
-                            <div className="info-box bg-light p-3 rounded-3 mb-3">
+                            <div className="info-box bg-light p-3 rounded-3 mb-3 border">
                                 <Row className="g-3">
                                     <Col xs={6}>
                                         <div className="text-muted small">วันที่นัดหมาย</div>
@@ -467,16 +517,14 @@ const AppointmentManager = ({ onAppointmentUpdate }) => {
 
                             <div className="info-group mb-3">
                                 <div className="text-muted small mb-1">หัวข้อการปรึกษา</div>
-                                <div className="fw-semibold text-dark p-2 border rounded-3 bg-white">
+                                <div className="fw-semibold text-dark p-2 border rounded-3 bg-white shadow-sm">
                                     {selectedApptDetails.topic || selectedApptDetails.note || 'การปรึกษาทั่วไป'}
                                 </div>
                             </div>
 
-                            <div className="info-group mb-3">
-                                <div className="text-muted small mb-1">ผลการประเมินความเครียดเบื้องต้น</div>
-                                <div className="fw-semibold text-danger p-2 border rounded-3 bg-white d-flex align-items-center">
-                                    <FaFileMedical className="me-2"/> {selectedApptDetails.stress_level || selectedApptDetails.latest_assessment || 'ไม่มีข้อมูลการประเมิน'}
-                                </div>
+                            <div className="info-group border-start border-danger border-4 ps-3 py-2 bg-white shadow-sm rounded-end mb-3">
+                                <div className="text-danger small fw-bold mb-1"><FaFileMedical className="me-1"/> ผลการประเมินความเครียดเบื้องต้น</div>
+                                <div className="fw-semibold text-dark">{selectedApptDetails.stress_level || selectedApptDetails.latest_assessment || 'ไม่มีข้อมูลการประเมิน'}</div>
                             </div>
 
                             {selectedApptDetails.result_summary && (
@@ -490,10 +538,11 @@ const AppointmentManager = ({ onAppointmentUpdate }) => {
                 </Modal.Body>
             </Modal>
 
+            {/* Chat Modal */}
             <Modal show={showChat && selectedChatAppt} onHide={() => setShowChat(false)} size="lg" centered className="chat-modal-custom">
                 <Modal.Header closeButton className="border-0 bg-light">
                     <Modal.Title className="d-flex align-items-center gap-3">
-                        <div className="avatar-circle bg-primary text-white"><FaUserGraduate/></div>
+                        <div className="student-avatar-glow" style={{width:'40px', height:'40px', fontSize:'1.1rem'}}><FaUserGraduate/></div>
                         <div>
                             <div className="fs-5 fw-bold">{selectedChatAppt?.student_name || selectedChatAppt?.fullname}</div>
                             <div className="fs-6 text-muted fw-normal">หัวข้อ: {selectedChatAppt?.topic || 'ปรึกษาทั่วไป'}</div>

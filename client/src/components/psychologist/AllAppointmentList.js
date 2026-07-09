@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Card, Badge, Spinner, Form, InputGroup, Row, Col, Button, Modal } from 'react-bootstrap';
+import { Card, Spinner, Form, InputGroup, Row, Col, Button, Modal } from 'react-bootstrap';
 import { 
     FaSearch, FaClock, FaHistory, FaCheckCircle, FaTimesCircle, 
     FaHourglassHalf, FaMicroscope, FaDatabase, FaFilter, FaUndo, 
@@ -50,7 +50,7 @@ const AllAppointmentList = () => {
         setShowDetails(true); 
     };
 
-    // --- 🎨 ฟังก์ชันจัดการ UI (Badge & Time) ---
+    // --- 🎨 ฟังก์ชันจัดการ UI (ปรับให้ใช้ CSS Classes ใหม่) ---
     const formatTimeSlot = (start, end, apptTime, timeSlotStr) => {
         if (timeSlotStr) return timeSlotStr;
         let startTime = start ? start.substring(0, 5) : (apptTime ? String(apptTime).substring(0, 5) : '00:00');
@@ -60,18 +60,18 @@ const AllAppointmentList = () => {
 
     const getStatusBadge = (status) => {
         const s = status ? String(status).toLowerCase() : '';
-        if (s === 'confirmed' || s === 'ยืนยัน') return <Badge bg="success" className="px-3 py-2 rounded-pill fw-normal shadow-sm"><FaCheck className="me-1"/> ยืนยันแล้ว</Badge>;
-        if (s === 'cancelled' || s === 'ยกเลิก') return <Badge bg="danger" className="px-3 py-2 rounded-pill fw-normal shadow-sm"><FaTimes className="me-1"/> ยกเลิกแล้ว</Badge>;
-        if (s === 'pending' || s === 'รอดำเนินการ') return <Badge bg="warning" text="dark" className="px-3 py-2 rounded-pill fw-normal shadow-sm"><FaClock className="me-1"/> รอดำเนินการ</Badge>;
-        if (s === 'completed' || s === 'เสร็จสิ้น') return <Badge bg="secondary" className="px-3 py-2 rounded-pill fw-normal shadow-sm"><FaHistory className="me-1"/> เสร็จสิ้น</Badge>;
-        if (s === 'no-show' || s === 'ขาดนัด') return <Badge bg="dark" className="px-3 py-2 rounded-pill fw-normal shadow-sm"><FaUserTimes className="me-1"/> ขาดนัด</Badge>;
-        return <Badge bg="secondary" className="px-3 py-2 rounded-pill fw-normal shadow-sm"><FaCircle className="me-1"/> {status || 'ไม่ระบุ'}</Badge>;
+        if (s === 'confirmed' || s === 'ยืนยัน') return <span className="status-chip chip-conf"><FaCheck className="me-1"/> ยืนยันแล้ว</span>;
+        if (s === 'cancelled' || s === 'ยกเลิก') return <span className="status-chip chip-can"><FaTimes className="me-1"/> ยกเลิกแล้ว</span>;
+        if (s === 'pending' || s === 'รอดำเนินการ') return <span className="status-chip chip-pen"><FaClock className="me-1"/> รอดำเนินการ</span>;
+        if (s === 'completed' || s === 'เสร็จสิ้น') return <span className="status-chip chip-comp"><FaHistory className="me-1"/> เสร็จสิ้น</span>;
+        if (s === 'no-show' || s === 'ขาดนัด') return <span className="status-chip chip-dark"><FaUserTimes className="me-1"/> ขาดนัด</span>;
+        return <span className="status-chip chip-dark"><FaCircle className="me-1"/> {status || 'ไม่ระบุ'}</span>;
     };
 
     const getMeetingTypeBadge = (type) => {
         const t = type ? String(type).toLowerCase() : '';
-        if(t === 'online' || t === 'ออนไลน์') return <Badge bg="primary" className="px-3 py-2 rounded-pill fw-normal shadow-sm"><FaVideo className="me-1"/> ออนไลน์</Badge>;
-        return <Badge bg="info" text="dark" className="px-3 py-2 rounded-pill fw-normal shadow-sm"><FaBuilding className="me-1"/> On-site</Badge>;
+        if(t === 'online' || t === 'ออนไลน์') return <span className="info-pill mt-1"><FaVideo className="me-1 text-primary"/> แชทออนไลน์</span>;
+        return <span className="info-pill mt-1"><FaBuilding className="me-1 text-info"/> พบที่ห้องให้คำปรึกษา</span>;
     };
 
     // --- ⚙️ ประมวลผลข้อมูล (กรอง และ เรียงลำดับ) ---
@@ -194,8 +194,9 @@ const AllAppointmentList = () => {
                         <FaHistory className="me-3 text-primary"/> รายการประวัติที่ค้นพบ ({sortedAppointments.length})
                     </div>
                 </div>
-                <div className="table-responsive px-2 pb-2">
-                    <table className="table-modern">
+                <div className="table-responsive px-2 pb-2 overflow-visible">
+                    {/* เปลี่ยนมาใช้คลาสตารางแบบใหม่จาก CSS */}
+                    <table className="pcshs-archive-table w-100">
                         <thead>
                             <tr>
                                 <th className="ps-4">วัน-เวลา</th>
@@ -210,33 +211,43 @@ const AllAppointmentList = () => {
                                 sortedAppointments.map((app) => {
                                     const appDate = new Date(app.date || app.appointment_date);
                                     return (
-                                        <tr key={app.appointment_id} className="table-row-hover">
+                                        // ใช้งาน row-card สำหรับตารางที่มีลักษณะเป็นการ์ด
+                                        <tr key={app.appointment_id} className="archive-row-card">
                                             <td className="ps-4">
-                                                <div className="fw-bold text-navy">{appDate.toLocaleDateString('th-TH', {day: 'numeric', month: 'short', year: 'numeric'})}</div>
-                                                <small className="text-muted"><FaClock className="me-1"/>{formatTimeSlot(app.start_time, app.end_time, app.appointment_time, app.time_slot)} น.</small>
+                                                <div className="date-badge">
+                                                    <span className="date-day d-block">{appDate.getDate()}</span>
+                                                    <span className="date-month">{appDate.toLocaleDateString('th-TH', { month: 'short' })}</span>
+                                                </div>
+                                                <div className="time-sub-modern">
+                                                    <FaClock className="me-1"/>
+                                                    {formatTimeSlot(app.start_time, app.end_time, app.appointment_time, app.time_slot)} น.
+                                                </div>
                                             </td>
                                             <td>
-                                                <div className="d-flex align-items-center gap-2">
-                                                    <div className="avatar-circle small"><FaUserGraduate/></div>
+                                                <div className="d-flex align-items-center gap-3">
+                                                    <div className="student-avatar-glow"><FaUserGraduate/></div>
                                                     <div>
-                                                        <span className="fw-bold text-dark d-block">{app.student_name || app.fullname}</span>
-                                                        <small className="text-muted">ID: #{String(app.appointment_id).padStart(6, '0')}</small>
+                                                        <span className="fw-bold text-dark d-block fs-6">{app.student_name || app.fullname}</span>
+                                                        <span className="info-pill mt-1 text-muted">ID: #{String(app.appointment_id).padStart(6, '0')}</span>
                                                     </div>
                                                 </div>
                                             </td>
                                             <td>
-                                                <div className="text-dark fw-semibold text-truncate" style={{maxWidth: '200px'}}>{app.topic || '-'}</div>
-                                                <div className="text-danger small"><FaFileMedical className="me-1"/>{app.stress_level || app.latest_assessment || 'ไม่มีข้อมูล'}</div>
+                                                <div className="text-dark fw-semibold text-truncate mb-2" style={{maxWidth: '220px'}}>{app.topic || '-'}</div>
+                                                <div className="topic-badge">
+                                                    <FaFileMedical className="me-1"/>
+                                                    {app.stress_level || app.latest_assessment || 'ไม่มีข้อมูล'}
+                                                </div>
                                             </td>
                                             <td>
-                                                <div className="d-flex flex-column gap-1 align-items-start">
+                                                <div className="d-flex flex-column gap-2 align-items-start">
                                                     {getStatusBadge(app.status)}
                                                     {getMeetingTypeBadge(app.type || app.meeting_type)}
                                                 </div>
                                             </td>
                                             <td className="text-end pe-4">
-                                                <Button variant="light" className="btn-sm fw-bold border text-muted btn-action px-3" onClick={() => openDetails(app)}>
-                                                    <FaInfoCircle className="me-1"/> ดูข้อมูล
+                                                <Button variant="light" className="btn-sm fw-bold border text-muted px-4 py-2 rounded-pill shadow-sm" onClick={() => openDetails(app)} style={{ transition: 'all 0.3s' }}>
+                                                    <FaInfoCircle className="me-1"/> ข้อมูล
                                                 </Button>
                                             </td>
                                         </tr>
@@ -245,7 +256,7 @@ const AllAppointmentList = () => {
                             ) : (
                                 <tr>
                                     <td colSpan="5" className="text-center py-5">
-                                        <div className="glass-panel p-5 d-inline-block">
+                                        <div className="p-5 d-inline-block">
                                             <FaSearch className="display-4 text-muted mb-3 opacity-50"/>
                                             <h4 className="pcshs-blue-deep">ไม่พบข้อมูลที่ตรงกัน</h4>
                                             <p className="text-muted">ลองปรับเปลี่ยนตัวกรอง หรือกดปุ่มล้างค่าเพื่อเริ่มใหม่</p>
@@ -268,14 +279,14 @@ const AllAppointmentList = () => {
                     {selectedApptDetails && (
                         <div className="details-content">
                             <div className="text-center mb-4">
-                                <div className="avatar-circle mx-auto mb-2" style={{width: '60px', height: '60px', fontSize: '1.5rem'}}><FaUserGraduate/></div>
+                                <div className="student-avatar-glow mx-auto mb-2" style={{width: '70px', height: '70px', fontSize: '1.8rem'}}><FaUserGraduate/></div>
                                 <h5 className="fw-bold m-0">{selectedApptDetails.student_name || selectedApptDetails.fullname}</h5>
                                 <div className="mt-3 d-flex justify-content-center gap-2">
-                                    {getStatusBadge(selectedApptDetails.status)}{getMeetingTypeBadge(selectedApptDetails.type || selectedApptDetails.meeting_type)}
+                                    {getStatusBadge(selectedApptDetails.status)}
                                 </div>
                             </div>
                             
-                            <div className="info-box bg-light p-3 rounded-3 mb-3">
+                            <div className="info-box bg-light p-3 rounded-3 mb-3 border">
                                 <Row className="g-3">
                                     <Col xs={6}>
                                         <div className="text-muted small">วันที่นัดหมาย</div>
@@ -290,7 +301,7 @@ const AllAppointmentList = () => {
                             
                             <div className="info-group mb-3">
                                 <div className="text-muted small mb-1">หัวข้อการปรึกษา</div>
-                                <div className="fw-semibold text-dark p-2 border rounded-3 bg-white">{selectedApptDetails.topic || 'ไม่ระบุ'}</div>
+                                <div className="fw-semibold text-dark p-2 border rounded-3 bg-white shadow-sm">{selectedApptDetails.topic || 'ไม่ระบุ'}</div>
                             </div>
                             
                             <div className="info-group border-start border-danger border-4 ps-3 py-2 bg-white shadow-sm rounded-end mb-3">

@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Card, Form, Button, Row, Col, Alert, Spinner, Badge, Image, Modal } from 'react-bootstrap';
-import { FaBullhorn, FaPaperPlane, FaTrash, FaImage, FaEdit, FaEye, FaTimes, FaSave, FaClock, FaUserCircle, FaCloudUploadAlt, FaList } from 'react-icons/fa';
+import { FaBullhorn, FaPaperPlane, FaTrash, FaImage, FaEdit, FaEye, FaTimes, FaSave, FaClock, FaUserCircle, FaCloudUploadAlt, FaList, FaTag } from 'react-icons/fa';
 
 import './NewsManagement.css'; 
+import './AllAppointmentList.css'; 
 
 const NewsManagement = () => {
     // --- States ---
@@ -11,7 +12,7 @@ const NewsManagement = () => {
     const [content, setContent] = useState('');
     const [imageFile, setImageFile] = useState(null);
     const [previewUrl, setPreviewUrl] = useState(null);
-    const [category, setCategory] = useState(''); // ✅ เปลี่ยนชื่อ State ให้เข้าใจง่ายขึ้น
+    const [category, setCategory] = useState(''); 
     
     const [categories, setCategories] = useState([]);
     const [newsList, setNewsList] = useState([]); 
@@ -57,7 +58,6 @@ const NewsManagement = () => {
         setEditId(news.news_id);
         setTitle(news.title);
         setContent(news.content);
-        // ✅ เปลี่ยนมารับค่า news.category ให้ตรงกับ DB ใหม่
         setCategory(news.category || news.category_name || ''); 
         setPreviewUrl(news.image_url);
         setImageFile(null);
@@ -86,7 +86,6 @@ const NewsManagement = () => {
             const formData = new FormData();
             formData.append('title', title);
             formData.append('content', content);
-            // ✅ ส่งค่าชื่อ category กลับไปให้ Backend ตรงๆ
             formData.append('category', category); 
             if (imageFile) formData.append('image', imageFile);
 
@@ -120,71 +119,74 @@ const NewsManagement = () => {
     };
 
     return (
-        <div className="pcshs-news-container fade-in-up px-3 px-lg-5 py-4">
+        <div className="pcshs-archive-container fade-in-up px-3 px-lg-5 py-4">
             
-            {/* 1. Header */}
-            <div className="news-header mb-5 d-flex align-items-center">
-                <div className="brand-icon-box me-4"><FaBullhorn /></div>
+            {/* 1. Header สไตล์ใหม่ */}
+            <div className="archive-header mb-5 d-flex align-items-center">
+                <div className="brand-icon-box me-3"><FaBullhorn /></div>
                 <div>
-                    <h1 className="fw-normal pcshs-blue-deep m-0 display-6" style={{letterSpacing: '-1px'}}>ระบบจัดการข่าวสาร</h1>
-                    <p className="text-muted m-0 mt-2 lead">เผยแพร่ข้อมูลข่าวสารและกิจกรรมสำหรับนักเรียน</p>
+                    <h2 className="fw-bold m-0 text-navy display-6 fw-bold" style={{letterSpacing: '-1px'}}>ระบบจัดการข่าวสาร</h2>
+                    <p className="text-muted m-0 mt-1 lead fs-6">เผยแพร่ข้อมูลข่าวสารและกิจกรรมสำหรับนักเรียน</p>
                 </div>
             </div>
 
             {/* 2. Form Section */}
-            <Card className="glass-panel mb-5 border-0">
-                <div className="panel-header-modern">
-                    <div className="d-flex align-items-center">
+            <Card className="glass-panel mb-5 border-0 shadow-sm overflow-hidden">
+                <div className="p-3 bg-light border-bottom d-flex justify-content-between align-items-center">
+                    <div className="fw-bold text-primary d-flex align-items-center fs-5 px-2">
                         {isEditing ? <FaEdit className="me-2"/> : <FaPaperPlane className="me-2"/>}
                         <span>{isEditing ? 'แก้ไขประกาศข่าวสาร' : 'สร้างประกาศข่าวใหม่'}</span>
                     </div>
                     {isEditing && (
-                        <Button variant="link" className="text-white text-decoration-none p-0" onClick={handleCancelEdit}>
+                        <Button variant="outline-secondary" size="sm" className="rounded-pill px-3 shadow-sm fw-bold" onClick={handleCancelEdit}>
                             <FaTimes className="me-1"/> ยกเลิก
                         </Button>
                     )}
                 </div>
                 <Card.Body className="p-4 p-lg-5">
-                    {message && <Alert variant={message.type} className="rounded-3 shadow-sm mb-4 border-0">{message.text}</Alert>}
+                    {message && <Alert variant={message.type} className="rounded-3 shadow-sm mb-4 border-0 d-flex align-items-center"><strong className="me-2">{message.text}</strong></Alert>}
 
                     <Form onSubmit={handleSubmit}>
                         <Row className="g-5">
                             {/* Left: Inputs */}
                             <Col lg={8}>
                                 <div className="mb-4">
-                                    <label className="modern-label">หัวข้อข่าวประชาสัมพันธ์</label>
+                                    <label className="fw-bold text-navy mb-2">หัวข้อข่าวประชาสัมพันธ์ <span className="text-danger">*</span></label>
                                     <input 
                                         type="text" 
-                                        className="modern-input w-100" 
+                                        className="form-control form-control-lg bg-light border-0 shadow-none rounded-3 px-4" 
                                         placeholder="ระบุหัวข้อข่าวที่น่าสนใจ..." 
                                         value={title} 
                                         onChange={(e) => setTitle(e.target.value)} 
                                         required 
+                                        style={{ fontSize: '1rem' }}
                                     />
                                 </div>
                                 <div className="mb-4">
-                                    <label className="modern-label">รายละเอียดเนื้อหา</label>
+                                    <label className="fw-bold text-navy mb-2">รายละเอียดเนื้อหา <span className="text-danger">*</span></label>
                                     <textarea 
-                                        className="modern-textarea w-100" 
+                                        className="form-control bg-light border-0 shadow-none rounded-3 px-4 py-3" 
                                         rows="8" 
                                         placeholder="พิมพ์รายละเอียดข่าวสารที่นี่..." 
                                         value={content} 
                                         onChange={(e) => setContent(e.target.value)} 
                                         required 
+                                        style={{ resize: 'none' }}
                                     />
                                 </div>
                             </Col>
 
                             {/* Right: Upload & Settings */}
                             <Col lg={4}>
-                                <div className="bg-white p-4 rounded-4 h-100 border border-light shadow-sm">
+                                <div className="bg-light p-4 rounded-4 h-100 border-0 shadow-sm d-flex flex-column">
                                     <div className="mb-4">
-                                        <label className="modern-label">หมวดหมู่</label>
+                                        <label className="fw-bold text-navy mb-2">หมวดหมู่ <span className="text-danger">*</span></label>
                                         <Form.Select 
-                                            className="modern-select w-100" 
+                                            className="form-select form-select-lg border-0 shadow-none rounded-3" 
                                             value={category} 
                                             onChange={(e) => setCategory(e.target.value)} 
                                             required
+                                            style={{ fontSize: '1rem' }}
                                         >
                                             <option value="">-- เลือกหมวดหมู่ --</option>
                                             {categories.map(c => (
@@ -193,17 +195,17 @@ const NewsManagement = () => {
                                         </Form.Select>
                                     </div>
 
-                                    <div className="mb-4">
-                                        <label className="modern-label">รูปภาพหน้าปก</label>
-                                        <div className="modern-upload-box">
+                                    <div className="mb-4 flex-grow-1">
+                                        <label className="fw-bold text-navy mb-2">รูปภาพหน้าปก</label>
+                                        <div className="position-relative d-flex align-items-center justify-content-center bg-white rounded-4 border overflow-hidden shadow-sm" style={{ minHeight: '180px', transition: 'all 0.3s' }}>
                                             <input type="file" accept="image/*" style={{position:'absolute', width:'100%', height:'100%', opacity:0, cursor:'pointer', zIndex:2}} onChange={handleFileChange} />
                                             {previewUrl ? (
-                                                <Image src={previewUrl} className="preview-img" />
+                                                <Image src={previewUrl} style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'absolute' }} />
                                             ) : (
-                                                <div className="text-center text-muted opacity-50 position-relative z-1">
-                                                    <FaCloudUploadAlt size={40} className="mb-2" />
-                                                    <p className="small mb-0 fw-bold">คลิกอัปโหลดรูปภาพ</p>
-                                                    <small style={{fontSize:'0.75rem'}}>JPG, PNG</small>
+                                                <div className="text-center text-muted opacity-50 z-1 p-3">
+                                                    <FaCloudUploadAlt size={40} className="mb-2 text-primary" />
+                                                    <p className="small mb-0 fw-bold">คลิกเพื่ออัปโหลดรูปภาพ</p>
+                                                    <small style={{fontSize:'0.75rem'}}>รองรับไฟล์ JPG, PNG</small>
                                                 </div>
                                             )}
                                         </div>
@@ -211,8 +213,10 @@ const NewsManagement = () => {
 
                                     <Button 
                                         type="submit" 
-                                        className={`btn-modern-action w-100 ${isEditing ? 'edit-mode' : ''}`}
+                                        variant={isEditing ? "warning" : "primary"}
+                                        className="w-100 py-3 rounded-pill fw-bold shadow-sm d-flex justify-content-center align-items-center"
                                         disabled={loading}
+                                        style={{ fontSize: '1.05rem', transition: 'all 0.3s' }}
                                     >
                                         {loading ? <Spinner animation="border" size="sm" /> : (isEditing ? <><FaSave className="me-2"/> บันทึกการแก้ไข</> : <><FaPaperPlane className="me-2"/> เผยแพร่ประกาศ</>)}
                                     </Button>
@@ -223,64 +227,78 @@ const NewsManagement = () => {
                 </Card.Body>
             </Card>
 
-            {/* 3. Table Section */}
-            <Card className="glass-panel border-0 p-3">
-                <div className="d-flex justify-content-between align-items-center mb-3 px-3 pt-2">
-                    <div className="fw-bold pcshs-blue-deep fs-5"><FaList className="me-2"/> ประวัติการประกาศ ({newsList.length})</div>
+            {/* 3. Table Section (ใช้ตารางกระจกแบบพรีเมียม) */}
+            <div className="glass-panel modern-table-container p-3">
+                <div className="table-top-bar-modern d-flex justify-content-between align-items-center mb-3 px-3">
+                    <div className="fw-bold pcshs-blue-deep d-flex align-items-center fs-5">
+                        <FaList className="me-3 text-primary"/> ประวัติการประกาศข่าวสาร ({newsList.length})
+                    </div>
                 </div>
-                <div className="table-responsive px-2">
-                    <table className="news-table">
+                <div className="table-responsive px-2 pb-2 overflow-visible">
+                    <table className="pcshs-archive-table w-100">
                         <thead>
                             <tr>
-                                <th style={{width:'15%'}}>วันที่ประกาศ</th>
-                                <th style={{width:'10%'}}>รูปปก</th>
+                                <th className="ps-4" style={{width:'15%'}}>วันที่ลงประกาศ</th>
+                                <th style={{width:'15%'}}>รูปปก</th>
                                 <th style={{width:'35%'}}>หัวข้อข่าว</th>
                                 <th style={{width:'15%'}}>หมวดหมู่</th>
-                                <th style={{width:'15%'}}>ผู้ลงประกาศ</th>
-                                <th className="text-end" style={{width:'10%'}}>จัดการ</th>
+                                <th className="text-end pe-4" style={{width:'20%'}}>จัดการ</th>
                             </tr>
                         </thead>
                         <tbody>
                             {newsList.length === 0 ? (
-                                <tr><td colSpan="6" className="text-center py-5 text-muted">ไม่พบข้อมูลข่าวสาร</td></tr>
+                                <tr>
+                                    <td colSpan="5" className="text-center py-5">
+                                        <div className="p-4 d-inline-block opacity-50">
+                                            <FaBullhorn className="display-4 text-muted mb-3"/>
+                                            <h5 className="text-muted">ยังไม่มีข้อมูลประกาศข่าวสาร</h5>
+                                        </div>
+                                    </td>
+                                </tr>
                             ) : (
                                 newsList.map((news) => {
                                     const date = new Date(news.created_at || Date.now());
                                     return (
-                                        <tr key={news.news_id} className="news-row-card">
-                                            <td>
-                                                <div className="d-flex align-items-center">
-                                                    <div className="date-box me-2">
-                                                        <div className="date-d">{date.getDate()}</div>
-                                                        <div className="date-m">{date.toLocaleDateString('th-TH', { month: 'short' })}</div>
-                                                    </div>
-                                                    <small className="text-muted">{date.getFullYear() + 543}</small>
+                                        <tr key={news.news_id} className="archive-row-card">
+                                            <td className="ps-4">
+                                                <div className="date-badge">
+                                                    <span className="date-day d-block">{date.getDate()}</span>
+                                                    <span className="date-month">{date.toLocaleDateString('th-TH', { month: 'short' })}</span>
+                                                </div>
+                                                <div className="time-sub-modern mt-1">
+                                                    ปี {date.getFullYear() + 543}
                                                 </div>
                                             </td>
                                             <td>
-                                                {news.image_url ? (
-                                                    <Image src={news.image_url} className="news-thumb-modern" />
-                                                ) : (
-                                                    <div className="bg-light rounded text-center py-2 text-muted news-thumb-modern"><FaImage/></div>
-                                                )}
+                                                <div className="rounded-3 overflow-hidden shadow-sm border bg-light d-flex align-items-center justify-content-center" style={{ width: '80px', height: '60px' }}>
+                                                    {news.image_url ? (
+                                                        <Image src={news.image_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                    ) : (
+                                                        <FaImage className="text-muted opacity-50" size={24}/>
+                                                    )}
+                                                </div>
                                             </td>
                                             <td>
-                                                <div className="fw-bold text-dark text-truncate" style={{maxWidth:'300px'}}>{news.title}</div>
-                                            </td>
-                                            <td>
-                                                {/* ✅ เปลี่ยนเป็นแสดงหมวดหมู่ที่ถูกต้อง */}
-                                                <span className="cat-badge">{news.category_name || news.category || 'ทั่วไป'}</span>
-                                            </td>
-                                            <td>
+                                                <div className="fw-bold text-dark text-truncate mb-1 fs-6" style={{maxWidth:'300px'}}>{news.title}</div>
                                                 <div className="d-flex align-items-center text-muted" style={{fontSize:'0.85rem'}}>
-                                                    <FaUserCircle className="me-2 text-primary opacity-50"/> {news.author_name || 'Admin'}
+                                                    <div className="student-avatar-glow me-1" style={{width:'20px', height:'20px', fontSize:'0.7rem', background:'#eef2fc', color:'#3b82f6'}}><FaUserCircle/></div> 
+                                                    {news.author_name || 'Admin'}
                                                 </div>
                                             </td>
-                                            <td className="text-end">
-                                                <div className="d-flex justify-content-end">
-                                                    <button className="action-btn-circle" onClick={() => handleViewClick(news)}><FaEye /></button>
-                                                    <button className="action-btn-circle" onClick={() => handleEditClick(news)}><FaEdit /></button>
-                                                    <button className="action-btn-circle delete" onClick={() => handleDelete(news.news_id)}><FaTrash /></button>
+                                            <td>
+                                                <span className="info-pill"><FaTag className="me-1 text-primary"/> {news.category_name || news.category || 'ทั่วไป'}</span>
+                                            </td>
+                                            <td className="text-end pe-4">
+                                                <div className="d-flex justify-content-end gap-2">
+                                                    <Button variant="light" className="btn-sm rounded-circle shadow-sm border d-flex align-items-center justify-content-center text-primary" style={{width:'35px', height:'35px'}} onClick={() => handleViewClick(news)}>
+                                                        <FaEye />
+                                                    </Button>
+                                                    <Button variant="light" className="btn-sm rounded-circle shadow-sm border d-flex align-items-center justify-content-center text-warning" style={{width:'35px', height:'35px'}} onClick={() => handleEditClick(news)}>
+                                                        <FaEdit />
+                                                    </Button>
+                                                    <Button variant="light" className="btn-sm rounded-circle shadow-sm border d-flex align-items-center justify-content-center text-danger" style={{width:'35px', height:'35px'}} onClick={() => handleDelete(news.news_id)}>
+                                                        <FaTrash />
+                                                    </Button>
                                                 </div>
                                             </td>
                                         </tr>
@@ -290,23 +308,35 @@ const NewsManagement = () => {
                         </tbody>
                     </table>
                 </div>
-            </Card>
+            </div>
 
-            {/* 4. Modal View */}
-            <Modal show={showViewModal} onHide={() => setShowViewModal(false)} size="lg" centered contentClassName="modern-modal-content">
+            {/* 4. Modal View (ปรับปรุงให้ดูคลีนขึ้น) */}
+            <Modal show={showViewModal} onHide={() => setShowViewModal(false)} size="lg" centered className="details-modal">
                 {selectedNews && (
-                    <Modal.Body className="p-0">
+                    <Modal.Body className="p-0 border-0 rounded-4 overflow-hidden shadow-lg">
                         <div className="position-relative" style={{height:'350px', background:'#2d3748'}}>
-                            {selectedNews.image_url && <Image src={selectedNews.image_url} style={{width:'100%', height:'100%', objectFit:'cover', opacity:0.6}} />}
-                            <div className="position-absolute bottom-0 start-0 p-4 w-100 text-white" style={{background:'linear-gradient(to top, rgba(0,0,0,0.8), transparent)'}}>
-                                <Badge bg="warning" text="dark" className="mb-2">{selectedNews.category_name || selectedNews.category}</Badge>
-                                <h3 className="fw-bold">{selectedNews.title}</h3>
-                                <div className="small opacity-75"><FaClock className="me-1"/> {new Date(selectedNews.created_at).toLocaleDateString('th-TH', { dateStyle: 'long' })}</div>
+                            {selectedNews.image_url ? (
+                                <Image src={selectedNews.image_url} style={{width:'100%', height:'100%', objectFit:'cover', opacity:0.7}} />
+                            ) : (
+                                <div className="w-100 h-100 d-flex align-items-center justify-content-center opacity-25">
+                                    <FaImage size={80} color="white" />
+                                </div>
+                            )}
+                            <div className="position-absolute bottom-0 start-0 p-4 p-lg-5 w-100 text-white" style={{background:'linear-gradient(to top, rgba(0,0,0,0.9), transparent)'}}>
+                                <Badge bg="primary" className="mb-3 px-3 py-2 rounded-pill shadow-sm"><FaTag className="me-1"/> {selectedNews.category_name || selectedNews.category}</Badge>
+                                <h3 className="fw-bold mb-2">{selectedNews.title}</h3>
+                                <div className="small opacity-75 d-flex align-items-center">
+                                    <FaClock className="me-2"/> 
+                                    {new Date(selectedNews.created_at).toLocaleDateString('th-TH', { dateStyle: 'long' })}
+                                    <span className="mx-3">|</span>
+                                    <FaUserCircle className="me-2"/>
+                                    {selectedNews.author_name || 'Admin'}
+                                </div>
                             </div>
-                            <button className="position-absolute top-0 end-0 m-3 btn btn-light rounded-circle shadow-sm" onClick={() => setShowViewModal(false)} style={{width:40, height:40}}><FaTimes/></button>
+                            <button className="position-absolute top-0 end-0 m-3 btn btn-light rounded-circle shadow-sm d-flex align-items-center justify-content-center" onClick={() => setShowViewModal(false)} style={{width:40, height:40}}><FaTimes/></button>
                         </div>
-                        <div className="p-4 bg-white">
-                            <div className="text-secondary" style={{whiteSpace: 'pre-wrap', lineHeight: '1.8'}}>{selectedNews.content}</div>
+                        <div className="p-4 p-lg-5 bg-white">
+                            <div className="text-secondary fs-6" style={{whiteSpace: 'pre-wrap', lineHeight: '1.8'}}>{selectedNews.content}</div>
                         </div>
                     </Modal.Body>
                 )}
