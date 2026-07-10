@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
-import { Card, Form, Button, Row, Col, Alert, Spinner, Table } from 'react-bootstrap';
+// เพิ่มการนำเข้า Modal จาก react-bootstrap
+import { Card, Form, Button, Row, Col, Alert, Spinner, Table, Modal } from 'react-bootstrap';
 import { 
     FaGoogle, FaTrash, FaClock, FaCheckCircle, 
     FaPlusCircle, FaHistory, FaCalendarCheck,
@@ -22,6 +23,9 @@ const ScheduleManager = () => {
     const [loading, setLoading] = useState(true);
     const [deleting, setDeleting] = useState(false);
     const [isGoogleSynced, setIsGoogleSynced] = useState(false); 
+
+    // เพิ่ม State สำหรับควบคุมหน้าต่างยืนยันการลบ
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
 
     // --- ข้อมูลเดือนภาษาไทย ---
     const thaiMonths = [
@@ -65,7 +69,7 @@ const ScheduleManager = () => {
             const res = await axios.get('http://localhost:5000/api/calendar/status', { 
                 headers: { 'x-auth-token': token } 
             });
-            setIsGoogleSynced(res.data.is_google_synced); // อัปเดตปุ่มตามจริง
+            setIsGoogleSynced(res.data.is_google_synced); 
         } catch (err) {
             console.error("เช็คสถานะ Google ไม่สำเร็จ", err);
         }
@@ -73,7 +77,7 @@ const ScheduleManager = () => {
 
     useEffect(() => { 
         fetchMySlots(); 
-        checkGoogleStatus(); // เรียกใช้ตอนโหลดหน้าเว็บ
+        checkGoogleStatus(); 
         
         if (!calledOnce.current) {
             handleGoogleRedirect();
@@ -122,13 +126,12 @@ const ScheduleManager = () => {
         }
     };
 
-    // --- Logic การกรองข้อมูลตารางปฏิบัติงาน (Client-side Filtering) ---
+    // --- Logic การกรองข้อมูลตารางปฏิบัติงาน ---
     const filteredSlots = mySlots.filter(slot => {
         if (!slot.date) return true;
         
-        // แยกเอาส่วน YYYY-MM-DD
         const slotDateStr = slot.date.split('T')[0]; 
-        const [sYear, sMonth, sDay] = slotDateStr.split('-'); // จะได้สัดส่วนปี เดือน วัน แยกกัน
+        const [sYear, sMonth, sDay] = slotDateStr.split('-'); 
 
         const matchYear = filterYear ? sYear === filterYear : true;
         const matchMonth = filterMonth ? sMonth === filterMonth : true;
@@ -155,7 +158,6 @@ const ScheduleManager = () => {
 
     const toggleDeleteId = (id) => setDeleteIds(prev => prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]);
 
-    // เลือกทั้งหมดเฉพาะรายการที่ถูกกรองและสามารถลบได้เท่านั้น
     const handleSelectAll = () => {
         const deletableSlots = filteredSlots.filter(s => !s.appointment_id).map(s => s.schedule_id);
         if (deleteIds.length === deletableSlots.length && deletableSlots.length > 0) {
@@ -165,10 +167,11 @@ const ScheduleManager = () => {
         }
     };
 
+    // ฟังก์ชันทำลายข้อมูลจริงหลังกดยืนยันในหน้าต่างลบ
     const handleBatchDelete = async () => {
-        if (deleteIds.length === 0) return alert("กรุณาเลือกรายการที่จะลบ");
-        if (!window.confirm(`ยืนยันการลบ ${deleteIds.length} รายการ? (ระบบ Auto Sync จะลบออกจาก Google Calendar ด้วย)`)) return;
+        if (deleteIds.length === 0) return;
         
+        setShowDeleteModal(false); // ปิด Modal ทันทีที่กดตกลง
         setDeleting(true);
         let deletedCount = 0;
         const token = localStorage.getItem('token');
@@ -249,7 +252,6 @@ const ScheduleManager = () => {
                         <p>ระบบจัดการเวลาปฏิบัติงาน PCSHS Health Care</p>
                     </div>
                 </div>
-                {/* นำปุ่ม กลับหน้าหลัก ออกจากตรงนี้แล้ว */}
             </div>
 
             <Row className="g-4">
@@ -305,7 +307,8 @@ const ScheduleManager = () => {
                             
                             <div className="d-flex gap-2">
                                 {deleteIds.length > 0 && (
-                                    <Button variant="danger" className="btn-sm rounded-pill px-3 shadow-sm border-0" onClick={handleBatchDelete} disabled={deleting}>
+                                    // เปลี่ยนปุ่มลบให้ไปสั่งเปิดกล่อง Modal ยืนยัน
+                                    <Button variant="danger" className="btn-sm rounded-pill px-3 shadow-sm border-0" onClick={() => setShowDeleteModal(true)} disabled={deleting}>
                                         {deleting ? <Spinner size="sm"/> : <FaTrash className="me-1"/>} ลบ ({deleteIds.length})
                                     </Button>
                                 )}
@@ -322,7 +325,7 @@ const ScheduleManager = () => {
                             </div>
                         </div>
 
-                        {/* --- โซนตัวกรองการแสดงผล (แยก ปี - เดือนภาษาไทย) --- */}
+                        {/* --- โซนตัวกรองการแสดงผล --- */}
                         <div className="p-3 bg-light border-bottom">
                             <Row className="g-2 align-items-end">
                                 <Col xs={6} md={3}>
@@ -334,7 +337,7 @@ const ScheduleManager = () => {
                                             value={filterYear} 
                                             onChange={(e) => {
                                                 setFilterYear(e.target.value);
-                                                setFilterDate(''); // ล้างการระบุวันที่
+                                                setFilterDate(''); 
                                             }}
                                             className="form-select-sm"
                                         >
@@ -352,7 +355,7 @@ const ScheduleManager = () => {
                                             value={filterMonth} 
                                             onChange={(e) => {
                                                 setFilterMonth(e.target.value);
-                                                setFilterDate(''); // ล้างการระบุวันที่
+                                                setFilterDate(''); 
                                             }}
                                             className="form-select-sm"
                                         >
@@ -372,8 +375,8 @@ const ScheduleManager = () => {
                                             onChange={(e) => {
                                                 setFilterDate(e.target.value);
                                                 if (e.target.value) {
-                                                    setFilterYear('');  // ล้างค่าตัวกรองปีใหญ่
-                                                    setFilterMonth(''); // ล้างค่าตัวกรองเดือนใหญ่
+                                                    setFilterYear('');  
+                                                    setFilterMonth(''); 
                                                 }
                                             }}
                                             className="form-control-sm"
@@ -493,6 +496,41 @@ const ScheduleManager = () => {
                     </Card>
                 </Col>
             </Row>
+
+            {/* 🛠️ Modal ยืนยันการลบตารางงานแบบเป็นกลุ่ม (Batch Delete) สไตล์พรีเมียม */}
+            <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)} centered className="delete-confirmation-modal">
+                <Modal.Body className="p-4 text-center">
+                    <div className="delete-icon-box mx-auto mb-4">
+                        <FaTrash size={28} />
+                    </div>
+                    
+                    <h4 className="fw-bold text-navy mb-2" style={{ fontFamily: 'Prompt' }}>ยืนยันการลบตารางงาน?</h4>
+                    <p className="text-muted px-3 mb-4" style={{ fontSize: '0.95rem' }}>
+                        คุณแน่ใจหรือไม่ที่จะลบตารางปฏิบัติงานที่เลือกทั้งหมดจำนวน <strong className="text-danger">{deleteIds.length} รายการ</strong>?<br/>
+                        <span className="small text-muted mt-1 d-block">(ระบบ Auto Sync จะทำการลบเวลานี้ออกจาก Google Calendar ด้วย)</span>
+                    </p>
+
+                    <div className="d-flex justify-content-center gap-3">
+                        <Button 
+                            variant="light" 
+                            className="rounded-pill px-4 py-2 border fw-bold text-secondary"
+                            onClick={() => setShowDeleteModal(false)}
+                            style={{ minWidth: '120px' }}
+                        >
+                            ยกเลิก
+                        </Button>
+                        <Button 
+                            variant="danger" 
+                            className="rounded-pill px-4 py-2 fw-bold shadow-sm btn-delete-confirm"
+                            onClick={handleBatchDelete}
+                            style={{ minWidth: '120px', background: 'linear-gradient(135deg, #dc3545 0%, #bd2130 100%)', border: 'none' }}
+                        >
+                            ยืนยันการลบ
+                        </Button>
+                    </div>
+                </Modal.Body>
+            </Modal>
+
         </div>
     );
 };

@@ -24,6 +24,10 @@ const NewsManagement = () => {
     const [showViewModal, setShowViewModal] = useState(false);
     const [selectedNews, setSelectedNews] = useState(null);
 
+    // เพิ่ม State สำหรับจัดการ Modal ยืนยันการลบ
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [newsIdToDelete, setNewsIdToDelete] = useState(null);
+
     useEffect(() => {
         fetchCategories();
         fetchNewsHistory();
@@ -109,13 +113,27 @@ const NewsManagement = () => {
         }
     };
 
-    const handleDelete = async (id) => {
-        if(!window.confirm("ยืนยันการลบข่าวนี้?")) return;
+    // เปิด Modal ยืนยันก่อนทำการลบ
+    const handleOpenDeleteModal = (id) => {
+        setNewsIdToDelete(id);
+        setShowDeleteModal(true);
+    };
+
+    // กดยืนยันลบจริงจากใน Modal
+    const handleConfirmDelete = async () => {
+        if (!newsIdToDelete) return;
         try {
             const token = localStorage.getItem('token');
-            await axios.delete(`http://localhost:5000/api/news/${id}`, { headers: { 'x-auth-token': token } });
+            await axios.delete(`http://localhost:5000/api/news/${newsIdToDelete}`, { headers: { 'x-auth-token': token } });
+            setMessage({ type: 'success', text: '🗑️ ลบข่าวสารเรียบร้อยแล้ว' });
             fetchNewsHistory();
-        } catch (err) { alert("ลบไม่สำเร็จ"); }
+        } catch (err) { 
+            console.error(err);
+            setMessage({ type: 'danger', text: '❌ ลบไม่สำเร็จ เกิดข้อผิดพลาดในระบบ' }); 
+        } finally {
+            setShowDeleteModal(false);
+            setNewsIdToDelete(null);
+        }
     };
 
     return (
@@ -227,7 +245,7 @@ const NewsManagement = () => {
                 </Card.Body>
             </Card>
 
-            {/* 3. Table Section (ใช้ตารางกระจกแบบพรีเมียม) */}
+            {/* 3. Table Section */}
             <div className="glass-panel modern-table-container p-3">
                 <div className="table-top-bar-modern d-flex justify-content-between align-items-center mb-3 px-3">
                     <div className="fw-bold pcshs-blue-deep d-flex align-items-center fs-5">
@@ -296,7 +314,8 @@ const NewsManagement = () => {
                                                     <Button variant="light" className="btn-sm rounded-circle shadow-sm border d-flex align-items-center justify-content-center text-warning" style={{width:'35px', height:'35px'}} onClick={() => handleEditClick(news)}>
                                                         <FaEdit />
                                                     </Button>
-                                                    <Button variant="light" className="btn-sm rounded-circle shadow-sm border d-flex align-items-center justify-content-center text-danger" style={{width:'35px', height:'35px'}} onClick={() => handleDelete(news.news_id)}>
+                                                    {/* เปลี่ยนปุ่มลบเดิมให้มาเปิดกล่อง Modal แจ้งเตือนสวยๆ */}
+                                                    <Button variant="light" className="btn-sm rounded-circle shadow-sm border d-flex align-items-center justify-content-center text-danger" style={{width:'35px', height:'35px'}} onClick={() => handleOpenDeleteModal(news.news_id)}>
                                                         <FaTrash />
                                                     </Button>
                                                 </div>
@@ -310,7 +329,7 @@ const NewsManagement = () => {
                 </div>
             </div>
 
-            {/* 4. Modal View (ปรับปรุงให้ดูคลีนขึ้น) */}
+            {/* 4. Modal View */}
             <Modal show={showViewModal} onHide={() => setShowViewModal(false)} size="lg" centered className="details-modal">
                 {selectedNews && (
                     <Modal.Body className="p-0 border-0 rounded-4 overflow-hidden shadow-lg">
@@ -341,6 +360,40 @@ const NewsManagement = () => {
                     </Modal.Body>
                 )}
             </Modal>
+
+            {/* 5. Modal ยืนยันการลบแบบโมเดิร์น (เรืองแสงสไตล์มินิมอล) */}
+            <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)} centered className="delete-confirmation-modal">
+                <Modal.Body className="p-4 text-center">
+                    <div className="delete-icon-box mx-auto mb-4">
+                        <FaTrash size={28} />
+                    </div>
+                    
+                    <h4 className="fw-bold text-navy mb-2" style={{ fontFamily: 'Prompt' }}>ยืนยันการลบข่าวสาร?</h4>
+                    <p className="text-muted px-3 mb-4" style={{ fontSize: '0.95rem' }}>
+                        คุณแน่ใจหรือไม่ที่จะลบประกาศข่าวสารนี้? เมื่อลบแล้วข้อมูลนี้จะไม่สามารถกู้คืนกลับมาได้อีก
+                    </p>
+
+                    <div className="d-flex justify-content-center gap-3">
+                        <Button 
+                            variant="light" 
+                            className="rounded-pill px-4 py-2 border fw-bold text-secondary"
+                            onClick={() => setShowDeleteModal(false)}
+                            style={{ minWidth: '120px' }}
+                        >
+                            ยกเลิก
+                        </Button>
+                        <Button 
+                            variant="danger" 
+                            className="rounded-pill px-4 py-2 fw-bold shadow-sm btn-delete-confirm"
+                            onClick={handleConfirmDelete}
+                            style={{ minWidth: '120px', background: 'linear-gradient(135deg, #dc3545 0%, #bd2130 100%)', border: 'none' }}
+                        >
+                            ยืนยันการลบ
+                        </Button>
+                    </div>
+                </Modal.Body>
+            </Modal>
+
         </div>
     );
 };
