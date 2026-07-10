@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Card, Form, Button, Row, Col, Alert, Spinner, Image, Badge } from 'react-bootstrap';
-import { FaUser, FaPhone, FaVenusMars, FaCamera, FaQuoteLeft, FaInfoCircle, FaUserMd } from 'react-icons/fa';
+import { Card, Form, Button, Row, Col, Alert, Spinner, Image } from 'react-bootstrap';
+import { FaUser, FaPhone, FaVenusMars, FaCamera, FaQuoteLeft, FaInfoCircle, FaUserMd, FaEdit, FaTimes } from 'react-icons/fa';
 
-// ✅ นำเข้า CSS
-import './Psychologist.css';       // CSS หลัก (Theme)
-import './ProfileEditor.css';      // CSS เฉพาะหน้านี้
+import './Psychologist.css';       
+import './ProfileEditor.css';      
 
 const ProfileEditor = () => {
     const [profile, setProfile] = useState({
@@ -15,6 +14,8 @@ const ProfileEditor = () => {
     const [previewUrl, setPreviewUrl] = useState('');
     const [loading, setLoading] = useState(true);
     const [message, setMessage] = useState(null);
+
+    const [isEditing, setIsEditing] = useState(false);
 
     useEffect(() => {
         fetchProfile();
@@ -43,6 +44,13 @@ const ProfileEditor = () => {
         }
     };
 
+    const handleCancel = () => {
+        fetchProfile();
+        setSelectedFile(null);
+        setIsEditing(false);
+        setMessage(null);
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setMessage(null);
@@ -62,7 +70,10 @@ const ProfileEditor = () => {
                 }
             });
             setMessage({ type: 'success', text: 'บันทึกการเปลี่ยนแปลงเรียบร้อยแล้ว' });
-            fetchProfile(); // โหลดข้อมูลใหม่
+            
+            setIsEditing(false); 
+            setSelectedFile(null);
+            fetchProfile(); 
         } catch (err) {
             setMessage({ type: 'danger', text: 'เกิดข้อผิดพลาดในการบันทึกข้อมูล' });
         }
@@ -77,7 +88,6 @@ const ProfileEditor = () => {
 
     return (
         <div className="fade-in-up">
-            {/* Header Title */}
             <div className="header-brand-border">
                 <h2 className="fw-bold pcshs-navy m-0 display-6">
                     <FaUserMd className="me-3 text-warning" /> 
@@ -87,7 +97,6 @@ const ProfileEditor = () => {
             </div>
 
             <Card className="stat-card-ultra">
-                {/* Decorative Top Bar */}
                 <div style={{ height: '6px', background: 'linear-gradient(90deg, var(--pcshs-blue-deep) 0%, var(--pcshs-orange) 100%)' }}></div>
                 
                 <Card.Body className="p-4 p-lg-5 position-relative">
@@ -99,7 +108,7 @@ const ProfileEditor = () => {
 
                     <Form onSubmit={handleSubmit}>
                         <Row className="align-items-start">
-                            {/* --- Left Column: Avatar --- */}
+                            {/* --- โซนรูปโปรไฟล์ --- */}
                             <Col lg={4} className="text-center mb-5 mb-lg-0">
                                 <div className="avatar-wrapper">
                                     <div className="stat-orb" style={{ width: '220px', height: '220px', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', opacity: 0.15, background: 'var(--pcshs-orange)' }}></div>
@@ -110,17 +119,21 @@ const ProfileEditor = () => {
                                         className="profile-img-preview"
                                     />
                                     
-                                    <Form.Label htmlFor="imageUpload" className="btn-camera-upload">
-                                        <FaCamera size={20} />
-                                    </Form.Label>
-                                    <Form.Control type="file" id="imageUpload" hidden onChange={handleFileChange} accept="image/*" />
+                                    {isEditing && (
+                                        <>
+                                            <Form.Label htmlFor="imageUpload" className="btn-camera-upload">
+                                                <FaCamera size={20} />
+                                            </Form.Label>
+                                            <Form.Control type="file" id="imageUpload" hidden onChange={handleFileChange} accept="image/*" />
+                                        </>
+                                    )}
                                 </div>
                                 <div className="mt-4">
                                     <span className="badge-role">Professional Identity</span>
                                 </div>
                             </Col>
 
-                            {/* --- Right Column: Form Data --- */}
+                            {/* --- โซนข้อมูลส่วนตัว --- */}
                             <Col lg={8}>
                                 <div className="mb-4 pb-2 border-bottom">
                                     <h5 className="fw-bold text-dark mb-1">ข้อมูลพื้นฐานผู้เชี่ยวชาญ</h5>
@@ -135,6 +148,7 @@ const ProfileEditor = () => {
                                                 value={profile.fullname} 
                                                 onChange={e => setProfile({...profile, fullname: e.target.value})} 
                                                 placeholder="ระบุชื่อจริง-นามสกุล"
+                                                disabled={!isEditing}
                                             />
                                         </Form.Group>
                                     </Col>
@@ -146,6 +160,7 @@ const ProfileEditor = () => {
                                                 value={profile.phone} 
                                                 onChange={e => setProfile({...profile, phone: e.target.value})} 
                                                 placeholder="0XX-XXX-XXXX"
+                                                disabled={!isEditing}
                                             />
                                         </Form.Group>
                                     </Col>
@@ -156,6 +171,7 @@ const ProfileEditor = () => {
                                                 className="form-select-custom"
                                                 value={profile.gender} 
                                                 onChange={e => setProfile({...profile, gender: e.target.value})}
+                                                disabled={!isEditing}
                                             >
                                                 <option value="">ระบุเพศ</option>
                                                 <option value="Male">ชาย (Male)</option>
@@ -174,16 +190,40 @@ const ProfileEditor = () => {
                                                 placeholder="เขียนอธิบายความเชี่ยวชาญหรือแนวทางการดูแลนักเรียน..."
                                                 value={profile.bio} 
                                                 onChange={e => setProfile({...profile, bio: e.target.value})} 
+                                                disabled={!isEditing}
                                             />
                                         </Form.Group>
                                     </Col>
                                 </Row>
 
+                                {/* --- โซนปุ่มควบคุม --- */}
                                 <div className="text-end mt-5">
-                                    <Button type="submit" className="btn-save-profile">
-                                        บันทึกการเปลี่ยนแปลง
-                                    </Button>
+                                    {!isEditing ? (
+                                        <Button 
+                                            type="button" 
+                                            className="px-4 py-2 rounded-pill fw-bold shadow-sm"
+                                            onClick={() => setIsEditing(true)}
+                                            style={{ background: 'linear-gradient(135deg, #003366 0%, #00234B 100%)', border: 'none', color: '#fff' }}
+                                        >
+                                            <FaEdit className="me-2" /> แก้ไขข้อมูล
+                                        </Button>
+                                    ) : (
+                                        <div className="d-flex justify-content-end gap-2">
+                                            <Button 
+                                                type="button" 
+                                                variant="light" 
+                                                className="rounded-pill px-4 py-2 fw-bold text-secondary border shadow-sm"
+                                                onClick={handleCancel}
+                                            >
+                                                <FaTimes className="me-2" /> ยกเลิก
+                                            </Button>
+                                            <Button type="submit" className="btn-save-profile px-4 py-2 rounded-pill fw-bold shadow-sm">
+                                                บันทึกการเปลี่ยนแปลง
+                                            </Button>
+                                        </div>
+                                    )}
                                 </div>
+
                             </Col>
                         </Row>
                     </Form>
