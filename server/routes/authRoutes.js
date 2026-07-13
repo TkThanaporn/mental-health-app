@@ -18,7 +18,7 @@ router.post('/register-request', async (req, res) => {
 
     try {
         // 1. ตรวจสอบว่าอีเมลนี้ถูกใช้งานไปหรือยัง
-        const [existingUsers] = await db.execute('SELECT user_id, is_verified FROM users AWHERE email = ?', [email]);
+        const [existingUsers] = await db.execute('SELECT user_id, is_verified FROM users WHERE email = ?', [email]);
         
         if (existingUsers.length > 0) {
             // ถ้ามีอีเมลในระบบ และยืนยันตัวตนแล้ว -> สมัครซ้ำไม่ได้
