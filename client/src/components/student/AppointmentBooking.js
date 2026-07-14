@@ -168,7 +168,7 @@ const AppointmentBooking = () => {
                     <Card className="success-finish-card border-0 shadow-lg text-center p-5 fade-in-up">
                         <div className="success-icon-wrapper mb-4">🎉</div>
                         <h2 className="fw-bold text-navy mb-3">จองคิวสำเร็จแล้ว!</h2>
-                        <p className="text-muted mb-4">นักจิตวิทยาได้รับคำขอของคุณแล้ว แล้วพบกันนะครับ</p>
+                        <p className="text-muted mb-4">นักจิตวิทยาได้รับคำขอของคุณแล้ว</p>
                         <div className="d-flex justify-content-center gap-3">
                             <Button className="btn-pcshs-navy rounded-pill px-4" onClick={() => navigate('/student/appointments')} style={{ background: 'var(--navy)', color: 'white', border: 'none' }}>ดูนัดหมายของฉัน</Button>
                         </div>
