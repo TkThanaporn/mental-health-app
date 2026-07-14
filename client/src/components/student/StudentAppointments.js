@@ -117,7 +117,7 @@ const StudentAppointments = () => {
             await axios.post(`http://localhost:5000/api/appointments/feedback`, reviewData, {
                 headers: { 'x-auth-token': token }
             });
-            alert("ขอบคุณสำหรับการประเมินครับ! ความคิดเห็นของคุณช่วยให้เราพัฒนาได้ดียิ่งขึ้น");
+            alert("ขอบคุณสำหรับการประเมิน ความคิดเห็นของคุณช่วยให้เราพัฒนาได้ดียิ่งขึ้น");
             setShowReviewModal(false);
             fetchMyHistory(); 
         } catch (err) { alert("เกิดข้อผิดพลาดในการส่งข้อมูล"); }
