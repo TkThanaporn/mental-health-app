@@ -402,11 +402,11 @@ router.get("/psychologist-history", authMiddleware, async (req, res) => {
 });
 
 // ==========================================
-// 2. POST: จองนัดหมาย (สำหรับนักเรียน)
+// 2. POST: จองนัดหมาย (สำหรับนักเรียน) - 🌟 อัปเดตระบบ Group Members
 // ==========================================
 router.post("/", authMiddleware, async (req, res) => {
-  const { schedule_id, psychologist_id, note, type, consultation_type } =
-    req.body;
+  // ✅ 1. เพิ่ม group_members เข้ามาในตัวรับค่า
+  const { schedule_id, psychologist_id, note, type, consultation_type, group_members } = req.body;
   const student_user_id = req.user.id || req.user.user_id;
 
   if (!schedule_id || !psychologist_id) {
@@ -436,7 +436,8 @@ router.post("/", authMiddleware, async (req, res) => {
             VALUES (?, ?, ?, ?, ?, ?, 'pending')
         `;
 
-    await connection.query(sql, [
+    // ✅ 2. เก็บผลลัพธ์เพื่อนำค่า insertId ไปใช้งานต่อ
+    const [apptResult] = await connection.query(sql, [
       student_user_id,
       psychologist_id,
       schedule_id,
@@ -444,6 +445,29 @@ router.post("/", authMiddleware, async (req, res) => {
       (type || "online").toLowerCase(),
       (consultation_type || "individual").toLowerCase(),
     ]);
+
+    const newAppointmentId = apptResult.insertId;
+
+    // ✅ 3. เช็คเงื่อนไข และดึง user_id จากอีเมลเพื่อบันทึกลง groupmembers
+    if (consultation_type.toLowerCase() === 'group' && group_members && group_members.length > 0) {
+      // สร้าง ?,?,? ตามจำนวนอีเมลที่ส่งมา
+      const placeholders = group_members.map(() => '?').join(',');
+      
+      const [friendUsers] = await connection.query(
+        `SELECT user_id, email FROM users WHERE email IN (${placeholders})`,
+        group_members
+      );
+
+      // ถ้าระบบค้นหาเจอ user_id ของเพื่อน จะทำการจับคู่กับนัดหมาย
+      if (friendUsers.length > 0) {
+          const groupValues = friendUsers.map(friend => [newAppointmentId, friend.user_id]);
+          
+          await connection.query(
+              "INSERT INTO groupmembers (appointment_id, user_id) VALUES ?",
+              [groupValues]
+          );
+      }
+    }
 
     await connection.query(
       "UPDATE schedules SET is_available = 0 WHERE schedule_id = ?",
@@ -512,6 +536,8 @@ router.post("/", authMiddleware, async (req, res) => {
 router.get("/my-appointments", authMiddleware, async (req, res) => {
   try {
     const student_user_id = req.user.id || req.user.user_id;
+    
+    // 💡 1. เพิ่มคำสั่ง (SELECT GROUP_CONCAT...) เพื่อดึงอีเมลเพื่อน
     const sql = `
             SELECT 
                 a.*, 
@@ -519,7 +545,13 @@ router.get("/my-appointments", authMiddleware, async (req, res) => {
                 s.date AS appointment_date,
                 s.start_time,
                 s.end_time,
-                (SELECT COUNT(*) FROM feedback f WHERE f.appointment_id = a.appointment_id) AS is_reviewed
+                (SELECT COUNT(*) FROM feedback f WHERE f.appointment_id = a.appointment_id) AS is_reviewed,
+                (
+                    SELECT GROUP_CONCAT(u2.email SEPARATOR ',') 
+                    FROM groupmembers gm 
+                    JOIN users u2 ON gm.user_id = u2.user_id 
+                    WHERE gm.appointment_id = a.appointment_id
+                ) AS group_emails
             FROM appointments a
             JOIN users u ON a.psychologist_user_id = u.user_id
             JOIN schedules s ON a.schedule_id = s.schedule_id
@@ -527,7 +559,15 @@ router.get("/my-appointments", authMiddleware, async (req, res) => {
             ORDER BY s.date DESC, s.start_time ASC
         `;
     const [rows] = await db.query(sql, [student_user_id]);
-    res.json(rows);
+
+    // 💡 2. แปลงข้อความอีเมลที่ติดกัน (เช่น a@mail.com,b@mail.com) ให้เป็น Array
+    const formattedRows = rows.map(row => ({
+        ...row,
+        group_members: row.group_emails ? row.group_emails.split(',') : []
+    }));
+
+    // ส่ง formattedRows กลับไปให้ Frontend แทน
+    res.json(formattedRows);
   } catch (err) {
     console.error("Fetch Student History Error:", err);
     res.status(500).send("Server Error");
@@ -541,6 +581,7 @@ router.get("/psychologist-appointments", authMiddleware, async (req, res) => {
   try {
     const psychologist_user_id = req.user.id || req.user.user_id;
 
+    // ✅ อัปเดต Subquery เพื่อดึงอีเมลกลุ่มมาแสดงด้วย (ในกรณีที่คุณยังไม่ได้แก้ส่วนนี้)
     const sql = `
             SELECT 
                 a.*, 
@@ -549,7 +590,13 @@ router.get("/psychologist-appointments", authMiddleware, async (req, res) => {
                 s.date AS appointment_date,
                 s.start_time,
                 s.end_time,
-                ass.stress_level AS latest_assessment
+                ass.stress_level AS latest_assessment,
+                (
+                    SELECT GROUP_CONCAT(u2.email SEPARATOR ',') 
+                    FROM groupmembers gm 
+                    JOIN users u2 ON gm.user_id = u2.user_id 
+                    WHERE gm.appointment_id = a.appointment_id
+                ) AS group_emails
             FROM appointments a
             JOIN users u ON a.student_user_id = u.user_id
             JOIN schedules s ON a.schedule_id = s.schedule_id
@@ -567,7 +614,14 @@ router.get("/psychologist-appointments", authMiddleware, async (req, res) => {
         `;
 
     const [rows] = await db.query(sql, [psychologist_user_id]);
-    res.json(rows);
+    
+    // แปลงสตริงให้กลายเป็น Array สำหรับหน้า Frontend
+    const formattedRows = rows.map(row => ({
+        ...row,
+        group_members: row.group_emails ? row.group_emails.split(',') : []
+    }));
+
+    res.json(formattedRows);
   } catch (err) {
     console.error("Fetch Psych Appointments Error:", err);
     res.status(500).send("Server Error");
