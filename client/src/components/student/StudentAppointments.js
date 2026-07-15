@@ -9,13 +9,13 @@ import {
     FaCheckCircle, FaTimesCircle, FaExclamationCircle, FaListUl, FaAtom,
     FaThLarge, FaBars, FaInfoCircle, FaCheck, FaTimes, FaCircle,
     FaVideo, FaBuilding, FaClipboardList, FaStar, FaUserTimes,
-    FaCalendarPlus, FaUserFriends, FaUserGraduate, FaEnvelope // เพิ่ม Icon สำหรับ Modal
+    FaCalendarPlus, FaUserFriends, FaUserGraduate, FaEnvelope 
 } from 'react-icons/fa';
 
 import './StudentAppointments.css';
 import PCSHSNavbar from '../common/Navbar/PCSHSNavbar';
 
-// ✅ ฟังก์ชันช่วยสร้างลิงก์เพิ่มลง Google Calendar (อิงตามโค้ดต้นฉบับของคุณ)
+// ✅ ฟังก์ชันช่วยสร้างลิงก์เพิ่มลง Google Calendar
 const generateGoogleCalendarLink = (appt) => {
     if (!appt) return '#';
     try {
@@ -77,7 +77,6 @@ const StudentAppointments = () => {
     const [showChat, setShowChat] = useState(false);
     const [selectedChatAppt, setSelectedChatAppt] = useState(null);
     
-    // State สำหรับ Modal
     const [showDetails, setShowDetails] = useState(false);
     const [selectedApptDetails, setSelectedApptDetails] = useState(null);
 
@@ -136,12 +135,46 @@ const StudentAppointments = () => {
         return counts;
     }, [appointments]);
 
+    // 🔥 ส่วนที่แก้ไข: ดันสถานะเสร็จสิ้น/ยกเลิกไปไว้ข้างล่างสุด และเรียงวันเวลาที่เหลือจากใกล้ไปไกล
     const filteredAppointments = useMemo(() => {
-        if (filterStatus === 'All') return appointments;
-        if (filterStatus === 'cancelled') {
-            return appointments.filter(appt => ['cancelled', 'no-show'].includes(String(appt.status).toLowerCase()));
+        let result = [];
+        
+        // 1. คัดกรองสถานะตาม Tab ที่เลือกก่อน
+        if (filterStatus === 'All') {
+            result = [...appointments];
+        } else if (filterStatus === 'cancelled') {
+            result = appointments.filter(appt => ['cancelled', 'no-show'].includes(String(appt.status).toLowerCase()));
+        } else {
+            result = appointments.filter(appt => String(appt.status).toLowerCase() === filterStatus.toLowerCase());
         }
-        return appointments.filter(appt => String(appt.status).toLowerCase() === filterStatus.toLowerCase());
+
+        // 2. จัดเรียงลำดับ
+        return result.sort((a, b) => {
+            const statusA = String(a.status).toLowerCase();
+            const statusB = String(b.status).toLowerCase();
+            
+            // กำหนด Weight: กลุ่มประวัติที่จบแล้ว (completed, cancelled, no-show) = 1, กลุ่ม Active = 0
+            const isPastA = ['completed', 'cancelled', 'no-show'].includes(statusA) ? 1 : 0;
+            const isPastB = ['completed', 'cancelled', 'no-show'].includes(statusB) ? 1 : 0;
+            
+            // ถ้าสถานะอยู่คนละกลุ่ม ให้เอาอันที่เป็น Active (0) ขึ้นก่อน Past (1)
+            if (isPastA !== isPastB) {
+                return isPastA - isPastB; 
+            }
+
+            // ถ้าอยู่ในกลุ่มประเภทเดียวกัน ค่อยมาพิจารณาวันที่และเวลา (เก่าไปใหม่ - ใกล้สุดขึ้นก่อน)
+            const getDateStr = (val) => val ? String(val).substring(0, 10) : '1970-01-01';
+            
+            const dateA = getDateStr(a.date || a.appointment_date);
+            const timeA = a.start_time || a.appointment_time || '00:00:00';
+            const dateTimeA = new Date(`${dateA}T${timeA}`);
+            
+            const dateB = getDateStr(b.date || b.appointment_date);
+            const timeB = b.start_time || b.appointment_time || '00:00:00';
+            const dateTimeB = new Date(`${dateB}T${timeB}`);
+            
+            return dateTimeA - dateTimeB; 
+        });
     }, [filterStatus, appointments]);
 
     const formatTimeSlot = (start, end, apptTime) => {
@@ -200,7 +233,6 @@ const StudentAppointments = () => {
         return <span className="text-dark fw-semibold d-flex align-items-center"><FaBuilding className="text-muted me-2"/> พบตัว (On-site)</span>;
     };
 
-    // Helper เฉพาะสำหรับ Modal 
     const getConsultationTypeBadge = (cType) => {
         const t = cType ? String(cType).toLowerCase() : '';
         if (t === 'group' || t === 'กลุ่ม') {
@@ -408,7 +440,7 @@ const StudentAppointments = () => {
                 </Modal.Footer>
             </Modal>
 
-            {/* 🌟 Details Modal ที่ถูกอัปเกรดเนื้อหา 🌟 */}
+            {/* Details Modal */}
             <Modal show={showDetails} onHide={() => setShowDetails(false)} size="md" centered className="details-modal">
                 <Modal.Header closeButton className="border-0 pb-0">
                     <Modal.Title className="fw-bold text-navy"><FaClipboardList className="me-2 text-primary"/>รายละเอียดการนัดหมาย</Modal.Title>
@@ -440,7 +472,7 @@ const StudentAppointments = () => {
                                 </Row>
                             </div>
 
-                            {/* 🌟 แสดงรายชื่อเพื่อน หากเป็นการนัดหมายแบบกลุ่ม */}
+                            {/* แสดงรายชื่อเพื่อน หากเป็นการนัดหมายแบบกลุ่ม */}
                             {(selectedApptDetails.consultation_type?.toLowerCase() === 'group' || selectedApptDetails.consultation_type === 'กลุ่ม') && (
                                 <div className="info-group mb-3 p-3 rounded-4" style={{backgroundColor: '#f9f6ff', border: '1px solid #e1d5f5'}}>
                                     <div className="text-purple small fw-bold mb-2 d-flex align-items-center" style={{color: '#6f42c1'}}>
