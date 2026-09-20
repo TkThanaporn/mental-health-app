@@ -2,7 +2,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../config/db');
-const bcrypt = require('bcryptjs'); // ✅ เปลี่ยนเป็น bcryptjs ให้เหมือน authRoutes
+const bcrypt = require('bcryptjs'); 
 const { authMiddleware, authorizeRole } = require('../middleware/auth');
 
 const defaultDashboardYears = [2025];
@@ -212,125 +212,12 @@ const buildReportHtml = (stats, printable = false) => {
 </html>`;
 };
 
+// ==========================================
+// 1. API ดึงสถิติ Dashboard และ Export
+// ==========================================
 router.get('/summary', authMiddleware, authorizeRole(['Admin']), async (req, res, next) => {
     try {
         return res.json(await getDashboardStats(req.query.year));
-
-        const currentYear = new Date().getFullYear();
-        const requestedYear = parseInt(req.query.year, 10);
-        const selectedYear = Number.isInteger(requestedYear) ? requestedYear : currentYear;
-        const monthLabels = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
-        const gradeLabels = ['ม.1', 'ม.2', 'ม.3', 'ม.4', 'ม.5', 'ม.6'];
-
-        const [students] = await db.query("SELECT COUNT(*) as count FROM users WHERE role = 'Student'");
-        const [psychologists] = await db.query("SELECT COUNT(*) as count FROM users WHERE role = 'Psychologist'");
-        const [admins] = await db.query("SELECT COUNT(*) as count FROM users WHERE role = 'Admin'");
-        const [totalUsers] = await db.query("SELECT COUNT(*) as count FROM users WHERE role IN ('Student', 'Psychologist', 'Admin')");
-        const [roleRows] = await db.query(`
-            SELECT role, COUNT(*) AS count
-            FROM users
-            WHERE role IN ('Student', 'Psychologist', 'Admin')
-            GROUP BY role
-        `);
-
-        let confirmedAppointments = 0;
-        try {
-            const [appt] = await db.query("SELECT COUNT(*) as count FROM appointments WHERE status = 'confirmed'");
-            confirmedAppointments = appt[0].count;
-        } catch (e) { console.log("Appointments table not ready"); }
-
-        let pendingAssessments = 0;
-        try {
-            const [assess] = await db.query("SELECT COUNT(*) as count FROM assessments");
-            pendingAssessments = assess[0].count;
-        } catch (e) { console.log("Assessments table not ready"); }
-
-        let availableYears = [currentYear];
-        let monthlyConsultations = monthLabels.map((label, index) => ({ month: index + 1, label, count: 0 }));
-        let dormitoryUsage = [];
-        let gradeUsage = gradeLabels.map((grade) => ({ grade, count: 0 }));
-        let yearlyAppointments = 0;
-
-        try {
-            const [yearRows] = await db.query(`
-                SELECT DISTINCT YEAR(booking_date) AS year
-                FROM appointments
-                WHERE booking_date IS NOT NULL
-                ORDER BY year DESC
-            `);
-            availableYears = yearRows.map((row) => row.year).filter(Boolean);
-            if (!availableYears.includes(currentYear)) availableYears.unshift(currentYear);
-            if (!availableYears.includes(selectedYear)) availableYears.unshift(selectedYear);
-
-            const [monthlyRows] = await db.query(`
-                SELECT MONTH(booking_date) AS month, COUNT(*) AS count
-                FROM appointments
-                WHERE YEAR(booking_date) = ?
-                GROUP BY MONTH(booking_date)
-            `, [selectedYear]);
-            monthlyConsultations = monthlyConsultations.map((item) => {
-                const found = monthlyRows.find((row) => Number(row.month) === item.month);
-                return { ...item, count: found ? Number(found.count) : 0 };
-            });
-            yearlyAppointments = monthlyConsultations.reduce((sum, item) => sum + item.count, 0);
-
-            const [dormRows] = await db.query(`
-                SELECT
-                    COALESCE(NULLIF(TRIM(u.dormitory), ''), 'ไม่ระบุ') AS dormitory,
-                    COUNT(DISTINCT a.student_user_id) AS count
-                FROM appointments a
-                JOIN users u ON a.student_user_id = u.user_id
-                WHERE YEAR(a.booking_date) = ? AND u.role = 'Student'
-                GROUP BY COALESCE(NULLIF(TRIM(u.dormitory), ''), 'ไม่ระบุ')
-                ORDER BY count DESC
-                LIMIT 10
-            `, [selectedYear]);
-            dormitoryUsage = dormRows.map((row) => ({ dormitory: row.dormitory, count: Number(row.count) }));
-
-            const [gradeRows] = await db.query(`
-                SELECT u.education_level AS grade, COUNT(DISTINCT a.student_user_id) AS count
-                FROM appointments a
-                JOIN users u ON a.student_user_id = u.user_id
-                WHERE YEAR(a.booking_date) = ? AND u.role = 'Student'
-                GROUP BY u.education_level
-            `, [selectedYear]);
-            const gradeCountMap = gradeRows.reduce((map, row) => {
-                const match = String(row.grade || '').match(/[1-6]/);
-                if (match) {
-                    const label = `ม.${match[0]}`;
-                    map[label] = (map[label] || 0) + Number(row.count);
-                }
-                return map;
-            }, {});
-            gradeUsage = gradeUsage.map((item) => ({ ...item, count: gradeCountMap[item.grade] || 0 }));
-        } catch (e) {
-            console.log("Dashboard chart data not ready:", e.message);
-        }
-
-        const roleCountMap = roleRows.reduce((map, row) => {
-            map[row.role] = Number(row.count);
-            return map;
-        }, {});
-
-        res.json({
-            selectedYear,
-            availableYears,
-            total_users: totalUsers[0].count,
-            total_students: students[0].count,
-            total_admins: admins[0].count,
-            pending_assessments: pendingAssessments,
-            confirmed_appointments: confirmedAppointments,
-            yearly_appointments: yearlyAppointments,
-            pending_psychologists: psychologists[0].count,
-            roleSummary: [
-                { role: 'Student', label: 'นักเรียน', count: roleCountMap.Student || 0 },
-                { role: 'Psychologist', label: 'นักจิตวิทยา', count: roleCountMap.Psychologist || 0 },
-                { role: 'Admin', label: 'ผู้ดูแลระบบ', count: roleCountMap.Admin || 0 }
-            ],
-            monthlyConsultations,
-            dormitoryUsage,
-            gradeUsage
-        });
     } catch (err) {
         next(err);
     }
@@ -360,7 +247,6 @@ router.get('/export/report', authMiddleware, authorizeRole(['Admin']), async (re
     }
 });
 
-
 // ==========================================
 // 1.5 🔔 ดึงรายชื่อผู้ใช้ใหม่ล่าสุด (สำหรับแจ้งเตือนกระดิ่ง)
 // ==========================================
@@ -376,11 +262,9 @@ router.get('/notifications/new-users', authMiddleware, authorizeRole(['Admin']),
         const [rows] = await db.query(sql);
         res.json(rows);
     } catch (err) {
-        console.error("Notifications API Error:", err);
         res.status(500).json({ error: 'Database Error' });
     }
 });
-
 
 // ==========================================
 // 2. 👥 ดึงรายชื่อผู้ใช้ทั้งหมด (สำหรับหน้าจัดการ Users)
@@ -399,11 +283,7 @@ router.get('/users', authMiddleware, authorizeRole(['Admin']), async (req, res) 
 // ==========================================
 router.post('/users', authMiddleware, authorizeRole(['Admin']), async (req, res) => {
     const { fullname, email, password, role, phone, gender } = req.body;
-
-    if (!fullname || !email || !password || !role) {
-        return res.status(400).json({ msg: 'กรุณากรอกข้อมูลให้ครบ' });
-    }
-
+    if (!fullname || !email || !password || !role) return res.status(400).json({ msg: 'กรุณากรอกข้อมูลให้ครบ' });
     try {
         const [existing] = await db.query("SELECT user_id FROM users WHERE email = ?", [email]);
         if (existing.length > 0) return res.status(400).json({ msg: 'อีเมลนี้มีอยู่ในระบบแล้ว' });
@@ -412,71 +292,93 @@ router.post('/users', authMiddleware, authorizeRole(['Admin']), async (req, res)
         const hashed_password = await bcrypt.hash(password, salt);
         const profile_image = `https://ui-avatars.com/api/?name=${encodeURIComponent(fullname)}&background=random&color=fff`;
 
-        // ✅ เปลี่ยน password_hash เป็น password ให้ตรงกับตาราง users ล่าสุด
         const sql = `INSERT INTO users (fullname, email, password, role, phone, gender, profile_image, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`;
         await db.query(sql, [fullname, email, hashed_password, role, phone || null, gender || 'Other', profile_image]);
-
         res.json({ msg: 'เพิ่มผู้ใช้งานสำเร็จ' });
     } catch (err) {
-        console.error(err);
         res.status(500).json({ msg: 'Server Error' });
     }
 });
 
 // ==========================================
-// 4. ✏️ แก้ไขข้อมูลผู้ใช้งาน (Update User) - เพิ่มใหม่!
+// 4. ✏️ แก้ไขข้อมูลผู้ใช้งาน (Update User)
 // ==========================================
 router.put('/users/:id', authMiddleware, authorizeRole(['Admin']), async (req, res) => {
     const { fullname, email, role, phone, gender } = req.body;
     const userId = req.params.id;
-
     try {
-        // 1. ตรวจสอบว่าผู้ใช้มีตัวตนจริงไหม
         const [user] = await db.query("SELECT * FROM users WHERE user_id = ?", [userId]);
-        if (user.length === 0) {
-            return res.status(404).json({ msg: 'ไม่พบผู้ใช้งานที่ต้องการแก้ไข' });
-        }
+        if (user.length === 0) return res.status(404).json({ msg: 'ไม่พบผู้ใช้งานที่ต้องการแก้ไข' });
 
-        // 2. ตรวจสอบว่าอีเมลใหม่ไปซ้ำกับคนอื่นไหม (ถ้ามีการเปลี่ยนอีเมล)
         const [existingEmail] = await db.query("SELECT user_id FROM users WHERE email = ? AND user_id != ?", [email, userId]);
-        if (existingEmail.length > 0) {
-            return res.status(400).json({ msg: 'อีเมลนี้ถูกใช้งานโดยผู้ใช้รายอื่นแล้ว' });
-        }
+        if (existingEmail.length > 0) return res.status(400).json({ msg: 'อีเมลนี้ถูกใช้งานโดยผู้ใช้รายอื่นแล้ว' });
 
-        // 3. อัปเดตข้อมูล (ไม่รวมรหัสผ่าน เพื่อความปลอดภัย)
-        const sql = `
-            UPDATE users 
-            SET fullname = ?, email = ?, role = ?, phone = ?, gender = ?
-            WHERE user_id = ?
-        `;
+        const sql = `UPDATE users SET fullname = ?, email = ?, role = ?, phone = ?, gender = ? WHERE user_id = ?`;
         await db.query(sql, [fullname, email, role, phone || null, gender || 'Other', userId]);
-
         res.json({ msg: 'อัปเดตข้อมูลผู้ใช้งานสำเร็จ' });
     } catch (err) {
-        console.error("Update Error:", err);
         res.status(500).json({ msg: 'Server Error: ไม่สามารถแก้ไขข้อมูลได้' });
     }
 });
 
 // ==========================================
-// 5. ❌ ลบผู้ใช้งาน (ปรับปรุงจากเดิม)
+// 5. ❌ ลบผู้ใช้งาน
 // ==========================================
 router.delete('/users/:id', authMiddleware, authorizeRole(['Admin']), async (req, res) => {
     try {
         const userId = req.params.id;
-        
-        // ตรวจสอบก่อนว่ามี user นี้ไหม
         const [user] = await db.query("SELECT * FROM users WHERE user_id = ?", [userId]);
-        if (user.length === 0) {
-            return res.status(404).json({ msg: 'ไม่พบผู้ใช้งานที่ต้องการลบ' });
-        }
+        if (user.length === 0) return res.status(404).json({ msg: 'ไม่พบผู้ใช้งานที่ต้องการลบ' });
 
-        // ทำการลบ
         await db.query("DELETE FROM users WHERE user_id = ?", [userId]);
         res.json({ msg: 'ลบผู้ใช้งานสำเร็จ' });
     } catch (err) {
-        console.error("Delete Error:", err);
-        res.status(500).json({ msg: 'Server Error: ไม่สามารถลบผู้ใช้งานได้ (อาจมีข้อมูลที่เกี่ยวข้องอยู่ในตารางอื่น)' });
+        res.status(500).json({ msg: 'Server Error: ไม่สามารถลบผู้ใช้งานได้' });
+    }
+});
+
+// ==========================================
+// 6. ⬆️ เลื่อนชั้นปีการศึกษา (Promote Students)
+// ==========================================
+router.put('/promote-students', authMiddleware, authorizeRole(['Admin']), async (req, res) => {
+    try {
+        // 1. เปลี่ยนศิษย์เก่าปีที่แล้ว ให้กลายเป็นศิษย์เก่าถาวร
+        await db.execute(`UPDATE users SET education_level = 'จบการศึกษา' WHERE education_level = 'จบการศึกษา (ล่าสุด)'`);
+
+        // 2. เริ่มเลื่อนชั้น (ไล่จาก ม.6 ลงมา ม.1) เพื่อไม่ให้ข้อมูลทับกัน
+        await db.execute(`UPDATE users SET role = 'Alumni', education_level = 'จบการศึกษา (ล่าสุด)' WHERE education_level = 'มัธยมศึกษาปีที่ 6' AND role = 'Student'`);
+        await db.execute(`UPDATE users SET education_level = 'มัธยมศึกษาปีที่ 6' WHERE education_level = 'มัธยมศึกษาปีที่ 5' AND role = 'Student'`);
+        await db.execute(`UPDATE users SET education_level = 'มัธยมศึกษาปีที่ 5' WHERE education_level = 'มัธยมศึกษาปีที่ 4' AND role = 'Student'`);
+        await db.execute(`UPDATE users SET education_level = 'มัธยมศึกษาปีที่ 4' WHERE education_level = 'มัธยมศึกษาปีที่ 3' AND role = 'Student'`);
+        await db.execute(`UPDATE users SET education_level = 'มัธยมศึกษาปีที่ 3' WHERE education_level = 'มัธยมศึกษาปีที่ 2' AND role = 'Student'`);
+        await db.execute(`UPDATE users SET education_level = 'มัธยมศึกษาปีที่ 2' WHERE education_level = 'มัธยมศึกษาปีที่ 1' AND role = 'Student'`);
+
+        res.json({ msg: '✨ เลื่อนชั้นปีการศึกษาให้นักเรียนทุกคนเรียบร้อยแล้ว!' });
+    } catch (err) {
+        console.error("❌ PROMOTE ERROR:", err);
+        res.status(500).send('เกิดข้อผิดพลาดที่เซิร์ฟเวอร์');
+    }
+});
+
+// ==========================================
+// 7. ↩️ ย้อนกลับการเลื่อนชั้น (Undo Promote)
+// ==========================================
+router.put('/undo-promote', authMiddleware, authorizeRole(['Admin']), async (req, res) => {
+    try {
+        // ทำย้อนกลับจากล่างขึ้นบน (Bottom-up)
+        await db.execute(`UPDATE users SET education_level = 'มัธยมศึกษาปีที่ 1' WHERE education_level = 'มัธยมศึกษาปีที่ 2' AND role = 'Student'`);
+        await db.execute(`UPDATE users SET education_level = 'มัธยมศึกษาปีที่ 2' WHERE education_level = 'มัธยมศึกษาปีที่ 3' AND role = 'Student'`);
+        await db.execute(`UPDATE users SET education_level = 'มัธยมศึกษาปีที่ 3' WHERE education_level = 'มัธยมศึกษาปีที่ 4' AND role = 'Student'`);
+        await db.execute(`UPDATE users SET education_level = 'มัธยมศึกษาปีที่ 4' WHERE education_level = 'มัธยมศึกษาปีที่ 5' AND role = 'Student'`);
+        await db.execute(`UPDATE users SET education_level = 'มัธยมศึกษาปีที่ 5' WHERE education_level = 'มัธยมศึกษาปีที่ 6' AND role = 'Student'`);
+        
+        // ดึงเด็กที่เพิ่งจบการศึกษาล่าสุด กลับมาเป็น ม.6 
+        await db.execute(`UPDATE users SET role = 'Student', education_level = 'มัธยมศึกษาปีที่ 6' WHERE education_level = 'จบการศึกษา (ล่าสุด)' AND role = 'Alumni'`);
+
+        res.json({ msg: '↩️ ยกเลิกการเลื่อนชั้น และกู้ข้อมูลกลับมาเรียบร้อย!' });
+    } catch (err) {
+        console.error("❌ UNDO ERROR:", err);
+        res.status(500).send('เกิดข้อผิดพลาดในการย้อนกลับ');
     }
 });
 

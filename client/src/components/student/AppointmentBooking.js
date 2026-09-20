@@ -17,6 +17,7 @@ const AppointmentBooking = () => {
     const [availableSlots, setAvailableSlots] = useState([]); 
     const [dailySlots, setDailySlots] = useState([]); 
     const [selectedScheduleId, setSelectedScheduleId] = useState(null);
+    // ตั้งค่าเริ่มต้น topic เป็นค่าว่าง เพื่อบังคับให้ผู้ใช้เลือก dropdown
     const [formData, setFormData] = useState({ 
         date: '', time: '', type: 'Online', topic: '', consultation_type: 'Individual' 
     });
@@ -24,7 +25,6 @@ const AppointmentBooking = () => {
     const [groupMembers, setGroupMembers] = useState(['']); 
     
     const [showConfirmModal, setShowConfirmModal] = useState(false);
-    // 🌟 เพิ่ม State ป้องกันการกดปุ่ม Submit ซ้ำ
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
@@ -36,7 +36,7 @@ const AppointmentBooking = () => {
                     headers: { 'x-auth-token': token }
                 });
                 if (!res.data) {
-                    alert("⚠️ คุณจำเป็นต้องทำแบบประเมินสุขภาพจิตก่อนจองคิวครับ");
+                    alert("⚠️ คุณจำเป็นต้องทำแบบประเมินสุขภาพจิตก่อนจองคิว");
                     navigate('/student/assessment'); 
                 }
             } catch (err) { console.error(err); }
@@ -74,17 +74,15 @@ const AppointmentBooking = () => {
         } catch (err) { setMessage({ type: 'danger', text: 'ไม่สามารถดึงข้อมูลได้' }); }
     };
     
-    // 🌟 อัปเดต handleFormChange เพื่อบังคับ Onsite เมื่อเลือก Group
     const handleFormChange = (e) => {
         const { name, value } = e.target;
         setFormData(prev => {
             const newData = { ...prev, [name]: value };
             
             if (name === 'consultation_type' && value === 'Individual') {
-                setGroupMembers(['']); // เคลียร์สมาชิกกลุ่ม
+                setGroupMembers(['']); 
             }
             
-            // ถ้าเลือกแบบกลุ่ม บังคับให้เป็น Onsite
             if (name === 'consultation_type' && value === 'Group') {
                 newData.type = 'Onsite';
             }
@@ -103,7 +101,6 @@ const AppointmentBooking = () => {
         e.preventDefault();
         if (!selectedScheduleId) return setMessage({ type: 'danger', text: 'กรุณาเลือกช่วงเวลาที่ต้องการ' });
         
-        // เช็คว่าถ้าเป็นกลุ่ม ต้องกรอกอีเมลเพื่อนอย่างน้อย 1 คน
         if (formData.consultation_type === 'Group') {
             const validMembers = groupMembers.filter(m => m.trim() !== '');
             if (validMembers.length === 0) {
@@ -115,7 +112,6 @@ const AppointmentBooking = () => {
         setShowConfirmModal(true);
     };
 
-    // 🌟 เพิ่ม isSubmitting ป้องกันการกดซ้ำระหว่างรอ Backend
     const confirmBooking = async () => {
         setIsSubmitting(true);
         try {
@@ -282,7 +278,6 @@ const AppointmentBooking = () => {
                                             <Col md={6}>
                                                 <Form.Group>
                                                     <Form.Label className="small-label">รูปแบบ</Form.Label>
-                                                    {/* 🌟 อัปเดต Select ของ รูปแบบ ให้ล็อคถ้าเป็น Group */}
                                                     <Form.Select 
                                                         className="custom-input-field" 
                                                         name="type" 
@@ -315,7 +310,7 @@ const AppointmentBooking = () => {
                                                             placeholder="student@pcshs.ac.th" 
                                                             value={member} 
                                                             onChange={(e) => handleGroupMemberChange(index, e.target.value)} 
-                                                            required={index === 0} // 🌟 บังคับกรอกอย่างน้อยช่องแรก
+                                                            required={index === 0} 
                                                         />
                                                         {groupMembers.length > 1 && (
                                                             <Button variant="outline-danger" className="rounded-3" onClick={() => setGroupMembers(groupMembers.filter((_, i) => i !== index))}>-</Button>
@@ -326,9 +321,25 @@ const AppointmentBooking = () => {
                                             </div>
                                         )}
 
+                                        {/* 🌟 เปลี่ยนจาก Textarea เป็น Dropdown Menu สำหรับเลือกหัวข้อ */}
                                         <Form.Group className="mb-4">
                                             <Form.Label className="small-label">หัวข้อที่ต้องการปรึกษา</Form.Label>
-                                            <Form.Control as="textarea" rows={3} name="topic" className="custom-input-field" placeholder="ระบุสิ่งที่กังวลใจเบื้องต้น..." value={formData.topic} onChange={handleFormChange} required />
+                                            <Form.Select 
+                                                name="topic" 
+                                                className="custom-input-field" 
+                                                value={formData.topic} 
+                                                onChange={handleFormChange} 
+                                                required
+                                            >
+                                                <option value="" disabled>-- กรุณาเลือกหัวข้อที่ต้องการปรึกษา --</option>
+                                                <option value="ด้านการเรียน / ความเครียดจากการสอบ">ด้านการเรียน / ความเครียดจากการสอบ</option>
+                                                <option value="ด้านความสัมพันธ์ / เพื่อน / แฟน">ด้านความสัมพันธ์ / เพื่อน / แฟน</option>
+                                                <option value="ด้านครอบครัว / ปัญหาทางบ้าน">ด้านครอบครัว / ปัญหาทางบ้าน</option>
+                                                <option value="ด้านอารมณ์ / ซึมเศร้า / วิตกกังวล">ด้านอารมณ์ / ซึมเศร้า / วิตกกังวล</option>
+                                                <option value="ด้านการปรับตัว / การใช้ชีวิตในหอพัก">ด้านการปรับตัว / การใช้ชีวิตในหอพัก</option>
+                                                <option value="ด้านการค้นหาตัวเอง / อาชีพในอนาคต">ด้านการค้นหาตัวเอง / อาชีพในอนาคต</option>
+                                                <option value="อื่นๆ (ต้องการคุยกับนักจิตวิทยาก่อน)">อื่นๆ (ยังไม่แน่ใจ / ต้องการประเมินร่วมกัน)</option>
+                                            </Form.Select>
                                         </Form.Group>
                                     </section>
 
@@ -342,7 +353,6 @@ const AppointmentBooking = () => {
                 )}
             </Container>
 
-            {/* Modal สำหรับยืนยันข้อมูลการจอง */}
             <Modal show={showConfirmModal} onHide={() => !isSubmitting && setShowConfirmModal(false)} centered backdrop="static">
                 <Modal.Header closeButton={!isSubmitting} className="border-0 pb-0">
                     <Modal.Title className="fw-bold text-navy">ยืนยันข้อมูลการนัดหมาย</Modal.Title>
@@ -394,7 +404,6 @@ const AppointmentBooking = () => {
                     <Button variant="light" className="rounded-pill px-4" onClick={() => setShowConfirmModal(false)} disabled={isSubmitting}>
                         แก้ไขข้อมูล
                     </Button>
-                    {/* 🌟 แสดงข้อความกำลังจอง หากผู้ใช้กดแล้ว */}
                     <Button className="rounded-pill px-4 border-0" style={{ background: 'var(--orange)', color: 'white' }} onClick={confirmBooking} disabled={isSubmitting}>
                         {isSubmitting ? 'กำลังยืนยันคิว...' : 'ยืนยันการจองคิว'}
                     </Button>

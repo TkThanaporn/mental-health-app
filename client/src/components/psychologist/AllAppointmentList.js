@@ -5,11 +5,12 @@ import {
     FaSearch, FaClock, FaHistory, FaCheckCircle, FaTimesCircle, 
     FaHourglassHalf, FaMicroscope, FaDatabase, FaFilter, FaUndo, 
     FaUserGraduate, FaFileMedical, FaVideo, FaBuilding, FaCheck,
-    FaTimes, FaUserTimes, FaCircle, FaInfoCircle, FaCalendarAlt, FaClipboardList
+    FaTimes, FaUserTimes, FaCircle, FaInfoCircle, FaCalendarAlt, FaClipboardList, FaPrint
 } from 'react-icons/fa';
 
 import './Psychologist.css';       
 import './AllAppointmentList.css'; 
+import pcshsLogo from '../../assets/pcshs_logo.png'; // ✅ เพิ่มนำเข้าโลโก้โรงเรียน
 
 const AllAppointmentList = () => {
     const [appointments, setAppointments] = useState([]);
@@ -25,7 +26,25 @@ const AllAppointmentList = () => {
     const [showDetails, setShowDetails] = useState(false);
     const [selectedApptDetails, setSelectedApptDetails] = useState(null);
 
-    useEffect(() => { fetchHistory(); }, []);
+    // --- State โปรไฟล์ เพื่อเอาชื่อมาเซ็นในใบรายงาน ---
+    const [psychologistName, setPsychologistName] = useState('นักจิตวิทยา');
+
+    useEffect(() => { 
+        fetchHistory(); 
+        fetchProfile();
+    }, []);
+
+    const fetchProfile = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            if(token) {
+                const res = await axios.get('http://localhost:5000/api/profile/me', {
+                    headers: { 'x-auth-token': token }
+                });
+                setPsychologistName(res.data.fullname || 'นักจิตวิทยา');
+            }
+        } catch(err) { console.error(err); }
+    };
 
     const fetchHistory = async () => {
         try {
@@ -50,12 +69,22 @@ const AllAppointmentList = () => {
         setShowDetails(true); 
     };
 
-    // --- 🎨 ฟังก์ชันจัดการ UI (ปรับให้ใช้ CSS Classes ใหม่) ---
+    // --- 🎨 ฟังก์ชันจัดการ UI ---
     const formatTimeSlot = (start, end, apptTime, timeSlotStr) => {
         if (timeSlotStr) return timeSlotStr;
         let startTime = start ? start.substring(0, 5) : (apptTime ? String(apptTime).substring(0, 5) : '00:00');
         let endTime = end ? end.substring(0, 5) : '00:00';
         return `${startTime.replace(':', '.')}-${endTime.replace(':', '.')}`;
+    };
+
+    const getStatusText = (status) => {
+        const s = status ? String(status).toLowerCase() : '';
+        if (s === 'confirmed' || s === 'ยืนยัน') return 'ยืนยันแล้ว';
+        if (s === 'cancelled' || s === 'ยกเลิก') return 'ยกเลิกแล้ว';
+        if (s === 'pending' || s === 'รอดำเนินการ') return 'รอดำเนินการ';
+        if (s === 'completed' || s === 'เสร็จสิ้น') return 'เสร็จสิ้น';
+        if (s === 'no-show' || s === 'ขาดนัด') return 'ขาดนัด';
+        return status || 'ไม่ระบุ';
     };
 
     const getStatusBadge = (status) => {
@@ -88,7 +117,6 @@ const AllAppointmentList = () => {
         return matchesSearch && matchesDate && matchesYear && matchesTime;
     });
 
-    // 🔽 เรียงลำดับสำหรับหน้าประวัติ: ล่าสุด(ใหม่สุด) อยู่บนสุด (Descending)
     const sortedAppointments = [...filteredAppointments].sort((a, b) => {
         const dateA = new Date(`${a.date || a.appointment_date}T${a.start_time || a.appointment_time || "00:00:00"}`);
         const dateB = new Date(`${b.date || b.appointment_date}T${b.start_time || b.appointment_time || "00:00:00"}`);
@@ -102,8 +130,190 @@ const AllAppointmentList = () => {
         cancelled: filteredAppointments.filter(a => ['cancelled', 'no-show'].includes(a.status?.toLowerCase())).length
     };
 
-    const availableYears = [...new Set(appointments.map(app => new Date(app.date || app.appointment_date).getFullYear().toString()))].sort();
+    const availableYears = [...new Set(appointments.map(app => new Date(app.date || app.appointment_date).getFullYear().toString()))].sort((a,b)=>b-a);
     const timeSlots = ["09:00-10:00", "10:00-11:00", "11:00-12:00", "13:00-14:00", "14:00-15:00", "15:00-16:00", "16:00-17:00", "17:00-18:00"];
+
+    // ✅ ฟังก์ชันออกรายงาน PDF สำหรับข้อมูลประวัติในตาราง
+    const handleExportPDF = () => {
+        if (sortedAppointments.length === 0) return alert("ไม่มีข้อมูลสำหรับการสร้างรายงาน");
+
+        const reportWindow = window.open('', '_blank');
+        if (!reportWindow) {
+            alert('กรุณาอนุญาต pop-up เพื่อเปิดรายงาน');
+            return;
+        }
+
+        const currentDate = new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
+        const logoUrl = window.location.origin + pcshsLogo;
+
+        // ดึงข้อมูลค้นหาเพื่อแสดงบนหัวกระดาษ (ถ้ามีการค้นหา)
+        let filterTitleText = 'ประวัติการนัดหมายทั้งหมด';
+        if (searchTerm) filterTitleText += ` (คำค้นหา: "${searchTerm}")`;
+        if (filterYear) filterTitleText += ` ประจำปีการศึกษา ${parseInt(filterYear) + 543}`;
+        if (filterDate) filterTitleText += ` วันที่ ${new Date(filterDate).toLocaleDateString('th-TH')}`;
+
+        const tableRowsHTML = sortedAppointments.map((app, index) => {
+            const dateStr = new Date(app.date || app.appointment_date).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' });
+            const timeStr = formatTimeSlot(app.start_time, app.end_time, app.appointment_time, app.time_slot);
+            const statusStr = getStatusText(app.status);
+            
+            return `
+                <tr>
+                    <td class="text-center">${index + 1}</td>
+                    <td class="text-center">${dateStr} <br/> <small>${timeStr} น.</small></td>
+                    <td><b>${app.student_name || app.fullname}</b></td>
+                    <td>${app.topic || '-'}</td>
+                    <td class="text-center">${statusStr}</td>
+                </tr>
+            `;
+        }).join('');
+
+        const htmlContent = `
+        <!DOCTYPE html>
+        <html lang="th">
+        <head>
+            <meta charset="UTF-8">
+            <title>รายงานประวัติการให้คำปรึกษานักเรียน</title>
+            <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+            <style>
+                @page { size: A4 portrait; margin: 15mm 15mm 15mm 20mm; } 
+                body {
+                    font-family: 'Sarabun', sans-serif;
+                    color: #1e293b;
+                    margin: 0;
+                    background: #f8fafc;
+                    font-size: 14pt; 
+                    line-height: 1.4;
+                }
+                .container { 
+                    padding: 15mm 15mm; 
+                    max-width: 210mm; 
+                    margin: 20px auto; 
+                    background: white; 
+                    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+                    border-radius: 8px;
+                    box-sizing: border-box;
+                }
+                .report-header {
+                    display: flex;
+                    align-items: center;
+                    border-bottom: 2px solid #e2e8f0;
+                    padding-bottom: 15px;
+                    margin-bottom: 20px;
+                }
+                .header-logo { width: 75px; height: auto; margin-right: 20px; }
+                .header-text { flex-grow: 1; }
+                .doc-title { font-size: 18pt; font-weight: 700; color: #003566; margin: 0 0 4px 0; }
+                .doc-subtitle { font-size: 14pt; font-weight: 500; color: #475569; margin: 0; }
+                .meta-info {
+                    display: flex;
+                    justify-content: space-between;
+                    font-size: 12pt;
+                    color: #475569;
+                    background: #f1f5f9;
+                    padding: 10px 15px;
+                    border-radius: 6px;
+                    margin-bottom: 20px;
+                    border-left: 4px solid #0ea5e9; 
+                }
+                table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    font-size: 12pt; 
+                    margin-bottom: 30px;
+                }
+                th, td {
+                    padding: 6px 10px;
+                    border: 1px solid #cbd5e1;
+                    vertical-align: top;
+                }
+                th { 
+                    font-weight: 600; 
+                    text-align: center;
+                    background-color: #003566 !important; 
+                    color: #ffffff !important;
+                    -webkit-print-color-adjust: exact;
+                }
+                tr:nth-child(even) td {
+                    background-color: #f8fafc !important; 
+                    -webkit-print-color-adjust: exact;
+                }
+                .text-center { text-align: center; }
+                .signature-section {
+                    margin-top: 40px;
+                    display: flex;
+                    justify-content: flex-end;
+                    padding-right: 20px;
+                    page-break-inside: avoid;
+                }
+                .signature-box { text-align: center; font-size: 13pt; color: #1e293b; }
+                .sig-line { border-bottom: 1px dashed #94a3b8; width: 220px; margin: 30px auto 10px auto; }
+                .print-btn-container { 
+                    text-align: center; padding: 15px 0; background: #fff;
+                    position: sticky; top: 0; box-shadow: 0 2px 10px rgba(0,0,0,0.1); z-index: 1000;
+                }
+                .print-btn {
+                    background-color: #F25C05; color: white; border: none;
+                    padding: 10px 25px; font-size: 15px; border-radius: 6px; cursor: pointer;
+                    font-family: 'Prompt', sans-serif; font-weight: bold; transition: 0.2s;
+                }
+                .print-btn:hover { background-color: #d94f04; }
+                @media print {
+                    body { background: white; }
+                    .container { padding: 0; margin: 0; box-shadow: none; border-radius: 0; max-width: 100%; }
+                    .print-btn-container { display: none; }
+                }
+            </style>
+        </head>
+        <body>
+            <div class="print-btn-container">
+                <button class="print-btn" onclick="window.print()">🖨️ สั่งพิมพ์รายงาน (Print to PDF)</button>
+            </div>
+            <div class="container">
+                <div class="report-header">
+                    <img src="${logoUrl}" alt="PCSHS Logo" class="header-logo" />
+                    <div class="header-text">
+                        <h1 class="doc-title">รายงานทะเบียนประวัติการให้คำปรึกษานักเรียน</h1>
+                        <h2 class="doc-subtitle">PCSHS HeartCare - โรงเรียนวิทยาศาสตร์จุฬาภรณราชวิทยาลัย เลย</h2>
+                    </div>
+                </div>
+
+                <div class="meta-info">
+                    <span><strong>ข้อมูลที่ค้นหา:</strong> ${filterTitleText}</span>
+                    <span><strong>พิมพ์เมื่อ:</strong> ${currentDate}</span>
+                </div>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 5%;">ลำดับ</th>
+                            <th style="width: 20%;">วัน-เวลา</th>
+                            <th style="width: 25%;">ชื่อนักเรียน</th>
+                            <th style="width: 35%;">เรื่อง/หัวข้อที่ปรึกษา</th>
+                            <th style="width: 15%;">สถานะ</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${tableRowsHTML}
+                    </tbody>
+                </table>
+
+                <div class="signature-section">
+                    <div class="signature-box">
+                        <div class="sig-line"></div>
+                        <div>( ${psychologistName} )</div>
+                        <div style="font-size: 12pt; color: #64748b; margin-top: 4px;">นักจิตวิทยา / ผู้ให้คำปรึกษา</div>
+                    </div>
+                </div>
+            </div>
+        </body>
+        </html>
+        `;
+
+        reportWindow.document.open();
+        reportWindow.document.write(htmlContent);
+        reportWindow.document.close();
+    };
 
     if (loading) return (
         <div className="loading-science-container text-center py-5" style={{minHeight: '80vh', display: 'flex', flexDirection: 'column', justifyContent: 'center'}}>
@@ -193,9 +403,17 @@ const AllAppointmentList = () => {
                     <div className="fw-bold pcshs-blue-deep d-flex align-items-center fs-5">
                         <FaHistory className="me-3 text-primary"/> รายการประวัติที่ค้นพบ ({sortedAppointments.length})
                     </div>
+                    {/* ✅ ปุ่มกด Export PDF อยู่ตรงนี้ */}
+                    <Button 
+                        variant="warning" 
+                        className="fw-bold text-dark rounded-pill px-4 shadow-sm" 
+                        onClick={handleExportPDF}
+                        disabled={sortedAppointments.length === 0}
+                    >
+                        <FaPrint className="me-2"/> ออกรายงานประวัติ (PDF)
+                    </Button>
                 </div>
                 <div className="table-responsive px-2 pb-2 overflow-visible">
-                    {/* เปลี่ยนมาใช้คลาสตารางแบบใหม่จาก CSS */}
                     <table className="pcshs-archive-table w-100">
                         <thead>
                             <tr>
@@ -211,7 +429,6 @@ const AllAppointmentList = () => {
                                 sortedAppointments.map((app) => {
                                     const appDate = new Date(app.date || app.appointment_date);
                                     return (
-                                        // ใช้งาน row-card สำหรับตารางที่มีลักษณะเป็นการ์ด
                                         <tr key={app.appointment_id} className="archive-row-card">
                                             <td className="ps-4">
                                                 <div className="date-badge">
@@ -309,7 +526,6 @@ const AllAppointmentList = () => {
                                 <div className="fw-semibold text-dark">{selectedApptDetails.stress_level || selectedApptDetails.latest_assessment || 'ไม่มีข้อมูล'}</div>
                             </div>
 
-                            {/* แสดงผลสรุปการให้คำปรึกษา ถ้าเคสเสร็จสิ้นแล้ว */}
                             {selectedApptDetails.status?.toLowerCase() === 'completed' && selectedApptDetails.result_summary && (
                                 <div className="info-group border-start border-success border-4 ps-3 py-3 bg-white shadow-sm rounded-end mt-3">
                                     <div className="text-success small fw-bold mb-2"><FaCheckCircle className="me-1"/> สรุปผลการให้คำปรึกษาจากนักจิตวิทยา</div>
