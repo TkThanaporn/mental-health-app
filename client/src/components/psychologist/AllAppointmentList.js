@@ -487,7 +487,7 @@ const AllAppointmentList = () => {
                 </div>
             </div>
 
-            {/* Modal ดูรายละเอียด */}
+            {/* Modal ดูรายละเอียดด */}
             <Modal show={showDetails} onHide={() => setShowDetails(false)} size="md" centered className="details-modal">
                 <Modal.Header closeButton className="border-0 pb-0">
                     <Modal.Title className="fw-bold text-navy"><FaClipboardList className="me-2 text-primary"/>รายละเอียดประวัติ</Modal.Title>
