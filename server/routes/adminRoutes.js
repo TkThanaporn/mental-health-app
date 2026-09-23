@@ -340,46 +340,338 @@ router.delete('/users/:id', authMiddleware, authorizeRole(['Admin']), async (req
 // ==========================================
 // 6. ⬆️ เลื่อนชั้นปีการศึกษา (Promote Students)
 // ==========================================
-router.put('/promote-students', authMiddleware, authorizeRole(['Admin']), async (req, res) => {
-    try {
-        // 1. เปลี่ยนศิษย์เก่าปีที่แล้ว ให้กลายเป็นศิษย์เก่าถาวร
-        await db.execute(`UPDATE users SET education_level = 'จบการศึกษา' WHERE education_level = 'จบการศึกษา (ล่าสุด)'`);
+router.put(
+    '/promote-students',
+    authMiddleware,
+    authorizeRole(['Admin']),
+    async (req, res) => {
+        let connection;
 
-        // 2. เริ่มเลื่อนชั้น (ไล่จาก ม.6 ลงมา ม.1) เพื่อไม่ให้ข้อมูลทับกัน
-        await db.execute(`UPDATE users SET role = 'Alumni', education_level = 'จบการศึกษา (ล่าสุด)' WHERE education_level = 'มัธยมศึกษาปีที่ 6' AND role = 'Student'`);
-        await db.execute(`UPDATE users SET education_level = 'มัธยมศึกษาปีที่ 6' WHERE education_level = 'มัธยมศึกษาปีที่ 5' AND role = 'Student'`);
-        await db.execute(`UPDATE users SET education_level = 'มัธยมศึกษาปีที่ 5' WHERE education_level = 'มัธยมศึกษาปีที่ 4' AND role = 'Student'`);
-        await db.execute(`UPDATE users SET education_level = 'มัธยมศึกษาปีที่ 4' WHERE education_level = 'มัธยมศึกษาปีที่ 3' AND role = 'Student'`);
-        await db.execute(`UPDATE users SET education_level = 'มัธยมศึกษาปีที่ 3' WHERE education_level = 'มัธยมศึกษาปีที่ 2' AND role = 'Student'`);
-        await db.execute(`UPDATE users SET education_level = 'มัธยมศึกษาปีที่ 2' WHERE education_level = 'มัธยมศึกษาปีที่ 1' AND role = 'Student'`);
+        try {
+            connection = await db.getConnection();
 
-        res.json({ msg: '✨ เลื่อนชั้นปีการศึกษาให้นักเรียนทุกคนเรียบร้อยแล้ว!' });
-    } catch (err) {
-        console.error("❌ PROMOTE ERROR:", err);
-        res.status(500).send('เกิดข้อผิดพลาดที่เซิร์ฟเวอร์');
+            // เริ่ม Transaction
+            await connection.beginTransaction();
+
+            console.log('==========================================');
+            console.log('⬆️ START PROMOTE STUDENTS');
+            console.log('==========================================');
+
+            // --------------------------------------------------
+            // 1. เปลี่ยน "จบการศึกษา (ล่าสุด)"
+            //    จากรอบก่อนหน้า → "จบการศึกษา"
+            // --------------------------------------------------
+            await connection.execute(`
+                UPDATE users
+                SET education_level = 'จบการศึกษา'
+                WHERE education_level = 'จบการศึกษา (ล่าสุด)'
+            `);
+
+            // --------------------------------------------------
+            // 2. ม.6 → Alumni + จบการศึกษา (ล่าสุด)
+            // --------------------------------------------------
+            const [m6Result] = await connection.execute(`
+                UPDATE users
+                SET
+                    role = 'Alumni',
+                    education_level = 'จบการศึกษา (ล่าสุด)'
+                WHERE education_level = 'มัธยมศึกษาปีที่ 6'
+                  AND role = 'Student'
+            `);
+
+            console.log(
+                `🎓 ม.6 → จบการศึกษา: ${m6Result.affectedRows} คน`
+            );
+
+            // --------------------------------------------------
+            // 3. ม.5 → ม.6
+            // --------------------------------------------------
+            const [m5Result] = await connection.execute(`
+                UPDATE users
+                SET education_level = 'มัธยมศึกษาปีที่ 6'
+                WHERE education_level = 'มัธยมศึกษาปีที่ 5'
+                  AND role = 'Student'
+            `);
+
+            console.log(
+                `📚 ม.5 → ม.6: ${m5Result.affectedRows} คน`
+            );
+
+            // --------------------------------------------------
+            // 4. ม.4 → ม.5
+            // --------------------------------------------------
+            const [m4Result] = await connection.execute(`
+                UPDATE users
+                SET education_level = 'มัธยมศึกษาปีที่ 5'
+                WHERE education_level = 'มัธยมศึกษาปีที่ 4'
+                  AND role = 'Student'
+            `);
+
+            console.log(
+                `📚 ม.4 → ม.5: ${m4Result.affectedRows} คน`
+            );
+
+            // --------------------------------------------------
+            // 5. ม.3 → ม.4
+            // --------------------------------------------------
+            const [m3Result] = await connection.execute(`
+                UPDATE users
+                SET education_level = 'มัธยมศึกษาปีที่ 4'
+                WHERE education_level = 'มัธยมศึกษาปีที่ 3'
+                  AND role = 'Student'
+            `);
+
+            console.log(
+                `📚 ม.3 → ม.4: ${m3Result.affectedRows} คน`
+            );
+
+            // --------------------------------------------------
+            // 6. ม.2 → ม.3
+            // --------------------------------------------------
+            const [m2Result] = await connection.execute(`
+                UPDATE users
+                SET education_level = 'มัธยมศึกษาปีที่ 3'
+                WHERE education_level = 'มัธยมศึกษาปีที่ 2'
+                  AND role = 'Student'
+            `);
+
+            console.log(
+                `📚 ม.2 → ม.3: ${m2Result.affectedRows} คน`
+            );
+
+            // --------------------------------------------------
+            // 7. ม.1 → ม.2
+            // --------------------------------------------------
+            const [m1Result] = await connection.execute(`
+                UPDATE users
+                SET education_level = 'มัธยมศึกษาปีที่ 2'
+                WHERE education_level = 'มัธยมศึกษาปีที่ 1'
+                  AND role = 'Student'
+            `);
+
+            console.log(
+                `📚 ม.1 → ม.2: ${m1Result.affectedRows} คน`
+            );
+
+            // ยืนยัน Transaction
+            await connection.commit();
+
+            console.log('==========================================');
+            console.log('✅ PROMOTE SUCCESS');
+            console.log('==========================================');
+
+            return res.json({
+                success: true,
+                msg: '✨ เลื่อนชั้นปีการศึกษาให้นักเรียนทุกคนเรียบร้อยแล้ว!'
+            });
+
+        } catch (err) {
+
+            console.error('❌ PROMOTE ERROR:', err);
+
+            // ถ้ามี connection และ transaction ยังไม่เสร็จ
+            if (connection) {
+                try {
+                    await connection.rollback();
+                } catch (rollbackError) {
+                    console.error(
+                        '❌ ROLLBACK ERROR:',
+                        rollbackError
+                    );
+                }
+            }
+
+            return res.status(500).json({
+                success: false,
+                msg: 'เกิดข้อผิดพลาดในการเลื่อนชั้น กรุณาลองใหม่อีกครั้ง'
+            });
+
+        } finally {
+
+            if (connection) {
+                connection.release();
+            }
+        }
     }
-});
+);
+
 
 // ==========================================
 // 7. ↩️ ย้อนกลับการเลื่อนชั้น (Undo Promote)
 // ==========================================
-router.put('/undo-promote', authMiddleware, authorizeRole(['Admin']), async (req, res) => {
-    try {
-        // ทำย้อนกลับจากล่างขึ้นบน (Bottom-up)
-        await db.execute(`UPDATE users SET education_level = 'มัธยมศึกษาปีที่ 1' WHERE education_level = 'มัธยมศึกษาปีที่ 2' AND role = 'Student'`);
-        await db.execute(`UPDATE users SET education_level = 'มัธยมศึกษาปีที่ 2' WHERE education_level = 'มัธยมศึกษาปีที่ 3' AND role = 'Student'`);
-        await db.execute(`UPDATE users SET education_level = 'มัธยมศึกษาปีที่ 3' WHERE education_level = 'มัธยมศึกษาปีที่ 4' AND role = 'Student'`);
-        await db.execute(`UPDATE users SET education_level = 'มัธยมศึกษาปีที่ 4' WHERE education_level = 'มัธยมศึกษาปีที่ 5' AND role = 'Student'`);
-        await db.execute(`UPDATE users SET education_level = 'มัธยมศึกษาปีที่ 5' WHERE education_level = 'มัธยมศึกษาปีที่ 6' AND role = 'Student'`);
-        
-        // ดึงเด็กที่เพิ่งจบการศึกษาล่าสุด กลับมาเป็น ม.6 
-        await db.execute(`UPDATE users SET role = 'Student', education_level = 'มัธยมศึกษาปีที่ 6' WHERE education_level = 'จบการศึกษา (ล่าสุด)' AND role = 'Alumni'`);
+router.put(
+    '/undo-promote',
+    authMiddleware,
+    authorizeRole(['Admin']),
+    async (req, res) => {
 
-        res.json({ msg: '↩️ ยกเลิกการเลื่อนชั้น และกู้ข้อมูลกลับมาเรียบร้อย!' });
-    } catch (err) {
-        console.error("❌ UNDO ERROR:", err);
-        res.status(500).send('เกิดข้อผิดพลาดในการย้อนกลับ');
+        let connection;
+
+        try {
+
+            connection = await db.getConnection();
+
+            await connection.beginTransaction();
+
+            console.log('==========================================');
+            console.log('↩️ START UNDO PROMOTE');
+            console.log('==========================================');
+
+
+            // --------------------------------------------------
+            // สำคัญมาก
+            //
+            // ต้อง Undo จาก "บนลงล่าง"
+            //
+            // เพราะถ้าเริ่มจาก ม.2 → ม.1
+            // คนที่เป็น ม.3 ซึ่งกำลังจะกลายเป็น ม.2
+            // อาจถูก UPDATE ซ้ำ
+            // --------------------------------------------------
+
+
+            // --------------------------------------------------
+            // 1. ม.6 → ม.5
+            // --------------------------------------------------
+            const [m6Result] = await connection.execute(`
+                UPDATE users
+                SET education_level = 'มัธยมศึกษาปีที่ 5'
+                WHERE education_level = 'มัธยมศึกษาปีที่ 6'
+                  AND role = 'Student'
+            `);
+
+            console.log(
+                `↩️ ม.6 → ม.5: ${m6Result.affectedRows} คน`
+            );
+
+
+            // --------------------------------------------------
+            // 2. ม.5 → ม.4
+            // --------------------------------------------------
+            const [m5Result] = await connection.execute(`
+                UPDATE users
+                SET education_level = 'มัธยมศึกษาปีที่ 4'
+                WHERE education_level = 'มัธยมศึกษาปีที่ 5'
+                  AND role = 'Student'
+            `);
+
+            console.log(
+                `↩️ ม.5 → ม.4: ${m5Result.affectedRows} คน`
+            );
+
+
+            // --------------------------------------------------
+            // 3. ม.4 → ม.3
+            // --------------------------------------------------
+            const [m4Result] = await connection.execute(`
+                UPDATE users
+                SET education_level = 'มัธยมศึกษาปีที่ 3'
+                WHERE education_level = 'มัธยมศึกษาปีที่ 4'
+                  AND role = 'Student'
+            `);
+
+            console.log(
+                `↩️ ม.4 → ม.3: ${m4Result.affectedRows} คน`
+            );
+
+
+            // --------------------------------------------------
+            // 4. ม.3 → ม.2
+            // --------------------------------------------------
+            const [m3Result] = await connection.execute(`
+                UPDATE users
+                SET education_level = 'มัธยมศึกษาปีที่ 2'
+                WHERE education_level = 'มัธยมศึกษาปีที่ 3'
+                  AND role = 'Student'
+            `);
+
+            console.log(
+                `↩️ ม.3 → ม.2: ${m3Result.affectedRows} คน`
+            );
+
+
+            // --------------------------------------------------
+            // 5. ม.2 → ม.1
+            // --------------------------------------------------
+            const [m2Result] = await connection.execute(`
+                UPDATE users
+                SET education_level = 'มัธยมศึกษาปีที่ 1'
+                WHERE education_level = 'มัธยมศึกษาปีที่ 2'
+                  AND role = 'Student'
+            `);
+
+            console.log(
+                `↩️ ม.2 → ม.1: ${m2Result.affectedRows} คน`
+            );
+
+
+            // --------------------------------------------------
+            // 6. Alumni ล่าสุด → ม.6 Student
+            //
+            // เฉพาะ "จบการศึกษา (ล่าสุด)"
+            // เท่านั้นที่จะกลับมา
+            //
+            // "จบการศึกษา" จะไม่ถูกแตะ
+            // เพราะเป็นรุ่นที่จบไปก่อนหน้า
+            // --------------------------------------------------
+            const [alumniResult] = await connection.execute(`
+                UPDATE users
+                SET
+                    role = 'Student',
+                    education_level = 'มัธยมศึกษาปีที่ 6'
+                WHERE education_level = 'จบการศึกษา (ล่าสุด)'
+                  AND role = 'Alumni'
+            `);
+
+            console.log(
+                `🎓 Alumni → ม.6: ${alumniResult.affectedRows} คน`
+            );
+
+
+            // --------------------------------------------------
+            // ยืนยันทั้งหมด
+            // --------------------------------------------------
+            await connection.commit();
+
+            console.log('==========================================');
+            console.log('✅ UNDO PROMOTE SUCCESS');
+            console.log('==========================================');
+
+            return res.json({
+                success: true,
+                msg: '↩️ ยกเลิกการเลื่อนชั้น และกู้ข้อมูลกลับมาเรียบร้อย!'
+            });
+
+        } catch (err) {
+
+            console.error('❌ UNDO ERROR:', err);
+
+            if (connection) {
+
+                try {
+                    await connection.rollback();
+                } catch (rollbackError) {
+
+                    console.error(
+                        '❌ UNDO ROLLBACK ERROR:',
+                        rollbackError
+                    );
+
+                }
+            }
+
+            return res.status(500).json({
+                success: false,
+                msg: 'เกิดข้อผิดพลาดในการย้อนกลับ กรุณาลองใหม่อีกครั้ง'
+            });
+
+        } finally {
+
+            if (connection) {
+                connection.release();
+            }
+
+        }
     }
-});
+);
 
 module.exports = router;

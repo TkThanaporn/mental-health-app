@@ -2,12 +2,24 @@
 const nodemailer = require('nodemailer');
 require('dotenv').config();
 
-// ตั้งค่าตัวส่งอีเมล
+// ตั้งค่าตัวส่งอีเมลผ่านระบบ OAuth2 (ปลอดภัยสูงสุดและไม่โดนบล็อก)
 const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
+        type: 'OAuth2',
         user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS
+        clientId: process.env.GOOGLE_CLIENT_ID,
+        clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+        refreshToken: process.env.GOOGLE_REFRESH_TOKEN
+    }
+});
+
+// ตรวจสอบสถานะการเชื่อมต่อตอนที่ Server เริ่มทำงาน
+transporter.verify((error, success) => {
+    if (error) {
+        console.error("❌ [Email Service] เชื่อมต่อ OAuth2 ล้มเหลว:", error.message);
+    } else {
+        console.log("✅ [Email Service] ระบบพร้อมส่งอีเมลผ่าน OAuth2 แล้ว!");
     }
 });
 

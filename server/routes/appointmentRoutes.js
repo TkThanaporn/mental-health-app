@@ -576,58 +576,243 @@ router.get("/my-appointments", authMiddleware, async (req, res) => {
 
 // ==========================================
 // 4. GET: ดูรายการนัดหมายทั้งหมด (สำหรับนักจิตวิทยา)
+//    ดึงข้อมูลโปรไฟล์นักเรียน + สมาชิกกลุ่มแบบเต็ม
 // ==========================================
-router.get("/psychologist-appointments", authMiddleware, async (req, res) => {
-  try {
-    const psychologist_user_id = req.user.id || req.user.user_id;
 
-    // ✅ อัปเดต Subquery เพื่อดึงอีเมลกลุ่มมาแสดงด้วย (ในกรณีที่คุณยังไม่ได้แก้ส่วนนี้)
-    const sql = `
-            SELECT 
-                a.*, 
-                u.fullname AS student_name, 
-                u.email AS student_email,
-                s.date AS appointment_date,
-                s.start_time,
-                s.end_time,
-                ass.stress_level AS latest_assessment,
-                (
-                    SELECT GROUP_CONCAT(u2.email SEPARATOR ',') 
-                    FROM groupmembers gm 
-                    JOIN users u2 ON gm.user_id = u2.user_id 
-                    WHERE gm.appointment_id = a.appointment_id
-                ) AS group_emails
-            FROM appointments a
-            JOIN users u ON a.student_user_id = u.user_id
-            JOIN schedules s ON a.schedule_id = s.schedule_id
-            LEFT JOIN (
-                SELECT student_user_id, stress_level 
-                FROM assessments 
-                WHERE assessment_id IN (
-                    SELECT MAX(assessment_id) 
-                    FROM assessments 
-                    GROUP BY student_user_id
-                )
-            ) ass ON a.student_user_id = ass.student_user_id
-            WHERE a.psychologist_user_id = ? 
-            ORDER BY s.date DESC, s.start_time ASC
-        `;
+router.get(
+  "/psychologist-appointments",
+  authMiddleware,
+  authorizeRole(["Psychologist"]),
+  async (req, res) => {
+    try {
+      const psychologist_user_id =
+        req.user.id || req.user.user_id;
 
-    const [rows] = await db.query(sql, [psychologist_user_id]);
-    
-    // แปลงสตริงให้กลายเป็น Array สำหรับหน้า Frontend
-    const formattedRows = rows.map(row => ({
-        ...row,
-        group_members: row.group_emails ? row.group_emails.split(',') : []
-    }));
+      // =====================================================
+      // 1. ดึงข้อมูลนัดหมาย + นักเรียนหลัก
+      // =====================================================
 
-    res.json(formattedRows);
-  } catch (err) {
-    console.error("Fetch Psych Appointments Error:", err);
-    res.status(500).send("Server Error");
+      const sql = `
+        SELECT 
+          a.*,
+
+          -- ข้อมูลนักเรียนหลัก
+          u.user_id AS student_id,
+          u.fullname AS student_name,
+          u.email AS student_email,
+          u.phone AS student_phone,
+          u.gender AS student_gender,
+          u.education_level AS student_grade,
+          u.dormitory AS student_dormitory,
+
+          -- ข้อมูลตารางนัดหมาย
+          s.date AS appointment_date,
+          s.start_time,
+          s.end_time,
+
+          -- ผลประเมินล่าสุด
+          ass.stress_level AS latest_assessment
+
+        FROM appointments a
+
+        JOIN users u
+          ON a.student_user_id = u.user_id
+
+        JOIN schedules s
+          ON a.schedule_id = s.schedule_id
+
+        LEFT JOIN (
+          SELECT 
+            student_user_id,
+            stress_level
+          FROM assessments
+          WHERE assessment_id IN (
+            SELECT MAX(assessment_id)
+            FROM assessments
+            GROUP BY student_user_id
+          )
+        ) ass
+          ON a.student_user_id = ass.student_user_id
+
+        WHERE a.psychologist_user_id = ?
+
+        ORDER BY
+          s.date DESC,
+          s.start_time ASC
+      `;
+
+      const [rows] = await db.query(
+        sql,
+        [psychologist_user_id]
+      );
+
+      // =====================================================
+      // 2. ดึงข้อมูลสมาชิกกลุ่มของแต่ละนัดหมาย
+      // =====================================================
+
+      for (const appointment of rows) {
+
+        // ===================================================
+        // นักเรียนหลัก
+        // ===================================================
+
+        appointment.student_profile = {
+          id: appointment.student_id,
+
+          fullname:
+            appointment.student_name || "",
+
+          email:
+            appointment.student_email || "",
+
+          phone:
+            appointment.student_phone || "",
+
+          gender:
+            appointment.student_gender || "",
+
+          grade:
+            appointment.student_grade || "",
+
+          dormitory:
+            appointment.student_dormitory || ""
+        };
+
+
+        // ===================================================
+        // สมาชิกกลุ่ม
+        // ===================================================
+
+        const [groupMembers] = await db.query(
+          `
+            SELECT
+              gm.group_member_id,
+
+              u.user_id AS id,
+              u.fullname,
+              u.email,
+              u.phone,
+              u.gender,
+              u.education_level AS grade,
+              u.dormitory
+
+            FROM groupmembers gm
+
+            LEFT JOIN users u
+              ON gm.user_id = u.user_id
+
+            WHERE gm.appointment_id = ?
+
+            ORDER BY gm.group_member_id ASC
+          `,
+          [appointment.appointment_id]
+        );
+
+
+        // ===================================================
+        // แปลงข้อมูลสมาชิกกลุ่ม
+        // ===================================================
+
+        appointment.group_members =
+          groupMembers.map((member) => {
+
+            if (member.id) {
+
+              return {
+                found: true,
+
+                id: member.id,
+
+                fullname:
+                  member.fullname || "",
+
+                email:
+                  member.email || "",
+
+                phone:
+                  member.phone || "",
+
+                gender:
+                  member.gender || "",
+
+                grade:
+                  member.grade || "",
+
+                dormitory:
+                  member.dormitory || ""
+              };
+
+            }
+
+            // กรณีไม่พบ user
+            return {
+              found: false,
+
+              id: null,
+
+              fullname: "",
+
+              email: "",
+
+              phone: "",
+
+              gender: "",
+
+              grade: "",
+
+              dormitory: ""
+            };
+          });
+
+
+        // ===================================================
+        // เพิ่ม field สำหรับ Frontend เดิม
+        // ===================================================
+
+        appointment.date =
+          appointment.appointment_date;
+
+        appointment.time =
+          appointment.start_time &&
+          appointment.end_time
+            ? `${appointment.start_time} - ${appointment.end_time}`
+            : "";
+
+        appointment.meeting_type =
+          appointment.type;
+
+
+        // ===================================================
+        // ลบ field ที่ไม่จำเป็น
+        // ===================================================
+
+        delete appointment.student_id;
+        delete appointment.student_gender;
+        delete appointment.student_grade;
+        delete appointment.student_dormitory;
+      }
+
+
+      // =====================================================
+      // 3. ส่งข้อมูลกลับ Frontend
+      // =====================================================
+
+      res.json(rows);
+
+    } catch (err) {
+
+      console.error(
+        "❌ Fetch Psychologist Appointments Error:",
+        err
+      );
+
+      res.status(500).json({
+        msg: "เกิดข้อผิดพลาดในการดึงข้อมูลนัดหมาย",
+        error: err.message
+      });
+    }
   }
-});
-
+);
 // ==========================================
 // 5. PUT: อัปเดตสถานะ (กดอนุมัติ / เสร็จสิ้น / ยกเลิก)
 // ==========================================

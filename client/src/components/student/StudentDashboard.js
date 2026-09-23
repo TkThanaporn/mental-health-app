@@ -1,419 +1,1334 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Button, Card, Row, Col, Badge, Modal } from 'react-bootstrap'; // ✅ เพิ่ม Modal ตรงนี้
+
+import {
+    Container,
+    Button,
+    Card,
+    Row,
+    Col,
+    Badge,
+    Modal
+} from 'react-bootstrap';
+
 import { jwtDecode } from "jwt-decode";
+
 import { useNavigate } from 'react-router-dom';
-import { 
-    FaUserMd, FaHeartbeat, FaChevronRight, FaClipboardList,
-    FaClipboardCheck, FaCalendarCheck, FaSmile, FaHistory,
-    FaBookOpen, FaPhoneAlt, FaBed, FaBrain,
-    FaMapMarkerAlt, FaEnvelope, FaFacebookSquare, FaGlobe
+
+import {
+    FaUserMd,
+    FaHeartbeat,
+    FaChevronRight,
+    FaClipboardList,
+    FaClipboardCheck,
+    FaCalendarCheck,
+    FaSmile,
+    FaHistory,
+    FaBookOpen,
+    FaPhoneAlt,
+    FaMapMarkerAlt,
+    FaEnvelope,
+    FaFacebookSquare,
+    FaGlobe
 } from 'react-icons/fa';
 
-// Import CSS และ Logo (แก้ไข Path ให้ตรงกับโปรเจกต์ของคุณ)
 import './StudentDashboard.css';
+
 import pcshsLogo from '../../assets/pcshs_logo.png';
 
-// Import Navbar
 import PCSHSNavbar from '../common/Navbar/PCSHSNavbar';
 
-const StudentDashboard = () => {
-    const navigate = useNavigate();
-    const [currentUserName, setCurrentUserName] = useState("นักเรียน");
-    const [newsList, setNewsList] = useState([]);
-    const [selectedNews, setSelectedNews] = useState(null); // ✅ 1. เพิ่ม State สำหรับเก็บข้อมูลข่าวที่จะโชว์ในป๊อปอัพ
 
-    // ตั้งค่า URL ของ Backend (ปรับตามจริง หรือดึงจาก .env)
+const StudentDashboard = () => {
+
+    const navigate = useNavigate();
+
+    const [currentUserName, setCurrentUserName] = useState("นักเรียน");
+
+    const [newsList, setNewsList] = useState([]);
+
+    const [selectedNews, setSelectedNews] = useState(null);
+
+
+    // =========================================
+    // Backend URL
+    // =========================================
     const API_BASE_URL = 'http://localhost:5000';
 
+
+    // =========================================
+    // ดึงข้อมูลผู้ใช้ + ข่าวสาร
+    // =========================================
     useEffect(() => {
-        // --- 1. ดึงข้อมูลผู้ใช้จาก Token ---
+
+        // -----------------------------------------
+        // 1. ดึงข้อมูลผู้ใช้จาก Token
+        // -----------------------------------------
         const token = localStorage.getItem('token');
+
         if (token) {
+
             try {
+
                 const decoded = jwtDecode(token);
+
                 const userObj = decoded.user || decoded;
-                if(userObj.name) setCurrentUserName(userObj.name);
+
+                if (userObj.name) {
+                    setCurrentUserName(userObj.name);
+                }
+
             } catch (e) {
+
                 console.error("Token Error", e);
+
             }
+
         }
 
-        // --- 2. ดึงข้อมูลข่าวสารจาก API ---
+
+        // -----------------------------------------
+        // 2. ดึงข้อมูลข่าวสารจาก API
+        // -----------------------------------------
         const fetchNews = async () => {
+
             try {
-                const response = await fetch(`${API_BASE_URL}/api/news`); 
+
+                const response = await fetch(
+                    `${API_BASE_URL}/api/news`
+                );
+
                 if (response.ok) {
+
                     const data = await response.json();
+
                     setNewsList(data);
+
                 } else {
+
                     throw new Error("Failed to fetch news");
+
                 }
+
             } catch (error) {
-                console.error("Error fetching news:", error);
-                // ข้อมูลจำลองพร้อมรูปภาพ (Mock Data) กรณีเชื่อมต่อ API ไม่ได้หรือไม่มีข้อมูล
+
+                console.error(
+                    "Error fetching news:",
+                    error
+                );
+
+
+                // -----------------------------------------
+                // Mock Data กรณี API ใช้งานไม่ได้
+                // -----------------------------------------
                 setNewsList([
-                    { 
-                        id: 1, 
-                        title: 'เทคนิคการจัดการความเครียดก่อนสอบ', 
-                        category: 'Stress', 
-                        summary: 'วิธีง่ายๆ ในการผ่อนคลายสมองเมื่อต้องอ่านหนังสือหนักๆ ลองทำตาม 5 วิธีนี้...', 
-                        content: 'รายละเอียดบทความ... วิธีจัดการความเครียดก่อนสอบสามารถทำได้โดยการพักผ่อนให้เพียงพอ การจัดตารางอ่านหนังสือ และการทำสมาธิ...',
-                        image_url: 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?auto=format&fit=crop&q=80&w=500', 
+
+                    {
+                        id: 1,
+
+                        title: 'เทคนิคการจัดการความเครียดก่อนสอบ',
+
+                        category: 'Stress',
+
+                        summary:
+                            'วิธีง่ายๆ ในการผ่อนคลายสมองเมื่อต้องอ่านหนังสือหนักๆ ลองทำตาม 5 วิธีนี้...',
+
+                        content:
+                            'รายละเอียดบทความ... วิธีจัดการความเครียดก่อนสอบสามารถทำได้โดยการพักผ่อนให้เพียงพอ การจัดตารางอ่านหนังสือ และการทำสมาธิ...',
+
+                        image_url:
+                            'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?auto=format&fit=crop&q=80&w=500'
                     },
-                    { 
-                        id: 2, 
-                        title: 'นอนไม่หลับทำอย่างไร?', 
-                        category: 'Sleep', 
-                        summary: 'ปรับเปลี่ยนพฤติกรรมเล็กน้อย เพื่อการนอนหลับที่มีคุณภาพมากขึ้น ตื่นมาสดใสกว่าเดิม...', 
-                        content: 'รายละเอียดบทความ... การงดเล่นมือถือก่อนนอน 30 นาที และการจัดสภาพแวดล้อมห้องนอนให้มืดและเย็น จะช่วยให้หลับสบายยิ่งขึ้น...',
-                        image_url: 'https://images.unsplash.com/photo-1541480601022-2308c0f02487?auto=format&fit=crop&q=80&w=500', 
+
+                    {
+                        id: 2,
+
+                        title: 'นอนไม่หลับทำอย่างไร?',
+
+                        category: 'Sleep',
+
+                        summary:
+                            'ปรับเปลี่ยนพฤติกรรมเล็กน้อย เพื่อการนอนหลับที่มีคุณภาพมากขึ้น ตื่นมาสดใสกว่าเดิม...',
+
+                        content:
+                            'รายละเอียดบทความ... การงดเล่นมือถือก่อนนอน 30 นาที และการจัดสภาพแวดล้อมห้องนอนให้มืดและเย็น จะช่วยให้หลับสบายยิ่งขึ้น...',
+
+                        image_url:
+                            'https://images.unsplash.com/photo-1541480601022-2308c0f02487?auto=format&fit=crop&q=80&w=500'
                     },
-                    { 
-                        id: 3, 
-                        title: 'วิธีสร้างพลังบวกในวันที่แย่', 
-                        category: 'Mood', 
-                        summary: 'มองโลกในมุมใหม่ เพื่อใจที่สดใสกว่าเดิม แม้ในวันที่รู้สึกเหนื่อยล้า...', 
-                        content: 'รายละเอียดบทความ... การฝึกขอบคุณสิ่งเล็กๆ น้อยๆ ในแต่ละวัน จะช่วยปรับมุมมองและสร้างพลังบวกให้กับตัวเราได้...',
-                        image_url: 'https://images.unsplash.com/photo-1490730141103-6cac27aaab94?auto=format&fit=crop&q=80&w=500', 
+
+                    {
+                        id: 3,
+
+                        title: 'วิธีสร้างพลังบวกในวันที่แย่',
+
+                        category: 'Mood',
+
+                        summary:
+                            'มองโลกในมุมใหม่ เพื่อใจที่สดใสกว่าเดิม แม้ในวันที่รู้สึกเหนื่อยล้า...',
+
+                        content:
+                            'รายละเอียดบทความ... การฝึกขอบคุณสิ่งเล็กๆ น้อยๆ ในแต่ละวัน จะช่วยปรับมุมมองและสร้างพลังบวกให้กับตัวเราได้...',
+
+                        image_url:
+                            'https://images.unsplash.com/photo-1490730141103-6cac27aaab94?auto=format&fit=crop&q=80&w=500'
                     }
+
                 ]);
+
             }
+
         };
 
+
         fetchNews();
+
     }, []);
 
-    // ฟังก์ชันจัดการ URL รูปภาพให้สมบูรณ์
+
+    // =========================================
+    // จัดการ URL รูปภาพ
+    // =========================================
     const getImageUrl = (url) => {
+
         if (!url) return null;
-        if (url.startsWith('http')) return url; // ถ้าเป็น Link ภายนอกอยู่แล้ว ให้ใช้ได้เลย
-        return `${API_BASE_URL}${url}`; // ถ้าเป็น Path สัมพัทธ์ ให้เติม Base URL ด้านหน้า
+
+        if (url.startsWith('http')) {
+            return url;
+        }
+
+        return `${API_BASE_URL}${url}`;
+
     };
 
+
     return (
+
         <div className="pcshs-dashboard d-flex flex-column min-vh-100">
+
+            {/* =========================================
+                NAVBAR
+            ========================================= */}
             <PCSHSNavbar />
 
-            {/* --- Hero Section --- */}
-            <section className="hero-section d-flex align-items-center" style={{ marginTop: '70px' }}>
+
+            {/* =========================================
+                HERO SECTION
+            ========================================= */}
+            <section
+                className="hero-section d-flex align-items-center"
+                style={{ marginTop: '70px' }}
+            >
+
                 <Container>
+
                     <Row className="align-items-center reverse-column-mobile">
-                        <Col lg={7} md={6} className="text-section fade-in-up">
-                            <h5 className="fw-bold mb-2 text-secondary letter-spacing-1">ยินดีต้อนรับ, {currentUserName}</h5>
-                            <h1 className="display-4 fw-extrabold mb-3 fw-bold " style={{color: 'var(--pcshs-blue)'}}>
-                                พื้นที่ปลอดภัย<br/>
-                                <span style={{ color: '#f26522' }}>สำหรับใจชาวจุฬาภรณฯ</span>
+
+                        <Col
+                            lg={7}
+                            md={6}
+                            className="text-section fade-in-up"
+                        >
+
+                            <h5 className="fw-bold mb-2 text-secondary letter-spacing-1">
+
+                                ยินดีต้อนรับ, {currentUserName}
+
+                            </h5>
+
+
+                            <h1
+                                className="display-4 fw-extrabold mb-3 fw-bold"
+                                style={{
+                                    color: 'var(--pcshs-blue)'
+                                }}
+                            >
+
+                                พื้นที่ปลอดภัย
+                                <br />
+
+                                <span
+                                    style={{
+                                        color: '#f26522'
+                                    }}
+                                >
+                                    สำหรับใจชาวจุฬาภรณฯ
+                                </span>
+
                             </h1>
-                            <p className="lead text-muted mb-4" style={{maxWidth: '90%'}}>
-                                เราพร้อมรับฟังและสนับสนุนทางจิตวิทยา เพื่อให้นักเรียนก้าวข้ามทุกความท้าทายในรั้ววิทยาศาสตร์ได้อย่างมีความสุข
+
+
+                            <p
+                                className="lead text-muted mb-4"
+                                style={{
+                                    maxWidth: '90%'
+                                }}
+                            >
+
+                                เราพร้อมรับฟังและสนับสนุนทางจิตวิทยา
+                                เพื่อให้นักเรียนก้าวข้ามทุกความท้าทาย
+                                ในรั้ววิทยาศาสตร์ได้อย่างมีความสุข
+
                             </p>
-                            <Button onClick={() => navigate('/student/assessment')} className="btn-hero-primary shadow-sm">
-                                <FaHeartbeat className="me-2"/> เริ่มประเมินสุขภาพใจ
+
+
+                            <Button
+                                onClick={() =>
+                                    navigate('/student/assessment')
+                                }
+                                className="btn-hero-primary shadow-sm"
+                            >
+
+                                <FaHeartbeat className="me-2" />
+
+                                เริ่มประเมินสุขภาพใจ
+
                             </Button>
+
                         </Col>
-                        <Col lg={5} md={6} className="text-center mb-4 mb-md-0 fade-in-up delay-100">
-                            <img src={pcshsLogo} alt="PCSHS Logo" className="school-logo img-fluid floating-animation" />
+
+
+                        <Col
+                            lg={5}
+                            md={6}
+                            className="text-center mb-4 mb-md-0 fade-in-up delay-100"
+                        >
+
+                            <img
+                                src={pcshsLogo}
+                                alt="PCSHS Logo"
+                                className="school-logo img-fluid floating-animation"
+                            />
+
                         </Col>
+
                     </Row>
+
                 </Container>
+
             </section>
 
-            {/* --- Content Section --- */}
-            <Container className="py-5 content-wrapper position-relative flex-grow-1" style={{ zIndex: 5 }}>
-                
-                {/* System Overview */}
-                <Card className="border-0 shadow-sm rounded-4 mb-5 overflow-hidden overview-card-bg">
+
+            {/* =========================================
+                CONTENT
+            ========================================= */}
+            <Container
+                className="py-5 content-wrapper position-relative flex-grow-1"
+                style={{
+                    zIndex: 5
+                }}
+            >
+
+
+                {/* =========================================
+                    SYSTEM OVERVIEW
+                ========================================= */}
+                <Card
+                    className="border-0 shadow-sm rounded-4 mb-5 overflow-hidden overview-card-bg"
+                >
+
                     <Card.Body className="p-4 p-lg-5">
+
                         <div className="text-center mb-4">
-                            <Badge bg="light" text="primary" className="mb-2 px-3 py-2 rounded-pill border">System Overview</Badge>
-                            <h3 className="fw-bold text-dark">3 ขั้นตอนง่ายๆ ในการดูแลใจ</h3>
-                            <p className="text-muted">ระบบของเราออกแบบมาเพื่อช่วยให้นักเรียนเข้าถึงคำปรึกษาได้อย่างรวดเร็ว</p>
+
+                            <Badge
+                                bg="light"
+                                text="primary"
+                                className="mb-2 px-3 py-2 rounded-pill border"
+                            >
+                                System Overview
+                            </Badge>
+
+
+                            <h3 className="fw-bold text-dark">
+
+                                3 ขั้นตอนง่ายๆ ในการดูแลใจ
+
+                            </h3>
+
+
+                            <p className="text-muted">
+
+                                ระบบของเราออกแบบมาเพื่อช่วยให้นักเรียน
+                                เข้าถึงคำปรึกษาได้อย่างรวดเร็ว
+
+                            </p>
+
                         </div>
+
+
                         <Row className="text-center g-4">
-                            <Col md={4} className="position-relative">
+
+
+                            {/* STEP 1 */}
+                            <Col
+                                md={4}
+                                className="position-relative"
+                            >
+
                                 <div className="step-item">
+
                                     <div className="step-icon-wrapper bg-soft-orange mx-auto mb-3">
+
                                         <FaClipboardCheck size={28} />
+
                                     </div>
-                                    <h5 className="fw-bold">1. ประเมินตนเอง</h5>
+
+
+                                    <h5 className="fw-bold">
+
+                                        1. ประเมินตนเอง
+
+                                    </h5>
+
+
                                     <p className="text-muted small px-3">
-                                        ทำแบบทดสอบจิตวิทยา (PHQ-A) เพื่อเช็คระดับความเครียดและสุขภาพใจเบื้องต้น
+
+                                        ทำแบบทดสอบจิตวิทยา (PHQ-A)
+                                        เพื่อเช็คระดับความเครียด
+                                        และสุขภาพใจเบื้องต้น
+
                                     </p>
+
                                 </div>
+
+
                                 <div className="d-none d-md-block step-connector">
+
                                     <FaChevronRight className="text-muted opacity-25" />
+
                                 </div>
+
                             </Col>
-                            <Col md={4} className="position-relative">
+
+
+                            {/* STEP 2 */}
+                            <Col
+                                md={4}
+                                className="position-relative"
+                            >
+
                                 <div className="step-item">
+
                                     <div className="step-icon-wrapper bg-soft-blue mx-auto mb-3">
+
                                         <FaCalendarCheck size={28} />
+
                                     </div>
-                                    <h5 className="fw-bold">2. จองคิวปรึกษา</h5>
+
+
+                                    <h5 className="fw-bold">
+
+                                        2. จองคิวปรึกษา
+
+                                    </h5>
+
+
                                     <p className="text-muted small px-3">
-                                        เลือกวันและเวลาที่สะดวก เพื่อนัดหมายพูดคุยกับนักจิตวิทยาโรงเรียน
+
+                                        เลือกวันและเวลาที่สะดวก
+                                        เพื่อนัดหมายพูดคุยกับนักจิตวิทยาโรงเรียน
+
                                     </p>
+
                                 </div>
+
+
                                 <div className="d-none d-md-block step-connector">
+
                                     <FaChevronRight className="text-muted opacity-25" />
+
                                 </div>
+
                             </Col>
+
+
+                            {/* STEP 3 */}
                             <Col md={4}>
+
                                 <div className="step-item">
+
                                     <div className="step-icon-wrapper bg-soft-green mx-auto mb-3">
+
                                         <FaSmile size={28} />
+
                                     </div>
-                                    <h5 className="fw-bold">3. รับคำปรึกษา</h5>
+
+
+                                    <h5 className="fw-bold">
+
+                                        3. รับคำปรึกษา
+
+                                    </h5>
+
+
                                     <p className="text-muted small px-3">
-                                        รับคำปรึกษาผ่านระบบแชทหรือที่คลินิกเป็นส่วนตัว
+
+                                        รับคำปรึกษาผ่านระบบแชท
+                                        หรือที่คลินิกเป็นส่วนตัว
+
                                     </p>
-                                </div>  
+
+                                </div>
+
                             </Col>
+
                         </Row>
+
                     </Card.Body>
+
                 </Card>
 
-                {/* --- Main Menu Cards --- */}
+
+                {/* =========================================
+                    MAIN MENU
+                ========================================= */}
                 <Row className="g-4 mb-5 justify-content-center">
+
+
+                    {/* Assessment */}
                     <Col md={4}>
-                         <Card className="h-100 menu-card rounded-4 shadow-sm" onClick={() => navigate('/student/assessment')} style={{cursor: 'pointer'}}>
+
+                        <Card
+                            className="h-100 menu-card rounded-4 shadow-sm"
+                            onClick={() =>
+                                navigate('/student/assessment')
+                            }
+                            style={{
+                                cursor: 'pointer'
+                            }}
+                        >
+
                             <Card.Body className="p-4 d-flex align-items-center">
+
                                 <div className="icon-box bg-orange-light me-3">
+
                                     <FaClipboardList />
+
                                 </div>
+
+
                                 <div>
-                                    <h5 className="fw-bold mb-1 text-dark">ประเมินสุขภาพใจ</h5>
-                                    <small className="text-muted">ทำแบบทดสอบ PHQ-A</small>
+
+                                    <h5 className="fw-bold mb-1 text-dark">
+
+                                        ประเมินสุขภาพใจ
+
+                                    </h5>
+
+
+                                    <small className="text-muted">
+
+                                        ทำแบบทดสอบ PHQ-A
+
+                                    </small>
+
                                 </div>
-                                <FaChevronRight className="ms-auto text-muted opacity-50"/>
+
+
+                                <FaChevronRight
+                                    className="ms-auto text-muted opacity-50"
+                                />
+
                             </Card.Body>
+
                         </Card>
-                    </Col>
-                    
-                    <Col md={4}>
-                        <Card className="h-100 menu-card rounded-4 shadow-sm" onClick={() => navigate('/student/book')} style={{cursor: 'pointer'}}>
-                            <Card.Body className="p-4 d-flex align-items-center">
-                                <div className="icon-box bg-blue-light me-3">
-                                    <FaUserMd />
-                                </div>
-                                <div>
-                                    <h5 className="fw-bold mb-1 text-dark">จองคิวปรึกษา</h5>
-                                    <small className="text-muted">นัดหมายกับนักจิตวิทยา</small>
-                                </div>
-                                <FaChevronRight className="ms-auto text-muted opacity-50"/>
-                            </Card.Body>
-                        </Card>
+
                     </Col>
 
+
+                    {/* Booking */}
                     <Col md={4}>
-                        <Card className="h-100 menu-card rounded-4 shadow-sm" onClick={() => navigate('/student/appointments')} style={{cursor: 'pointer'}}>
+
+                        <Card
+                            className="h-100 menu-card rounded-4 shadow-sm"
+                            onClick={() =>
+                                navigate('/student/book')
+                            }
+                            style={{
+                                cursor: 'pointer'
+                            }}
+                        >
+
                             <Card.Body className="p-4 d-flex align-items-center">
-                                <div className="icon-box bg-green-light me-3" style={{backgroundColor: '#e6f9f0', color: '#00b074'}}>
-                                    <FaHistory />
+
+                                <div className="icon-box bg-blue-light me-3">
+
+                                    <FaUserMd />
+
                                 </div>
+
+
                                 <div>
-                                    <h5 className="fw-bold mb-1 text-dark">รายการนัดหมาย</h5>
-                                    <small className="text-muted">ดูประวัติและห้องแชท</small>
+
+                                    <h5 className="fw-bold mb-1 text-dark">
+
+                                        จองคิวปรึกษา
+
+                                    </h5>
+
+
+                                    <small className="text-muted">
+
+                                        นัดหมายกับนักจิตวิทยา
+
+                                    </small>
+
                                 </div>
-                                <FaChevronRight className="ms-auto text-muted opacity-50"/>
+
+
+                                <FaChevronRight
+                                    className="ms-auto text-muted opacity-50"
+                                />
+
                             </Card.Body>
+
                         </Card>
+
                     </Col>
+
+
+                    {/* Appointment History */}
+                    <Col md={4}>
+
+                        <Card
+                            className="h-100 menu-card rounded-4 shadow-sm"
+                            onClick={() =>
+                                navigate('/student/appointments')
+                            }
+                            style={{
+                                cursor: 'pointer'
+                            }}
+                        >
+
+                            <Card.Body className="p-4 d-flex align-items-center">
+
+                                <div
+                                    className="icon-box bg-green-light me-3"
+                                    style={{
+                                        backgroundColor: '#e6f9f0',
+                                        color: '#00b074'
+                                    }}
+                                >
+
+                                    <FaHistory />
+
+                                </div>
+
+
+                                <div>
+
+                                    <h5 className="fw-bold mb-1 text-dark">
+
+                                        รายการนัดหมาย
+
+                                    </h5>
+
+
+                                    <small className="text-muted">
+
+                                        ดูประวัติและห้องแชท
+
+                                    </small>
+
+                                </div>
+
+
+                                <FaChevronRight
+                                    className="ms-auto text-muted opacity-50"
+                                />
+
+                            </Card.Body>
+
+                        </Card>
+
+                    </Col>
+
                 </Row>
 
-                {/* --- Self-Care Highlights (ดึงจาก API + รูปภาพ) --- */}
+
+                {/* =========================================
+                    SELF CARE
+                ========================================= */}
                 <div className="mb-5">
+
                     <div className="d-flex justify-content-between align-items-center mb-4">
+
                         <h4 className="fw-bold m-0 text-dark">
-                            <FaBookOpen className="me-2 text-primary"/> 
+
+                            <FaBookOpen className="me-2 text-primary" />
+
                             ดูแลใจตัวเองเบื้องต้น
+
                         </h4>
-                        <div 
-                            className="text-primary fw-bold" 
-                            style={{ cursor: 'pointer', fontSize: '0.9rem' }}
-                            onClick={() => navigate('/student/news')} // เปลี่ยนเป็นลิงก์ไปหน้าข่าวรวมของนักเรียน
+
+
+                        <div
+                            className="text-primary fw-bold"
+                            style={{
+                                cursor: 'pointer',
+                                fontSize: '0.9rem'
+                            }}
+                            onClick={() =>
+                                navigate('/student/news')
+                            }
                         >
-                            ดูทั้งหมด <FaChevronRight size={12}/>
+
+                            ดูทั้งหมด
+
+                            <FaChevronRight size={12} />
+
                         </div>
+
                     </div>
-                    
+
+
                     <Row className="g-4">
+
                         {newsList.length > 0 ? (
-                            newsList.slice(0, 3).map((item, index) => (
-                                <Col md={4} key={item.news_id || item.id || index}>
-                                    <Card 
-                                        className="border-0 shadow-sm h-100 rounded-4 article-card hover-lift overflow-hidden" 
-                                        onClick={() => setSelectedNews(item)} // ✅ 2. เปลี่ยนให้แสดง Modal แทน
-                                        style={{cursor: 'pointer'}}
+
+                            newsList
+                                .slice(0, 3)
+                                .map((item, index) => (
+
+                                    <Col
+                                        md={4}
+                                        key={
+                                            item.news_id ||
+                                            item.id ||
+                                            index
+                                        }
                                     >
-                                        <div style={{height: '180px', position: 'relative', overflow: 'hidden'}}>
-                                            {item.image_url || item.imageUrl ? (
-                                                <Card.Img 
-                                                    variant="top" 
-                                                    src={getImageUrl(item.image_url || item.imageUrl)} 
-                                                    className="h-100 w-100 object-fit-cover"
-                                                    style={{ transition: 'transform 0.3s ease' }}
-                                                    alt={item.title}
-                                                />
-                                            ) : (
-                                                <div className="h-100 w-100 bg-light d-flex align-items-center justify-content-center text-secondary">
-                                                    <FaBookOpen size={40} className="opacity-25" />
+
+                                        <Card
+                                            className="border-0 shadow-sm h-100 rounded-4 article-card hover-lift overflow-hidden"
+                                            onClick={() =>
+                                                setSelectedNews(item)
+                                            }
+                                            style={{
+                                                cursor: 'pointer'
+                                            }}
+                                        >
+
+                                            <div
+                                                style={{
+                                                    height: '180px',
+                                                    position: 'relative',
+                                                    overflow: 'hidden'
+                                                }}
+                                            >
+
+                                                {item.image_url ||
+                                                item.imageUrl ? (
+
+                                                    <Card.Img
+                                                        variant="top"
+                                                        src={getImageUrl(
+                                                            item.image_url ||
+                                                            item.imageUrl
+                                                        )}
+                                                        className="h-100 w-100 object-fit-cover"
+                                                        style={{
+                                                            transition:
+                                                                'transform 0.3s ease'
+                                                        }}
+                                                        alt={item.title}
+                                                    />
+
+                                                ) : (
+
+                                                    <div className="h-100 w-100 bg-light d-flex align-items-center justify-content-center text-secondary">
+
+                                                        <FaBookOpen
+                                                            size={40}
+                                                            className="opacity-25"
+                                                        />
+
+                                                    </div>
+
+                                                )}
+
+                                            </div>
+
+
+                                            <Card.Body className="d-flex flex-column">
+
+                                                <div>
+
+                                                    <Badge
+                                                        bg="info"
+                                                        className="mb-2 text-dark bg-opacity-25"
+                                                    >
+
+                                                        {item.category ||
+                                                            'ความรู้'}
+
+                                                    </Badge>
+
+
+                                                    <h5
+                                                        className="fw-bold mb-2 text-truncate-2"
+                                                        style={{
+                                                            display:
+                                                                '-webkit-box',
+                                                            WebkitLineClamp: 2,
+                                                            WebkitBoxOrient:
+                                                                'vertical',
+                                                            overflow:
+                                                                'hidden'
+                                                        }}
+                                                    >
+
+                                                        {item.title}
+
+                                                    </h5>
+
+
+                                                    <p
+                                                        className="text-muted small text-truncate-2"
+                                                        style={{
+                                                            display:
+                                                                '-webkit-box',
+                                                            WebkitLineClamp: 2,
+                                                            WebkitBoxOrient:
+                                                                'vertical',
+                                                            overflow:
+                                                                'hidden'
+                                                        }}
+                                                    >
+
+                                                        {item.summary}
+
+                                                    </p>
+
                                                 </div>
-                                            )}
-                                        </div>
-                                        <Card.Body className="d-flex flex-column">
-                                            <div>
-                                                <Badge bg="info" className="mb-2 text-dark bg-opacity-25">{item.category || 'ความรู้'}</Badge>
-                                                <h5 className="fw-bold mb-2 text-truncate-2" style={{display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden'}}>{item.title}</h5>
-                                                <p className="text-muted small text-truncate-2" style={{display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden'}}>{item.summary}</p>
-                                            </div>
-                                            <div className="mt-auto pt-2">
-                                                <Button variant="link" className="p-0 text-decoration-none fw-bold small text-primary">
-                                                    อ่านต่อ <FaChevronRight size={10}/>
-                                                </Button>
-                                            </div>
-                                        </Card.Body>
-                                    </Card>
-                                </Col>
-                            ))
+
+
+                                                <div className="mt-auto pt-2">
+
+                                                    <Button
+                                                        variant="link"
+                                                        className="p-0 text-decoration-none fw-bold small text-primary"
+                                                    >
+
+                                                        อ่านต่อ
+
+                                                        <FaChevronRight
+                                                            size={10}
+                                                        />
+
+                                                    </Button>
+
+                                                </div>
+
+                                            </Card.Body>
+
+                                        </Card>
+
+                                    </Col>
+
+                                ))
+
                         ) : (
+
                             <Col className="text-center py-5">
-                                <div className="spinner-border text-primary" role="status"></div>
-                                <p className="mt-2 text-muted">กำลังโหลดบทความน่าสนใจ...</p>
+
+                                <div
+                                    className="spinner-border text-primary"
+                                    role="status"
+                                ></div>
+
+
+                                <p className="mt-2 text-muted">
+
+                                    กำลังโหลดบทความน่าสนใจ...
+
+                                </p>
+
                             </Col>
+
                         )}
+
                     </Row>
+
                 </div>
 
-                {/* --- Emergency Contact --- */}
-                <div className="bg-danger bg-opacity-10 border border-danger border-opacity-25 rounded-4 p-4 d-flex flex-column flex-md-row align-items-center justify-content-between mb-5">
+
+                {/* =========================================
+                    EMERGENCY CONTACT
+                ========================================= */}
+                <div
+                    className="bg-danger bg-opacity-10 border border-danger border-opacity-25 rounded-4 p-4 d-flex flex-column flex-md-row align-items-center justify-content-between mb-5"
+                >
+
                     <div className="d-flex align-items-center mb-3 mb-md-0">
+
                         <div className="bg-danger text-white rounded-circle p-3 me-3">
+
                             <FaPhoneAlt size={24} />
+
                         </div>
+
+
                         <div>
-                            <h5 className="fw-bold text-danger mb-1">ต้องการความช่วยเหลือเร่งด่วน?</h5>
-                            <p className="mb-0 text-muted small">หากรู้สึกไม่ไหว หรือต้องการคนคุยด้วยทันที (24 ชม.)</p>
+
+                            <h5 className="fw-bold text-danger mb-1">
+
+                                ต้องการความช่วยเหลือเร่งด่วน?
+
+                            </h5>
+
+
+                            <p className="mb-0 text-muted small">
+
+                                หากรู้สึกไม่ไหว หรือต้องการคนคุยด้วยทันที (24 ชม.)
+
+                            </p>
+
                         </div>
+
                     </div>
-                    <div className="d-flex gap-2">
-                        <Button variant="danger" className="rounded-pill px-4 fw-bold shadow-sm">
+
+
+                    {/* =========================================
+                        ปุ่มโทร 1323
+                        กดแล้วเปิดหน้าการโทร
+                    ========================================= */}
+                    <a
+                        href="tel:1323"
+                        className="text-decoration-none"
+                    >
+
+                        <Button
+                            variant="danger"
+                            className="rounded-pill px-4 fw-bold shadow-sm"
+                            type="button"
+                        >
+
+                            <FaPhoneAlt className="me-2" />
+
                             โทร 1323 (กรมสุขภาพจิต)
+
                         </Button>
-                    </div>
+
+                    </a>
+
                 </div>
 
-                {/* ✅ 3. เพิ่ม Modal Component โชว์รายละเอียดข่าว */}
-                <Modal 
-                    show={selectedNews !== null} 
-                    onHide={() => setSelectedNews(null)} 
-                    size="lg" 
+
+                {/* =========================================
+                    NEWS MODAL
+                ========================================= */}
+                <Modal
+                    show={selectedNews !== null}
+                    onHide={() => setSelectedNews(null)}
+                    size="lg"
                     centered
                 >
+
                     {selectedNews && (
+
                         <>
+
                             <Modal.Header closeButton>
-                                <Modal.Title className="fw-bold">{selectedNews.title}</Modal.Title>
+
+                                <Modal.Title className="fw-bold">
+
+                                    {selectedNews.title}
+
+                                </Modal.Title>
+
                             </Modal.Header>
+
+
                             <Modal.Body>
-                                {(selectedNews.image_url || selectedNews.imageUrl) && (
-                                    <img 
-                                        src={getImageUrl(selectedNews.image_url || selectedNews.imageUrl)} 
-                                        alt={selectedNews.title} 
-                                        className="img-fluid rounded-4 mb-3 w-100" 
-                                        style={{ maxHeight: '400px', objectFit: 'cover' }}
+
+                                {(selectedNews.image_url ||
+                                    selectedNews.imageUrl) && (
+
+                                    <img
+                                        src={getImageUrl(
+                                            selectedNews.image_url ||
+                                            selectedNews.imageUrl
+                                        )}
+                                        alt={selectedNews.title}
+                                        className="img-fluid rounded-4 mb-3 w-100"
+                                        style={{
+                                            maxHeight: '400px',
+                                            objectFit: 'cover'
+                                        }}
                                     />
+
                                 )}
+
+
                                 <div className="d-flex gap-2 mb-3">
-                                    <Badge bg="info">{selectedNews.category || 'ความรู้ทั่วไป'}</Badge>
+
+                                    <Badge bg="info">
+
+                                        {selectedNews.category ||
+                                            'ความรู้ทั่วไป'}
+
+                                    </Badge>
+
                                 </div>
-                                <div className="news-content" style={{ whiteSpace: 'pre-line', lineHeight: '1.6' }}>
-                                    {/* เลือกโชว์ content ถ้ามี หากไม่มีโชว์ summary */}
-                                    {selectedNews.content || selectedNews.summary} 
+
+
+                                <div
+                                    className="news-content"
+                                    style={{
+                                        whiteSpace: 'pre-line',
+                                        lineHeight: '1.6'
+                                    }}
+                                >
+
+                                    {selectedNews.content ||
+                                        selectedNews.summary}
+
                                 </div>
+
                             </Modal.Body>
+
+
                             <Modal.Footer>
-                                <Button variant="secondary" onClick={() => setSelectedNews(null)}>
+
+                                <Button
+                                    variant="secondary"
+                                    onClick={() =>
+                                        setSelectedNews(null)
+                                    }
+                                >
+
                                     ปิดหน้าต่าง
+
                                 </Button>
+
                             </Modal.Footer>
+
                         </>
+
                     )}
+
                 </Modal>
 
             </Container>
 
+
             {/* =========================================
-               PCSHS FOOTER
-               ========================================= */}
-            <footer style={{ backgroundColor: '#002d56', color: '#ecf0f1' }} className="pt-5 pb-3 mt-auto">
+                FOOTER
+            ========================================= */}
+            <footer
+                style={{
+                    backgroundColor: '#002d56',
+                    color: '#ecf0f1'
+                }}
+                className="pt-5 pb-3 mt-auto"
+            >
+
                 <Container>
+
                     <Row className="g-4 mb-4">
+
+
+                        {/* FOOTER ABOUT */}
                         <Col md={5}>
+
                             <div className="d-flex align-items-center mb-3">
-                                <div style={{width: 40, height: 40, backgroundColor: 'white', borderRadius: '50%', padding: 5, marginRight: 10}}>
-                                    <img src={pcshsLogo} alt="Logo" style={{width:'100%', height:'100%', objectFit:'contain'}} />
+
+                                <div
+                                    style={{
+                                        width: 40,
+                                        height: 40,
+                                        backgroundColor: 'white',
+                                        borderRadius: '50%',
+                                        padding: 5,
+                                        marginRight: 10
+                                    }}
+                                >
+
+                                    <img
+                                        src={pcshsLogo}
+                                        alt="Logo"
+                                        style={{
+                                            width: '100%',
+                                            height: '100%',
+                                            objectFit: 'contain'
+                                        }}
+                                    />
+
                                 </div>
+
+
                                 <div>
-                                    <h5 className="fw-bold mb-0" style={{color: '#fff'}}>PCSHS Care System</h5>
-                                    <small style={{color: '#f26522', fontWeight: 'bold'}}>โรงเรียนวิทยาศาสตร์จุฬาภรณราชวิทยาลัย</small>
+
+                                    <h5
+                                        className="fw-bold mb-0"
+                                        style={{
+                                            color: '#fff'
+                                        }}
+                                    >
+
+                                        PCSHS Care System
+
+                                    </h5>
+
+
+                                    <small
+                                        style={{
+                                            color: '#f26522',
+                                            fontWeight: 'bold'
+                                        }}
+                                    >
+
+                                        โรงเรียนวิทยาศาสตร์จุฬาภรณราชวิทยาลัย
+
+                                    </small>
+
                                 </div>
+
                             </div>
+
+
                             <p className="small opacity-75 pe-md-5">
-                                ระบบดูแลช่วยเหลือนักเรียนออนไลน์ มุ่งเน้นการส่งเสริมสุขภาพจิตที่ดี 
-                                และสร้างพื้นที่ปลอดภัยสำหรับนักเรียนทุกคน ภายใต้การดูแลของผู้เชี่ยวชาญและคณะครู
+
+                                ระบบดูแลช่วยเหลือนักเรียนออนไลน์
+                                มุ่งเน้นการส่งเสริมสุขภาพจิตที่ดี
+                                และสร้างพื้นที่ปลอดภัยสำหรับนักเรียนทุกคน
+                                ภายใต้การดูแลของผู้เชี่ยวชาญและคณะครู
+
                             </p>
-                        </Col>
-                        
-                        <Col md={3}>
-                            <h6 className="fw-bold mb-3 text-white border-bottom border-warning d-inline-block pb-1" style={{borderColor: '#f26522 !important'}}>เมนูด่วน</h6>
-                            <ul className="list-unstyled small opacity-75">
-                                <li className="mb-2"><a href="/student/assessment" className="text-decoration-none text-white hover-orange">ประเมินสุขภาพใจ</a></li>
-                                <li className="mb-2"><a href="/student/book" className="text-decoration-none text-white hover-orange">จองคิวปรึกษา</a></li>
-                                <li className="mb-2"><a href="/student/news" className="text-decoration-none text-white hover-orange">บทความน่ารู้</a></li>
-                                <li className="mb-2"><a href="#" className="text-decoration-none text-white hover-orange">แจ้งเหตุความรุนแรง</a></li>
-                            </ul>
+
                         </Col>
 
-                        <Col md={4}>
-                            <h6 className="fw-bold mb-3 text-white border-bottom border-warning d-inline-block pb-1" style={{borderColor: '#f26522 !important'}}>ติดต่อเรา</h6>
+
+                        {/* QUICK MENU */}
+                        <Col md={3}>
+
+                            <h6
+                                className="fw-bold mb-3 text-white border-bottom border-warning d-inline-block pb-1"
+                                style={{
+                                    borderColor: '#f26522'
+                                }}
+                            >
+
+                                เมนูด่วน
+
+                            </h6>
+
+
                             <ul className="list-unstyled small opacity-75">
-                                <li className="mb-3 d-flex">
-                                    <FaMapMarkerAlt className="me-2 mt-1 flex-shrink-0" style={{color: '#f26522'}} />
-                                    <span>งานแนะแนวและให้คำปรึกษา<br/>โรงเรียนวิทยาศาสตร์จุฬาภรณราชวิทยาลัย</span>
+
+                                <li className="mb-2">
+
+                                    <a
+                                        href="/student/assessment"
+                                        className="text-decoration-none text-white hover-orange"
+                                    >
+
+                                        ประเมินสุขภาพใจ
+
+                                    </a>
+
                                 </li>
-                                <li className="mb-3 d-flex align-items-center">
-                                    <FaPhoneAlt className="me-2" style={{color: '#f26522'}} />
-                                    <span>0xx-xxx-xxxx (ครูจิตวิทยาของโรงเรียน)</span>
+
+
+                                <li className="mb-2">
+
+                                    <a
+                                        href="/student/book"
+                                        className="text-decoration-none text-white hover-orange"
+                                    >
+
+                                        จองคิวปรึกษา
+
+                                    </a>
+
                                 </li>
-                                <li className="mb-3 d-flex align-items-center">
-                                    <FaEnvelope className="me-2" style={{color: '#f26522'}} />
-                                    <span>guidance@pcshsloei.ac.th</span>
+
+
+                                <li className="mb-2">
+
+                                    <a
+                                        href="/student/news"
+                                        className="text-decoration-none text-white hover-orange"
+                                    >
+
+                                        บทความน่ารู้
+
+                                    </a>
+
                                 </li>
+
+
+                                <li className="mb-2">
+
+                                    <a
+                                        href="#"
+                                        className="text-decoration-none text-white hover-orange"
+                                    >
+
+                                        แจ้งเหตุความรุนแรง
+
+                                    </a>
+
+                                </li>
+
                             </ul>
+
+                        </Col>
+
+
+                        {/* CONTACT */}
+                        <Col md={4}>
+
+                            <h6
+                                className="fw-bold mb-3 text-white border-bottom border-warning d-inline-block pb-1"
+                                style={{
+                                    borderColor: '#f26522'
+                                }}
+                            >
+
+                                ติดต่อเรา
+
+                            </h6>
+
+
+                            <ul className="list-unstyled small opacity-75">
+
+                                <li className="mb-3 d-flex">
+
+                                    <FaMapMarkerAlt
+                                        className="me-2 mt-1 flex-shrink-0"
+                                        style={{
+                                            color: '#f26522'
+                                        }}
+                                    />
+
+                                    <span>
+
+                                        งานแนะแนวและให้คำปรึกษา
+                                        <br />
+
+                                        โรงเรียนวิทยาศาสตร์จุฬาภรณราชวิทยาลัย
+
+                                    </span>
+
+                                </li>
+
+
+                                <li className="mb-3 d-flex align-items-center">
+
+                                    <FaPhoneAlt
+                                        className="me-2"
+                                        style={{
+                                            color: '#f26522'
+                                        }}
+                                    />
+
+                                    <span>
+
+                                        0xx-xxx-xxxx
+                                        (ครูจิตวิทยาของโรงเรียน)
+
+                                    </span>
+
+                                </li>
+
+
+                                <li className="mb-3 d-flex align-items-center">
+
+                                    <FaEnvelope
+                                        className="me-2"
+                                        style={{
+                                            color: '#f26522'
+                                        }}
+                                    />
+
+                                    <span>
+
+                                        guidance@pcshsloei.ac.th
+
+                                    </span>
+
+                                </li>
+
+                            </ul>
+
+
                             <div className="d-flex gap-3 mt-3">
-                                <a href="#" className="text-white fs-5 hover-orange"><FaFacebookSquare /></a>
-                                <a href="#" className="text-white fs-5 hover-orange"><FaGlobe /></a>
+
+                                <a
+                                    href="#"
+                                    className="text-white fs-5 hover-orange"
+                                >
+
+                                    <FaFacebookSquare />
+
+                                </a>
+
+
+                                <a
+                                    href="#"
+                                    className="text-white fs-5 hover-orange"
+                                >
+
+                                    <FaGlobe />
+
+                                </a>
+
                             </div>
+
                         </Col>
+
                     </Row>
-                    
+
+
                     <hr className="opacity-25" />
-                    
+
+
                     <Row className="align-items-center small opacity-50">
-                        <Col md={6} className="text-center text-md-start">
-                            &copy; 2024 Princess Chulabhorn Science High Schools. All rights reserved.
+
+                        <Col
+                            md={6}
+                            className="text-center text-md-start"
+                        >
+
+                            &copy; 2024 Princess Chulabhorn Science High Schools.
+                            All rights reserved.
+
                         </Col>
-                        <Col md={6} className="text-center text-md-end">
-                            <span className="me-3">Privacy Policy</span>
-                            <span>Terms of Service</span>
+
+
+                        <Col
+                            md={6}
+                            className="text-center text-md-end"
+                        >
+
+                            <span className="me-3">
+
+                                Privacy Policy
+
+                            </span>
+
+
+                            <span>
+
+                                Terms of Service
+
+                            </span>
+
                         </Col>
+
                     </Row>
+
                 </Container>
+
             </footer>
 
         </div>
+
     );
+
 };
+
 
 export default StudentDashboard;
