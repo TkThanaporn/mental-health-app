@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Container, Button, Card, Row, Col, Nav, Navbar, Offcanvas, Badge, Image, Spinner, Form, Dropdown, Modal } from 'react-bootstrap';
+import { Container, Button, Card, Row, Col, Nav, Navbar, Offcanvas, Badge, Image, Spinner, Form, Dropdown } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import { 
     FaHome, FaSignOutAlt, FaBars, FaUserCircle,
     FaUserGraduate, FaChalkboardTeacher, FaNewspaper, FaChartPie,
     FaUserMd, FaCalendarCheck, FaUserShield, FaFileExcel, FaPrint, FaBell, FaUserPlus,
-    FaKey, FaArrowUp, FaExclamationTriangle
+    FaKey
 } from 'react-icons/fa';
 import { FaFilter, FaUsers } from 'react-icons/fa';
 import {
@@ -55,12 +55,6 @@ const AdminDashboard = () => {
 
     const [notifications, setNotifications] = useState([]);
     const [unreadCount, setUnreadCount] = useState(0);
-
-    const [isPromoting, setIsPromoting] = useState(false);
-    const [isUndoing, setIsUndoing] = useState(false);
-
-    const [showPromoteModal, setShowPromoteModal] = useState(false);
-    const [promoteConfirmText, setPromoteConfirmText] = useState('');
 
     const [stats, setStats] = useState({
         selectedYear: new Date().getFullYear(),
@@ -171,45 +165,6 @@ const AdminDashboard = () => {
         }
         setActiveTab(tabName);
         setShowMobileMenu(false);
-    };
-
-    const handleOpenPromoteModal = () => {
-        setPromoteConfirmText(''); 
-        setShowPromoteModal(true);
-    };
-
-    const executePromoteStudents = async () => {
-        if (promoteConfirmText !== 'ยืนยัน') return;
-
-        setShowPromoteModal(false);
-        setIsPromoting(true);
-        try {
-            const token = localStorage.getItem('token');
-            const res = await axios.put('http://localhost:5000/api/admin/promote-students', {}, {
-                headers: { 'x-auth-token': token }
-            });
-            alert(res.data.msg); 
-            window.location.reload(); 
-        } catch (err) {
-            alert('❌ เกิดข้อผิดพลาด ไม่สามารถเลื่อนชั้นเรียนได้');
-            console.error("Promote Error:", err);
-        }
-        setIsPromoting(false);
-    };
-
-    const handleUndoPromote = async () => {
-        if (window.confirm("ต้องการย้อนกลับการเลื่อนชั้นใช่หรือไม่?\n\nข้อมูลนักเรียนจะถูกดึงกลับมาอยู่ระดับชั้นเดิมก่อนหน้าที่จะกดเลื่อนชั้นครับ")) {
-            setIsUndoing(true);
-            try {
-                const token = localStorage.getItem('token');
-                const res = await axios.put('http://localhost:5000/api/admin/undo-promote', {}, { headers: { 'x-auth-token': token } });
-                alert(res.data.msg);
-                window.location.reload();
-            } catch (err) {
-                alert('❌ ไม่สามารถย้อนกลับได้');
-            }
-            setIsUndoing(false);
-        }
     };
 
     const handleExportExcel = async () => {
@@ -687,25 +642,6 @@ const AdminDashboard = () => {
                                     <p className="text-muted mb-0">เลือกปีเพื่อดูแนวโน้มคำขอและกลุ่มนักเรียนที่ใช้บริการ</p>
                                 </div>
                                 <div className="d-flex flex-wrap align-items-center gap-3">
-                                    <div className="d-flex gap-2">
-                                        <Button 
-                                            onClick={handleUndoPromote} 
-                                            disabled={isUndoing || isPromoting}
-                                            variant="outline-danger"
-                                            className="rounded-pill shadow-sm d-flex align-items-center fw-bold px-3"
-                                        >
-                                            {isUndoing ? <Spinner size="sm" /> : "↩️ Undo"}
-                                        </Button>
-
-                                        <Button 
-                                            onClick={handleOpenPromoteModal} 
-                                            disabled={isPromoting || isUndoing}
-                                            className="rounded-pill shadow-sm d-flex align-items-center"
-                                            style={{ backgroundColor: '#10b981', border: 'none', padding: '0.45rem 1.25rem', color: 'white', fontWeight: 600 }}
-                                        >
-                                            {isPromoting ? <Spinner size="sm" /> : <><FaArrowUp className="me-2"/> เลื่อนปีการศึกษา</>}
-                                        </Button>
-                                    </div>
 
                                     <div className="year-filter bg-white shadow-sm px-3 py-2 rounded-pill d-flex align-items-center">
                                         <FaFilter className="text-orange me-2" />
@@ -971,65 +907,8 @@ const AdminDashboard = () => {
                     {renderContent()}
                 </Container>
             </div>
-
-            <Modal show={showPromoteModal} onHide={() => setShowPromoteModal(false)} centered backdrop="static" className="profile-modal-premium">
-                <Modal.Header closeButton className="border-0 pb-0 mt-2">
-                    <Modal.Title className="fw-bold px-3 d-flex align-items-center text-danger">
-                        <FaExclamationTriangle className="me-2 mb-1" />
-                        ยืนยันการเลื่อนชั้นปีการศึกษา
-                    </Modal.Title>
-                </Modal.Header>
-                <Modal.Body className="p-4 pt-2">
-                    <div className="bg-danger bg-opacity-10 p-4 rounded-4 mb-4 border border-danger border-opacity-25 shadow-sm">
-                        <p className="text-danger mb-0 fw-bold" style={{ fontSize: '1.05rem' }}>
-                            ⚠️ คำเตือน: การกระทำนี้จะเลื่อนระดับชั้นของนักเรียนทั้งโรงเรียนขึ้น 1 ระดับ!
-                        </p>
-                        <ul className="text-danger mb-0 mt-3" style={{ fontSize: '0.95rem' }}>
-                            <li className="mb-2">นักเรียน ม.1 ถึง ม.5 จะถูกเลื่อนชั้นขึ้นอัตโนมัติ</li>
-                            <li>นักเรียน ม.6 จะถูกเปลี่ยนสถานะเป็น <strong className="text-dark">"จบการศึกษา"</strong></li>
-                        </ul>
-                    </div>
-                    
-                    <Form.Group className="px-3 text-center">
-                        <Form.Label className="fw-bold text-dark mb-3" style={{ fontSize: '1rem' }}>
-                            หากคุณแน่ใจว่าถึงเวลาเลื่อนปีการศึกษาแล้ว <br/>
-                            กรุณาพิมพ์คำว่า <span className="text-danger fs-5 mx-1">ยืนยัน</span> เพื่อดำเนินการต่อ
-                        </Form.Label>
-                        <Form.Control
-                            type="text"
-                            placeholder="พิมพ์ 'ยืนยัน' ลงในช่องนี้"
-                            value={promoteConfirmText}
-                            onChange={(e) => setPromoteConfirmText(e.target.value)}
-                            className="text-center fw-bold shadow-sm"
-                            style={{ 
-                                fontSize: '1.25rem', 
-                                letterSpacing: '2px', 
-                                borderRadius: '12px',
-                                border: promoteConfirmText === 'ยืนยัน' ? '2px solid #10b981' : '2px solid #dee2e6',
-                                color: promoteConfirmText === 'ยืนยัน' ? '#10b981' : '#495057'
-                            }}
-                            autoFocus
-                            autoComplete="off"
-                        />
-                    </Form.Group>
-                </Modal.Body>
-                <Modal.Footer className="border-0 d-flex justify-content-center pb-4 pt-2 gap-3">
-                    <Button variant="light" onClick={() => setShowPromoteModal(false)} className="rounded-pill px-5 fw-bold text-secondary border-0 bg-light">
-                        ยกเลิก
-                    </Button>
-                    <Button 
-                        variant="danger" 
-                        onClick={executePromoteStudents} 
-                        disabled={promoteConfirmText !== 'ยืนยัน' || isPromoting}
-                        className="rounded-pill px-5 shadow-sm border-0 d-flex align-items-center gap-2"
-                        style={{ opacity: promoteConfirmText !== 'ยืนยัน' ? 0.6 : 1 }}
-                    >
-                        {isPromoting ? <Spinner size="sm" /> : <><FaArrowUp /> ดำเนินการเลื่อนชั้น</>}
-                    </Button>
-                </Modal.Footer>
-            </Modal>
         </div>
     );
-};
+}; 
 
 export default AdminDashboard;
