@@ -1,70 +1,147 @@
-// server/services/cronService.js
+
 const cron = require('node-cron');
-const db = require('../config/db'); 
+const db = require('../config/db');
 const { sendEmail } = require('./emailService');
 
+// ป้องกันการแจ้งเตือนซ้ำภายในรอบการทำงานของ Server
+const notifiedAppointments = new Set();
+
 const startNotificationCron = () => {
-    cron.schedule('* * * * *', async () => {
-        try {
-            const [upcoming] = await db.query(`
-                SELECT a.*, s.start_time, s.end_time, u.email, u.fullname
-                FROM appointments a
-                JOIN schedules s ON a.schedule_id = s.schedule_id
-                JOIN users u ON a.student_user_id = u.user_id
-                WHERE a.status = 'confirmed'
-                AND s.date = CURDATE()
-                AND TIME_FORMAT(s.start_time, '%H:%i') = TIME_FORMAT(DATE_ADD(NOW(), INTERVAL 15 MINUTE), '%H:%i')
-            `);
+  cron.schedule('* * * * *', async () => {
+    try {
+      const [upcoming] = await db.query(`
+        SELECT
+          a.*,
+          s.date AS appointment_date,
+          s.start_time,
+          s.end_time,
+          u.email,
+          u.fullname
+        FROM appointments a
+        JOIN schedules s ON a.schedule_id = s.schedule_id
+        JOIN users u ON a.student_user_id = u.user_id
+        WHERE a.status = 'confirmed'
+          AND s.date = CURDATE()
+          AND TIME_FORMAT(s.start_time, '%H:%i')
+              = TIME_FORMAT(DATE_ADD(NOW(), INTERVAL 15 MINUTE), '%H:%i')
+      `);
 
-            upcoming.forEach(appt => {
-                const startTime = appt.start_time.substring(0, 5).replace(':', '.');
-                const endTime = appt.end_time.substring(0, 5).replace(':', '.');
+      for (const appt of upcoming) {
+        if (!appt.email) continue;
 
-                sendEmail({
-                    to: appt.email,
-                    subject: `⏰ อีก 15 นาที จะถึงเวลานัดหมาย: ${appt.topic}`,
-                    html: `
-                        <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; background-color: #f4f7f6; padding: 20px; border-radius: 12px;">
-                            <div style="background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
-                                
-                                <div style="background: linear-gradient(135deg, #002147 0%, #1B3F8B 100%); padding: 30px 20px; text-align: center;">
-                                    <h1 style="color: #FFD700; margin: 0; font-size: 26px; letter-spacing: 1px;">PCSHS HeartCare</h1>
-                                    <p style="color: #ffffff; margin: 10px 0 0 0; font-size: 15px; opacity: 0.9;">ระบบดูแลช่วยเหลือนักเรียน</p>
-                                </div>
+        const appointmentId =
+          appt.appointment_id ?? appt.id;
 
-                                <div style="padding: 40px 30px; text-align: center;">
-                                    <div style="font-size: 40px; margin-bottom: 15px;">⏳</div>
-                                    <h2 style="color: #333333; margin-top: 0; font-size: 22px;">เตรียมตัวให้พร้อม!</h2>
-                                    <p style="color: #666666; font-size: 16px; line-height: 1.6; margin-bottom: 25px;">
-                                        สวัสดี <strong>${appt.fullname}</strong><br>
-                                        เหลือเวลาอีกเพียง <strong>15 นาที</strong> จะถึงคิวรับคำปรึกษาของคุณครับ
-                                    </p>
-
-                                    <div style="background-color: #f8f9fa; border-left: 4px solid #f26522; border-radius: 8px; padding: 20px; margin: 0 auto 30px auto; text-align: left;">
-                                        <p style="margin: 0 0 10px 0; font-size: 15px; color: #333;">📌 <strong>หัวข้อ:</strong> ${appt.topic}</p>
-                                        <p style="margin: 0; font-size: 15px; color: #333;">⏰ <strong>เวลา:</strong> ${startTime} - ${endTime} น.</p>
-                                    </div>
-                                    
-                                    <div style="text-align: center;">
-                                        <a href="http://localhost:3000/student/appointments" style="background-color: #f26522; color: #ffffff; padding: 14px 30px; text-decoration: none; border-radius: 30px; font-weight: bold; font-size: 16px; display: inline-block; box-shadow: 0 4px 10px rgba(242, 101, 34, 0.3);">เข้าสู่หน้าการนัดหมาย</a>
-                                    </div>
-                                </div>
-
-                                <div style="background-color: #eeeeee; padding: 20px; text-align: center; border-top: 1px solid #dddddd;">
-                                    <p style="color: #aaaaaa; font-size: 12px; margin: 0;">
-                                        &copy; โรงเรียนวิทยาศาสตร์จุฬาภรณราชวิทยาลัย เลย
-                                    </p>
-                                </div>
-                                
-                            </div>
-                        </div>
-                    `
-                });
-            });
-        } catch (err) {
-            console.error('❌ Cron Error:', err);
+        if (appointmentId == null) {
+          console.error(
+            '[Notification Cron] ไม่พบ ID ของนัดหมาย'
+          );
+          continue;
         }
-    });
+
+        const notificationKey =
+          `${appointmentId}_${appt.appointment_date}_${appt.start_time}`;
+
+        // ถ้าเคยพยายามส่งนัดนี้แล้ว ไม่ส่งซ้ำ
+        if (notifiedAppointments.has(notificationKey)) {
+          continue;
+        }
+
+        // บันทึกก่อนส่ง เพื่อป้องกัน Cron รอบถัดไปส่งซ้ำ
+        notifiedAppointments.add(notificationKey);
+
+        const startTime = String(appt.start_time)
+          .substring(0, 5)
+          .replace(':', '.');
+
+        const endTime = String(appt.end_time)
+          .substring(0, 5)
+          .replace(':', '.');
+
+        const clientUrl = (
+          process.env.CLIENT_URL ||
+          'http://localhost:3000'
+        ).replace(/\/+$/, '');
+
+        const html = `
+          <div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;background:#f4f7f6;padding:20px;border-radius:12px">
+            <div style="background:#fff;border-radius:12px;overflow:hidden">
+              <div style="background:#002147;padding:30px 20px;text-align:center">
+                <h1 style="color:#FFD700;margin:0">PCSHS HeartCare</h1>
+                <p style="color:#fff">ระบบดูแลช่วยเหลือนักเรียน</p>
+              </div>
+
+              <div style="padding:30px;text-align:center">
+                <div style="font-size:40px">⏳</div>
+                <h2>เตรียมตัวให้พร้อม!</h2>
+                <p>
+                  สวัสดี <strong>${escapeHtml(appt.fullname || 'นักเรียน')}</strong><br>
+                  อีก 15 นาทีจะถึงเวลานัดหมายของคุณ
+                </p>
+
+                <div style="background:#f8f9fa;padding:20px;text-align:left">
+                  <p>📌 <strong>หัวข้อ:</strong>
+                    ${escapeHtml(appt.topic || '-')}</p>
+                  <p>⏰ <strong>เวลา:</strong>
+                    ${startTime} - ${endTime} น.</p>
+                </div>
+
+                <p>
+                  <a href="${clientUrl}/student/appointments"
+                    style="background:#f26522;color:white;padding:14px 25px;text-decoration:none;border-radius:25px;display:inline-block">
+                    เข้าสู่หน้าการนัดหมาย
+                  </a>
+                </p>
+              </div>
+
+              <div style="background:#eee;padding:20px;text-align:center">
+                <small style="color:#777">
+                  โรงเรียนวิทยาศาสตร์จุฬาภรณราชวิทยาลัย เลย
+                </small>
+              </div>
+            </div>
+          </div>
+        `;
+
+        try {
+          const sent = await sendEmail({
+            to: appt.email,
+            subject: `⏰ อีก 15 นาที จะถึงเวลานัดหมาย: ${appt.topic || ''}`,
+            html
+          });
+
+          if (sent) {
+            console.log(
+              `[Notification Cron] แจ้งเตือนสำเร็จ: นัดหมาย ${appointmentId}`
+            );
+          } else {
+            console.error(
+              `[Notification Cron] ส่งไม่สำเร็จ: นัดหมาย ${appointmentId}`
+            );
+          }
+        } catch (error) {
+          console.error(
+            `[Notification Cron] เกิดข้อผิดพลาดนัดหมาย ${appointmentId}:`,
+            error.message
+          );
+        }
+      }
+    } catch (err) {
+      console.error('[Notification Cron] Cron Error:', err);
+    }
+  });
+
+  console.log('[Notification Cron] เริ่มทำงานทุก 1 นาที');
 };
+
+function escapeHtml(value) {
+  return String(value).replace(/[&<>"']/g, char => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;'
+  })[char]);
+}
 
 module.exports = { startNotificationCron };
