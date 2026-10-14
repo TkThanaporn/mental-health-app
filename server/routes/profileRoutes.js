@@ -41,7 +41,9 @@ router.get('/me', authMiddleware, async (req, res) => {
         const user = result[0];
         
         if (user.profile_image && !user.profile_image.startsWith('http')) {
-            user.profile_image = `http://localhost:5000/uploads/${user.profile_image}`;
+            const baseUrl = process.env.SERVER_URL || 'http://localhost:5000';
+            user.profile_image =
+                `${baseUrl.replace(/\/+$/, '')}/uploads/${user.profile_image.replace(/^\/+/, '')}`;
         }
         
         res.json(user);
