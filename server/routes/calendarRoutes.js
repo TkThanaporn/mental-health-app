@@ -15,7 +15,6 @@ const oauth2Client = new google.auth.OAuth2(
     'https://mental-health-app-two-tau.vercel.app/psychologist/dashboard'
 );
 
-
 // 1. API สำหรับขอ URL ไปหน้า Login ของ Google
 router.get('/auth-url', (req, res) => {
     const url = oauth2Client.generateAuthUrl({
