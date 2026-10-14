@@ -45,9 +45,16 @@ router.post('/save-token', async (req, res) => {
         } else {
             res.status(400).json({ success: false, message: 'เคยให้สิทธิ์ไปแล้ว กรุณาไปกดยกเลิกสิทธิ์แอปในบัญชี Google แล้วลองใหม่' });
         }
-    } catch (error) {
-        console.error('Google Auth Error:', error.message);
-        res.status(500).json({ success: false, message: 'เกิดข้อผิดพลาดในการเชื่อมต่อ (รหัสนี้อาจถูกใช้ไปแล้ว)' });
+   } catch (error) {
+        console.error(
+            'Google Auth Error:',
+            error.response?.data?.error || error.message
+        );
+
+        res.status(500).json({
+            success: false,
+            message: 'เชื่อมต่อ Google Calendar ไม่สำเร็จ กรุณาตรวจสอบ Render Logs'
+        });
     }
 });
 
