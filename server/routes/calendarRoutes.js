@@ -8,11 +8,13 @@ require('dotenv').config();
 // นำเข้า authMiddleware (ปรับ Path ให้ตรงกับที่คุณเก็บไฟล์ middleware)
 const { authMiddleware } = require('../middleware/auth');
 
+
 const oauth2Client = new google.auth.OAuth2(
     process.env.GOOGLE_CLIENT_ID,
     process.env.GOOGLE_CLIENT_SECRET,
-    'http://localhost:3000/psychologist/dashboard' // 🚨 ต้องตรงกับที่ตั้งไว้ใน Google Cloud Console
+    'https://mental-health-app-two-tau.vercel.app/psychologist/dashboard'
 );
+
 
 // 1. API สำหรับขอ URL ไปหน้า Login ของ Google
 router.get('/auth-url', (req, res) => {
