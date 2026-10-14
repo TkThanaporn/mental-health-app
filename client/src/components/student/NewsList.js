@@ -1,7 +1,8 @@
+import API_BASE_URL from '../../config/api.js';
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { 
-  Card, Row, Col, Badge, Container, 
+import {
+  Card, Row, Col, Badge, Container,
   Form, InputGroup, Button, Spinner,
   Pagination, Dropdown, Alert
 } from 'react-bootstrap';
@@ -41,28 +42,28 @@ const NewsList = () => {
           const sampleNews = generateSampleNews();
           setNews(sampleNews);
           setFilteredNews(sampleNews);
-          
+
           // สร้างรายการหมวดหมู่จากข้อมูลตัวอย่าง
           const uniqueCategories = ['ทั้งหมด', ...new Set(sampleNews.map(item => item.category_name))];
           setCategories(uniqueCategories);
         } else {
           // ถ้าใช้ API จริง
-          const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api/news';
+          const apiUrl = `${API_BASE_URL}/api/news`;
           const res = await axios.get(apiUrl);
           setNews(res.data);
           setFilteredNews(res.data);
-          
+
           // ดึงข้อมูลหมวดหมู่ (อาจมาจาก API อื่น หรือแยกจากข้อมูลข่าว)
           const categoryRes = await axios.get(`${apiUrl}/categories`);
           setCategories(['ทั้งหมด', ...categoryRes.data]);
         }
-        
+
         // โหลดจำนวนการดูจาก localStorage (จำลอง)
         const savedViews = localStorage.getItem('newsViews');
         if (savedViews) {
           setViewCounts(JSON.parse(savedViews));
         }
-        
+
         setLoading(false);
       } catch (err) {
         console.error('Error fetching news:', err);
@@ -70,7 +71,7 @@ const NewsList = () => {
         setLoading(false);
       }
     };
-    
+
     fetchNews();
   }, []);
 
@@ -87,9 +88,9 @@ const NewsList = () => {
       'มหาวิทยาลัยชั้นนำเปิดหลักสูตรออนไลน์ฟรี',
       'เทศกาลอาหารแห่งปีเปิดฉากแล้วที่กรุงเทพ'
     ];
-    
+
     const sampleContent = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.';
-    
+
     return Array.from({ length: 18 }, (_, i) => ({
       news_id: i + 1,
       title: sampleTitles[i % sampleTitles.length],
@@ -104,21 +105,21 @@ const NewsList = () => {
   // ฟังก์ชันกรองข่าวตามคำค้นหาและหมวดหมู่
   useEffect(() => {
     let result = news;
-    
+
     // กรองตามหมวดหมู่
     if (selectedCategory !== 'ทั้งหมด') {
       result = result.filter(item => item.category_name === selectedCategory);
     }
-    
+
     // กรองตามคำค้นหา
     if (searchTerm.trim() !== '') {
       const term = searchTerm.toLowerCase();
-      result = result.filter(item => 
-        item.title.toLowerCase().includes(term) || 
+      result = result.filter(item =>
+        item.title.toLowerCase().includes(term) ||
         item.content.toLowerCase().includes(term)
       );
     }
-    
+
     setFilteredNews(result);
     setCurrentPage(1); // รีเซ็ตไปหน้าที่ 1 เมื่อมีการกรอง
   }, [news, selectedCategory, searchTerm]);
@@ -128,7 +129,7 @@ const NewsList = () => {
     const newViewCounts = { ...viewCounts, [newsId]: (viewCounts[newsId] || 0) + 1 };
     setViewCounts(newViewCounts);
     localStorage.setItem('newsViews', JSON.stringify(newViewCounts));
-    
+
     // ในแอปจริงอาจเรียก API เพื่อบันทึกสถิติการดู
     // axios.post(`/api/news/${newsId}/view`);
   };
@@ -147,9 +148,9 @@ const NewsList = () => {
 
   // ฟอร์แมตวันที่
   const formatDate = (dateString) => {
-    const options = { 
-      year: 'numeric', 
-      month: 'long', 
+    const options = {
+      year: 'numeric',
+      month: 'long',
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit'
@@ -166,7 +167,7 @@ const NewsList = () => {
   return (
     <Container className="py-4">
       <h1 className="mb-4 text-center text-primary">ข่าวสารล่าสุด</h1>
-      
+
       {/* ส่วนค้นหาและกรอง */}
       <Card className="mb-4 shadow-sm">
         <Card.Body>
@@ -189,14 +190,14 @@ const NewsList = () => {
                 </InputGroup>
               </Form>
             </Col>
-            
+
             <Col md={6}>
               <div className="d-flex align-items-center">
                 <Filter className="me-2" />
                 <span className="me-2">หมวดหมู่:</span>
                 <div className="d-flex flex-wrap">
                   {categories.slice(0, 6).map(category => (
-                    <Badge 
+                    <Badge
                       key={category}
                       bg={selectedCategory === category ? categoryColors[category] || 'primary' : 'light'}
                       text={selectedCategory === category ? 'white' : 'dark'}
@@ -207,7 +208,7 @@ const NewsList = () => {
                       {category}
                     </Badge>
                   ))}
-                  
+
                   {categories.length > 6 && (
                     <Dropdown className="d-inline">
                       <Dropdown.Toggle variant="light" size="sm" id="dropdown-categories">
@@ -215,7 +216,7 @@ const NewsList = () => {
                       </Dropdown.Toggle>
                       <Dropdown.Menu>
                         {categories.slice(6).map(category => (
-                          <Dropdown.Item 
+                          <Dropdown.Item
                             key={category}
                             onClick={() => setSelectedCategory(category)}
                           >
@@ -231,7 +232,7 @@ const NewsList = () => {
           </Row>
         </Card.Body>
       </Card>
-      
+
       {/* แสดงสถานะการโหลด */}
       {loading && (
         <div className="text-center py-5">
@@ -239,23 +240,23 @@ const NewsList = () => {
           <p className="mt-3">กำลังโหลดข่าว...</p>
         </div>
       )}
-      
+
       {/* แสดงข้อผิดพลาด */}
       {error && !loading && (
         <Alert variant="danger" className="text-center">
           {error}
         </Alert>
       )}
-      
+
       {/* สถิติ */}
       {!loading && !error && (
         <div className="mb-3 text-muted">
-          พบข่าวทั้งหมด {filteredNews.length} รายการ 
+          พบข่าวทั้งหมด {filteredNews.length} รายการ
           {selectedCategory !== 'ทั้งหมด' && ` ในหมวดหมู่ ${selectedCategory}`}
           {searchTerm && ` สำหรับคำค้นหา "${searchTerm}"`}
         </div>
       )}
-      
+
       {/* แสดงรายการข่าว */}
       {!loading && !error && (
         <>
@@ -263,7 +264,7 @@ const NewsList = () => {
             {currentNews.length > 0 ? (
               currentNews.map(n => (
                 <Col md={6} lg={4} key={n.news_id} className="mb-4">
-                  <Card 
+                  <Card
                     className="h-100 shadow-sm hover-shadow transition-all"
                     onClick={() => handleViewNews(n.news_id)}
                     style={{ cursor: 'pointer' }}
@@ -275,8 +276,8 @@ const NewsList = () => {
                         </Badge>
                       </div>
                       {/* รูปภาพข่าว (ตัวอย่าง) */}
-                      <div 
-                        className="news-image" 
+                      <div
+                        className="news-image"
                         style={{
                           height: '180px',
                           backgroundColor: `#${((Math.random() * 0xffffff) << 0).toString(16).padStart(6, '0')}`,
@@ -290,13 +291,13 @@ const NewsList = () => {
                         </div>
                       </div>
                     </div>
-                    
+
                     <Card.Body className="d-flex flex-column">
                       <Card.Title className="flex-grow-1">{n.title}</Card.Title>
                       <Card.Text className="text-muted flex-grow-1">
                         {n.content.substring(0, 120)}...
                       </Card.Text>
-                      
+
                       <div className="mt-auto">
                         <div className="d-flex justify-content-between align-items-center text-muted small">
                           <div>
@@ -308,7 +309,7 @@ const NewsList = () => {
                             {viewCounts[n.news_id] || n.views || 0}
                           </div>
                         </div>
-                        
+
                         {n.author && (
                           <div className="mt-2 small">
                             โดย: <span className="fst-italic">{n.author}</span>
@@ -327,16 +328,16 @@ const NewsList = () => {
               </Col>
             )}
           </Row>
-          
+
           {/* การแบ่งหน้า */}
           {totalPages > 1 && (
             <div className="d-flex justify-content-center mt-4">
               <Pagination>
-                <Pagination.Prev 
+                <Pagination.Prev
                   onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                   disabled={currentPage === 1}
                 />
-                
+
                 {pageNumbers.map(number => (
                   <Pagination.Item
                     key={number}
@@ -346,7 +347,7 @@ const NewsList = () => {
                     {number}
                   </Pagination.Item>
                 ))}
-                
+
                 <Pagination.Next
                   onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                   disabled={currentPage === totalPages}
@@ -356,7 +357,7 @@ const NewsList = () => {
           )}
         </>
       )}
-      
+
       {/* CSS เพิ่มเติม */}
       <style>{`
         .hover-shadow:hover {
@@ -364,22 +365,22 @@ const NewsList = () => {
           transform: translateY(-5px);
           transition: all 0.3s ease;
         }
-        
+
         .category-badge {
           position: absolute;
           top: 10px;
           left: 10px;
           z-index: 1;
         }
-        
+
         .news-image {
           overflow: hidden;
         }
-        
+
         .cursor-pointer {
           cursor: pointer;
         }
-        
+
         .transition-all {
           transition: all 0.3s ease;
         }

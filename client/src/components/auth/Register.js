@@ -1,3 +1,4 @@
+import API_BASE_URL from '../../config/api.js';
 // client/src/components/auth/Register.js
 
 import React, { useState } from 'react';
@@ -108,7 +109,7 @@ const Register = () => {
         try {
             // ส่งข้อมูลไปที่ API
             const res = await axios.post(
-                'http://localhost:5000/api/auth/register-request',
+                `${API_BASE_URL}/api/auth/register-request`,
                 formData
             );
 
@@ -150,7 +151,7 @@ const Register = () => {
         try {
 
             await axios.post(
-                'http://localhost:5000/api/auth/register-verify',
+                `${API_BASE_URL}/api/auth/register-verify`,
                 {
                     email: formData.email,
                     otp: otp

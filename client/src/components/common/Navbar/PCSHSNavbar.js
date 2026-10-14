@@ -1,15 +1,16 @@
+import API_BASE_URL from '../../../config/api.js';
 import React, { useState, useEffect } from 'react';
 import { Container, Navbar, Nav, Dropdown } from 'react-bootstrap';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { jwtDecode } from "jwt-decode";
-import axios from 'axios'; 
-import { 
-    FaHome, FaNewspaper, FaHeartbeat, FaCalendarAlt, FaHistory, 
+import axios from 'axios';
+import {
+    FaHome, FaNewspaper, FaHeartbeat, FaCalendarAlt, FaHistory,
     FaUserCircle, FaSignOutAlt, FaUserEdit, FaKey // ✅ 1. เพิ่ม Import FaKey ตรงนี้
 } from 'react-icons/fa';
 
-import { useAuth } from '../../../context/AuthContext'; 
-import pcshsLogo from '../../../assets/pcshs_logo.png'; 
+import { useAuth } from '../../../context/AuthContext';
+import pcshsLogo from '../../../assets/pcshs_logo.png';
 import './PCSHSNavbar.css';
 
 // --- นำเข้า Profile Modal ---
@@ -19,9 +20,9 @@ const PCSHSNavbar = () => {
     const { logout } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
-    
+
     const [currentUserName, setCurrentUserName] = useState("นักเรียน");
-    
+
     // --- State สำหรับคุมการแสดงผล Profile Modal ---
     const [showProfile, setShowProfile] = useState(false);
 
@@ -35,7 +36,7 @@ const PCSHSNavbar = () => {
             } catch (e) {
                 console.error("Token Error in Navbar", e);
             }
-            
+
             // สั่งให้ Navbar ทำการเช็คโปรไฟล์แบบเงียบๆ ทุกครั้งที่เปิดเว็บ
             checkProfileCompletion(token);
         }
@@ -44,11 +45,11 @@ const PCSHSNavbar = () => {
     // ฟังก์ชันแอบเช็คว่าข้อมูลแหว่งไหม ถ้าแหว่งให้เด้ง Modal บังคับกรอกทันที
     const checkProfileCompletion = async (token) => {
         try {
-            const res = await axios.get('http://localhost:5000/api/profile/me', {
+            const res = await axios.get(`${API_BASE_URL}/api/profile/me`, {
                 headers: { 'x-auth-token': token }
             });
             const data = res.data;
-            
+
             // ถ้าเป็นนักเรียน แล้วพบว่ามีฟิลด์ว่าง
             if (data.role === 'Student') {
                 if (!data.phone || !data.gender || !data.grade || !data.dormitory) {
@@ -57,7 +58,7 @@ const PCSHSNavbar = () => {
             } else {
                 // ถ้าเป็นหมอหรือแอดมิน ก็เช็คเฉพาะบางช่อง
                 if (!data.phone || !data.gender) {
-                    setShowProfile(true); 
+                    setShowProfile(true);
                 }
             }
         } catch (error) {
@@ -74,13 +75,13 @@ const PCSHSNavbar = () => {
                     <Navbar.Brand onClick={() => navigate('/')} style={{cursor:'pointer'}} className="fw-bold d-flex align-items-center">
                         <img src={pcshsLogo} alt="Logo" height="40" className="me-2"/>
                         <div>
-                            <span style={{ color: '#0035ad', fontSize: '1.2rem' }}>PCSHS</span> 
+                            <span style={{ color: '#0035ad', fontSize: '1.2rem' }}>PCSHS</span>
                             <span style={{ color: '#f26522', fontSize: '1.2rem' }}>Care</span>
                         </div>
                     </Navbar.Brand>
-                    
+
                     <Navbar.Toggle aria-controls="basic-navbar-nav" />
-                    
+
                     <Navbar.Collapse id="basic-navbar-nav">
                         <Nav className="ms-auto align-items-center gap-2">
                             <Nav.Link onClick={() => navigate('/student/dashboard')} className={`nav-link-custom ${isActive('/student/dashboard')}`}>
@@ -98,7 +99,7 @@ const PCSHSNavbar = () => {
                             <Nav.Link onClick={() => navigate('/student/appointments')} className={`nav-link-custom ${isActive('/student/appointments')}`}>
                                 <FaHistory className="me-1 mb-1"/> ข้อมูลการนัดหมาย
                             </Nav.Link>
-                            
+
                             <div className="vr mx-2 d-none d-lg-block text-secondary"></div>
 
                             <Dropdown align="end">
@@ -108,12 +109,12 @@ const PCSHSNavbar = () => {
                                 </Dropdown.Toggle>
                                 <Dropdown.Menu className="border-0 shadow-lg mt-2 rounded-4 p-2">
                                     <Dropdown.Header className="small text-muted fw-bold">จัดการบัญชี</Dropdown.Header>
-                                    
+
                                     <Dropdown.Item onClick={() => setShowProfile(true)} className="rounded-3 py-2">
                                         <FaUserEdit className="me-2 text-primary"/> โปรไฟล์ส่วนตัว
                                     </Dropdown.Item>
 
-                                  
+
                                     <Dropdown.Item onClick={() => navigate('/change-password')} className="rounded-3 py-2">
                                         <FaKey className="me-2 text-warning"/> เปลี่ยนรหัสผ่าน
                                     </Dropdown.Item>
@@ -130,9 +131,9 @@ const PCSHSNavbar = () => {
             </Navbar>
 
             {/* --- เรียกใช้ Profile Modal --- */}
-            <Profile 
-                show={showProfile} 
-                handleClose={() => setShowProfile(false)} 
+            <Profile
+                show={showProfile}
+                handleClose={() => setShowProfile(false)}
             />
         </>
     );

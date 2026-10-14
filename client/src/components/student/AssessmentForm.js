@@ -1,3 +1,4 @@
+import API_BASE_URL from '../../config/api.js';
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import {
@@ -117,7 +118,7 @@ const AssessmentForm = () => {
                 localStorage.getItem('token');
 
             const res = await axios.post(
-                'http://localhost:5000/api/assessments',
+                `${API_BASE_URL}/api/assessments`,
                 {
                     type: 'PHQ-A',
                     answers

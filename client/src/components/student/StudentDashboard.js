@@ -1,3 +1,4 @@
+import API_BASE_URL from '../../config/api.js';
 import React, { useState, useEffect } from 'react';
 
 import {
@@ -52,9 +53,6 @@ const StudentDashboard = () => {
     // =========================================
     // Backend URL
     // =========================================
-    const API_BASE_URL = 'http://localhost:5000';
-
-
     // =========================================
     // ดึงข้อมูลผู้ใช้ + ข่าวสาร
     // =========================================

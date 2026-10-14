@@ -1,3 +1,4 @@
+import API_BASE_URL from '../../config/api.js';
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import {
@@ -72,7 +73,7 @@ const AppointmentBooking = () => {
                 }
 
                 const res = await axios.get(
-                    'http://localhost:5000/api/assessments/latest',
+                    `${API_BASE_URL}/api/assessments/latest`,
                     {
                         headers: {
                             'x-auth-token': token
@@ -149,7 +150,7 @@ const AppointmentBooking = () => {
             const token = localStorage.getItem('token');
 
             const resPsycho = await axios.get(
-                'http://localhost:5000/api/psychologists/available',
+                `${API_BASE_URL}/api/psychologists/available`,
                 {
                     headers: {
                         'x-auth-token': token
@@ -163,7 +164,7 @@ const AppointmentBooking = () => {
                 setPsycho(selectedPsycho);
 
                 const resSchedule = await axios.get(
-                    `http://localhost:5000/api/schedule/psychologist/${selectedPsycho.user_id}`
+                    `${API_BASE_URL}/api/schedule/psychologist/${selectedPsycho.user_id}`
                 );
 
                 setAvailableSlots(resSchedule.data);
@@ -284,7 +285,7 @@ const AppointmentBooking = () => {
             };
 
             await axios.post(
-                'http://localhost:5000/api/appointments',
+                `${API_BASE_URL}/api/appointments`,
                 dataToSend,
                 {
                     headers: {

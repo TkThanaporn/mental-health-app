@@ -1,30 +1,31 @@
+import API_BASE_URL from '../../config/api.js';
 import React, { useState } from 'react';
 import { Container, Card, Form, Button, Alert, Spinner, InputGroup } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { 
-    FaKey, 
-    FaArrowLeft, 
-    FaCheckCircle, 
-    FaExclamationCircle, 
-    FaEye, 
+import {
+    FaKey,
+    FaArrowLeft,
+    FaCheckCircle,
+    FaExclamationCircle,
+    FaEye,
     FaEyeSlash,
     FaLock
 } from 'react-icons/fa';
 
 const ChangePassword = () => {
     const navigate = useNavigate();
-    
+
     // States สำหรับเก็บค่าในฟอร์ม
     const [oldPassword, setOldPassword] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
-    
+
     // States สำหรับเปิด-ปิดการมองเห็นรหัสผ่าน
     const [showOldPassword, setShowOldPassword] = useState(false);
     const [showNewPassword, setShowNewPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-    
+
     // States สำหรับการแสดงผล (โหลด, แจ้งเตือน)
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
@@ -53,7 +54,7 @@ const ChangePassword = () => {
         setLoading(true);
         try {
             const token = localStorage.getItem('token');
-            const res = await axios.put('http://localhost:5000/api/auth/change-password', 
+            const res = await axios.put(`${API_BASE_URL}/api/auth/change-password`,
                 { oldPassword, newPassword },
                 { headers: { 'x-auth-token': token } }
             );
@@ -62,7 +63,7 @@ const ChangePassword = () => {
             setOldPassword('');
             setNewPassword('');
             setConfirmPassword('');
-            
+
             // ให้เด้งกลับไปหน้าล็อกอินหลังจากเปลี่ยนสำเร็จ
             setTimeout(() => {
                 localStorage.removeItem('token');
@@ -82,11 +83,11 @@ const ChangePassword = () => {
         <div style={{ minHeight: '100vh', backgroundColor: '#f4f7f6' }}>
             <Container className="d-flex justify-content-center align-items-center" style={{ minHeight: '100vh', paddingBottom: '40px' }}>
                 <Card className="shadow-lg border-0 w-100 fade-in" style={{ maxWidth: '480px', borderRadius: '20px', overflow: 'hidden' }}>
-                    
+
                     {/* Header ของ Card */}
                     <div className="p-4 text-white text-center position-relative" style={{ background: 'linear-gradient(135deg, #002147 0%, #1B3F8B 100%)' }}>
-                        <Button 
-                            variant="link" 
+                        <Button
+                            variant="link"
                             className="text-white position-absolute top-0 start-0 m-3 p-0 text-decoration-none d-flex align-items-center opacity-75 hover-opacity-100"
                             onClick={() => navigate(-1)}
                             style={{ transition: 'all 0.2s' }}
@@ -123,16 +124,16 @@ const ChangePassword = () => {
                                     <InputGroup.Text className="bg-transparent border-0 text-muted ps-3 pr-0">
                                         <FaLock />
                                     </InputGroup.Text>
-                                    <Form.Control 
-                                        type={showOldPassword ? "text" : "password"} 
+                                    <Form.Control
+                                        type={showOldPassword ? "text" : "password"}
                                         placeholder="กรอกรหัสผ่านปัจจุบันของคุณ"
                                         className="py-2 border-0 bg-transparent shadow-none"
                                         value={oldPassword}
                                         onChange={(e) => setOldPassword(e.target.value)}
                                         disabled={loading || success}
                                     />
-                                    <Button 
-                                        variant="link" 
+                                    <Button
+                                        variant="link"
                                         className="text-muted text-decoration-none border-0 bg-transparent pe-3"
                                         onClick={() => setShowOldPassword(!showOldPassword)}
                                         disabled={loading || success}
@@ -149,16 +150,16 @@ const ChangePassword = () => {
                                     <InputGroup.Text className="bg-transparent border-0 text-muted ps-3 pr-0">
                                         <FaLock />
                                     </InputGroup.Text>
-                                    <Form.Control 
-                                        type={showNewPassword ? "text" : "password"} 
+                                    <Form.Control
+                                        type={showNewPassword ? "text" : "password"}
                                         placeholder="ตั้งรหัสผ่านใหม่อย่างน้อย 6 ตัวอักษร"
                                         className="py-2 border-0 bg-transparent shadow-none"
                                         value={newPassword}
                                         onChange={(e) => setNewPassword(e.target.value)}
                                         disabled={loading || success}
                                     />
-                                    <Button 
-                                        variant="link" 
+                                    <Button
+                                        variant="link"
                                         className="text-muted text-decoration-none border-0 bg-transparent pe-3"
                                         onClick={() => setShowNewPassword(!showNewPassword)}
                                         disabled={loading || success}
@@ -175,16 +176,16 @@ const ChangePassword = () => {
                                     <InputGroup.Text className="bg-transparent border-0 text-muted ps-3 pr-0">
                                         <FaLock />
                                     </InputGroup.Text>
-                                    <Form.Control 
-                                        type={showConfirmPassword ? "text" : "password"} 
+                                    <Form.Control
+                                        type={showConfirmPassword ? "text" : "password"}
                                         placeholder="กรอกรหัสผ่านใหม่อีกครั้งให้ตรงกัน"
                                         className="py-2 border-0 bg-transparent shadow-none"
                                         value={confirmPassword}
                                         onChange={(e) => setConfirmPassword(e.target.value)}
                                         disabled={loading || success}
                                     />
-                                    <Button 
-                                        variant="link" 
+                                    <Button
+                                        variant="link"
                                         className="text-muted text-decoration-none border-0 bg-transparent pe-3"
                                         onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                                         disabled={loading || success}
@@ -194,11 +195,11 @@ const ChangePassword = () => {
                                 </InputGroup>
                             </Form.Group>
 
-                            <Button 
-                                type="submit" 
+                            <Button
+                                type="submit"
                                 className="w-100 py-3 rounded-3 fw-bold border-0 mt-2"
-                                style={{ 
-                                    background: 'linear-gradient(135deg, #f26522 0%, #d9531e 100%)', 
+                                style={{
+                                    background: 'linear-gradient(135deg, #f26522 0%, #d9531e 100%)',
                                     boxShadow: '0 4px 15px rgba(242, 101, 34, 0.3)',
                                     transition: 'all 0.3s ease'
                                 }}

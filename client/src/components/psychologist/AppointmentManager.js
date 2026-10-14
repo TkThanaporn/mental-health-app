@@ -1,3 +1,4 @@
+import API_BASE_URL from '../../config/api.js';
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import {
@@ -101,7 +102,7 @@ const AppointmentManager = ({ onAppointmentUpdate }) => {
             const token = localStorage.getItem('token');
 
             const res = await axios.get(
-                'http://localhost:5000/api/appointments/psychologist-appointments',
+                `${API_BASE_URL}/api/appointments/psychologist-appointments`,
                 {
                     headers: {
                         'x-auth-token': token
@@ -152,7 +153,7 @@ const AppointmentManager = ({ onAppointmentUpdate }) => {
                 localStorage.getItem('token');
 
             await axios.put(
-                `http://localhost:5000/api/appointments/status/${id}`,
+                `${API_BASE_URL}/api/appointments/status/${id}`,
                 {
                     status: status.toLowerCase()
                 },
@@ -192,7 +193,7 @@ const AppointmentManager = ({ onAppointmentUpdate }) => {
                 localStorage.getItem('token');
 
             await axios.put(
-                `http://localhost:5000/api/appointments/no-show/${id}`,
+                `${API_BASE_URL}/api/appointments/no-show/${id}`,
                 {
                     note: 'นักเรียนขาดนัด (No-show)'
                 },
@@ -247,7 +248,7 @@ const AppointmentManager = ({ onAppointmentUpdate }) => {
                 localStorage.getItem('token');
 
             await axios.post(
-                `http://localhost:5000/api/appointments/complete/${selectedApptDetails.appointment_id}`,
+                `${API_BASE_URL}/api/appointments/complete/${selectedApptDetails.appointment_id}`,
                 {
                     result_summary:
                         resultData.summary,

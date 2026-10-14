@@ -10,12 +10,21 @@ const path = require('path');
 // 🔥 นำเข้าบริการ Cron Job
 const { startNotificationCron } = require('./services/cronService');
 
+
 const app = express();
 
+// URL ของ Frontend ที่อนุญาตให้เชื่อมต่อ
+const allowedOrigins = [
+  'http://localhost:3000',
+  'http://localhost:3001',
+  process.env.CLIENT_URL
+].filter(Boolean);
+
 app.use(cors({
-  origin: ["http://localhost:3000", "http://localhost:3001"], 
+  origin: allowedOrigins,
   credentials: true
 }));
+
 
 app.use(express.json()); 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
@@ -34,13 +43,15 @@ app.use('/api/calendar', require('./routes/calendarRoutes')); // 👈 เพิ�
 require('./services/syncService');
 const server = http.createServer(app);
 
+
 const io = new Server(server, {
   cors: {
-    origin: ["http://localhost:3000", "http://localhost:3001"],
-    methods: ["GET", "POST"],
+    origin: allowedOrigins,
+    methods: ['GET', 'POST'],
     credentials: true
   }
 });
+
 
 io.on('connection', (socket) => {
     console.log(`⚡ User connected: ${socket.id}`);

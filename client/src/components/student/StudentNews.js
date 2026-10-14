@@ -1,3 +1,4 @@
+import API_BASE_URL from '../../config/api.js';
 // =============================
 // Import Libraries และ Components ที่จำเป็น
 // =============================
@@ -31,7 +32,7 @@ const StudentNews = () => {
 
     // ใช้สำหรับสั่งเปลี่ยนหน้า
     const navigate = useNavigate();
-    
+
     // =============================
     // States (ตัวแปรควบคุมข้อมูล)
     // =============================
@@ -53,8 +54,8 @@ const StudentNews = () => {
             try {
                 // ดึงข้อมูลข่าวและหมวดหมู่พร้อมกัน
                 const [newsRes, catRes] = await Promise.all([
-                    axios.get('http://localhost:5000/api/news'),
-                    axios.get('http://localhost:5000/api/news/categories')
+                    axios.get(`${API_BASE_URL}/api/news`),
+                    axios.get(`${API_BASE_URL}/api/news/categories`)
                 ]);
 
                 setNewsList(newsRes.data);
@@ -69,7 +70,7 @@ const StudentNews = () => {
         };
 
         fetchData();
-    }, []); 
+    }, []);
 
 
     // =============================
@@ -92,12 +93,12 @@ const StudentNews = () => {
 
             result = result.filter(news => {
                 if (!news) return false;
-                
+
                 // ใช้ String() ป้องกัน error กรณีเป็นค่าว่าง
                 const title = String(news.title || "");
                 const content = String(news.content || "");
-                
-                return title.toLowerCase().includes(lowerTerm) || 
+
+                return title.toLowerCase().includes(lowerTerm) ||
                        content.toLowerCase().includes(lowerTerm);
             });
         }
@@ -147,9 +148,9 @@ const StudentNews = () => {
                 <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-5 fade-in-up">
 
                     <div className="mb-3 mb-md-0">
-                        <Button 
-                            variant="link" 
-                            onClick={() => navigate('/student/dashboard')} 
+                        <Button
+                            variant="link"
+                            onClick={() => navigate('/student/dashboard')}
                             className="text-decoration-none p-0 mb-2 text-muted"
                         >
                             <FaChevronLeft /> กลับหน้าหลัก
@@ -162,20 +163,20 @@ const StudentNews = () => {
                             ติดตามข่าวสารกิจกรรมและข้อมูลสุขภาพใจล่าสุด
                         </p>
                     </div>
-                    
+
                     <div className="d-flex gap-2 flex-column flex-sm-row" style={{ maxWidth: '500px', width: '100%' }}>
-                        
+
                         {/* Dropdown เลือกหมวดหมู่ (✅ เปลี่ยน value ให้ส่งค่าเป็นชื่อ) */}
-                        <Form.Select 
-                            className="border-0 shadow-sm" 
+                        <Form.Select
+                            className="border-0 shadow-sm"
                             style={{width: 'auto', minWidth: '150px'}}
                             value={selectedCategory}
                             onChange={(e) => setSelectedCategory(e.target.value)}
                         >
                             <option value="">ทั้งหมด</option>
                             {categories.map((cat, index) => (
-                                <option 
-                                    key={index} 
+                                <option
+                                    key={index}
                                     value={cat.category_name || cat.category}
                                 >
                                     {cat.category_name || cat.category}
@@ -188,8 +189,8 @@ const StudentNews = () => {
                             <InputGroup.Text className="bg-white border-0">
                                 <FaSearch className="text-muted" />
                             </InputGroup.Text>
-                            <Form.Control 
-                                placeholder="ค้นหาหัวข้อ..." 
+                            <Form.Control
+                                placeholder="ค้นหาหัวข้อ..."
                                 className="border-0 ps-0"
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -210,9 +211,9 @@ const StudentNews = () => {
                         <FaBullhorn size={50} className="text-muted opacity-25 mb-3"/>
                         <p className="text-muted">ไม่พบข่าวสารที่ค้นหา</p>
                         {(searchTerm || selectedCategory) && (
-                            <Button 
-                                variant="outline-secondary" 
-                                size="sm" 
+                            <Button
+                                variant="outline-secondary"
+                                size="sm"
                                 onClick={() => {
                                     setSearchTerm('');
                                     setSelectedCategory('');
@@ -227,18 +228,18 @@ const StudentNews = () => {
                     <Row className="g-4">
                         {filteredNews.map((news) => (
                             <Col lg={4} md={6} key={news.news_id} className="fade-in-up">
-                                <Card 
-                                    className="h-100 shadow-sm border-0 rounded-4 overflow-hidden hover-card" 
-                                    onClick={() => setSelectedNews(news)} 
+                                <Card
+                                    className="h-100 shadow-sm border-0 rounded-4 overflow-hidden hover-card"
+                                    onClick={() => setSelectedNews(news)}
                                     style={{ cursor: 'pointer', transition: 'all 0.3s ease' }}
                                 >
                                     {/* Image Section */}
                                     <div style={{ height: '200px', overflow: 'hidden', backgroundColor: '#e9ecef', position: 'relative' }}>
                                         {news.image_url ? (
-                                            <img 
-                                                src={news.image_url} 
-                                                alt={news.title} 
-                                                className="w-100 h-100 object-fit-cover" 
+                                            <img
+                                                src={news.image_url}
+                                                alt={news.title}
+                                                className="w-100 h-100 object-fit-cover"
                                             />
                                         ) : (
                                             <div className="w-100 h-100 d-flex align-items-center justify-content-center text-muted">
@@ -268,7 +269,7 @@ const StudentNews = () => {
                                         </p>
                                         <div className="pt-3 border-top d-flex justify-content-between align-items-center mt-auto">
                                             <div className="d-flex align-items-center text-muted small">
-                                                <FaUserCircle className="me-1"/> 
+                                                <FaUserCircle className="me-1"/>
                                                 {news.author_name || 'Admin'}
                                             </div>
                                             <span className="text-primary fw-bold small">
@@ -287,25 +288,25 @@ const StudentNews = () => {
             {/* =============================
                 Modal แสดงรายละเอียดข่าว
             ============================= */}
-            <Modal 
-                show={!!selectedNews} 
-                onHide={() => setSelectedNews(null)} 
-                size="lg" 
-                centered 
+            <Modal
+                show={!!selectedNews}
+                onHide={() => setSelectedNews(null)}
+                size="lg"
+                centered
                 contentClassName="border-0 rounded-4 overflow-hidden"
             >
                 {selectedNews && (
                     <>
                         <div className="position-relative bg-dark" style={{height:'300px'}}>
                             {selectedNews.image_url && (
-                                <img 
-                                    src={selectedNews.image_url} 
-                                    alt={selectedNews.title} 
-                                    className="w-100 h-100 object-fit-cover opacity-75" 
+                                <img
+                                    src={selectedNews.image_url}
+                                    alt={selectedNews.title}
+                                    className="w-100 h-100 object-fit-cover opacity-75"
                                 />
                             )}
 
-                            <div className="position-absolute bottom-0 start-0 p-4 w-100" 
+                            <div className="position-absolute bottom-0 start-0 p-4 w-100"
                                 style={{background: 'linear-gradient(transparent, rgba(0,0,0,0.8))'}}>
 
                                 {/* ✅ เปลี่ยนเป็น selectedNews.category */}
@@ -326,26 +327,26 @@ const StudentNews = () => {
                                 </div>
                             </div>
 
-                            <Button 
-                                variant="light" 
-                                className="position-absolute top-0 end-0 m-3 rounded-circle shadow-sm" 
+                            <Button
+                                variant="light"
+                                className="position-absolute top-0 end-0 m-3 rounded-circle shadow-sm"
                                 onClick={() => setSelectedNews(null)}
                                 style={{width:'35px', height:'35px', padding:0}}
                             >
                                 &#10005;
                             </Button>
                         </div>
-                        
+
                         <Modal.Body className="p-4 p-lg-5 bg-white">
                             <div style={{ whiteSpace: 'pre-line', lineHeight: '1.8', color: '#4a5568', fontSize: '1.05rem' }}>
                                 {selectedNews.content}
                             </div>
                         </Modal.Body>
-                        
+
                         <Modal.Footer className="bg-light border-0">
-                            <Button 
-                                variant="secondary" 
-                                onClick={() => setSelectedNews(null)} 
+                            <Button
+                                variant="secondary"
+                                onClick={() => setSelectedNews(null)}
                                 className="rounded-pill px-4"
                             >
                                 ปิดหน้าต่าง

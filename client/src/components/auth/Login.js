@@ -1,3 +1,4 @@
+import API_BASE_URL from '../../config/api.js';
 // client/src/components/auth/Login.js
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
@@ -8,26 +9,26 @@ import { Container, Form, Button, Row, Col, InputGroup, Spinner, Alert, Modal } 
 import { FaEnvelope, FaLock, FaKey, FaArrowLeft, FaClock, FaEye, FaEyeSlash, FaTimesCircle, FaCheckCircle } from 'react-icons/fa';
 
 // --- นำเข้ารูปภาพโลโก้ ---
-import pcshsLogo from '../../assets/pcshs_logo.png'; 
+import pcshsLogo from '../../assets/pcshs_logo.png';
 
 const Login = () => {
     const navigate = useNavigate();
     const { login } = useAuth();
 
     // 1️⃣ State ควบคุมการแสดงผลหน้าจอ
-    const [view, setView] = useState('login'); 
+    const [view, setView] = useState('login');
 
     // 2️⃣ State สำหรับ Login
     const [formData, setFormData] = useState({ email: '', password: '' });
-    const [showPassword, setShowPassword] = useState(false); 
+    const [showPassword, setShowPassword] = useState(false);
 
     // 3️⃣ State สำหรับลืมรหัสผ่าน
     const [resetEmail, setResetEmail] = useState('');
     const [otp, setOtp] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
-    const [showNewPassword, setShowNewPassword] = useState(false); 
-    
+    const [showNewPassword, setShowNewPassword] = useState(false);
+
     // ⏱️ State สำหรับระบบจับเวลาถอยหลัง (300 วินาที = 5 นาที)
     const [timeLeft, setTimeLeft] = useState(300);
 
@@ -42,11 +43,11 @@ const Login = () => {
 
     // Theme สีโรงเรียน
     const themeColors = {
-        primaryBlue: '#002147', 
-        secondaryBlue: '#1B3F8B', 
-        primaryOrange: '#F26522', 
-        textDark: '#002147',      
-        textGold: '#FFD700'        
+        primaryBlue: '#002147',
+        secondaryBlue: '#1B3F8B',
+        primaryOrange: '#F26522',
+        textDark: '#002147',
+        textGold: '#FFD700'
     };
 
     // ==========================================
@@ -74,7 +75,7 @@ const Login = () => {
     const onLoginSubmit = async e => {
         e.preventDefault();
         try {
-            const res = await axios.post('http://localhost:5000/api/auth/login', formData);
+            const res = await axios.post(`${API_BASE_URL}/api/auth/login`, formData);
             const { token, role, userId } = res.data;
             login(token, role, userId);
 
@@ -82,7 +83,7 @@ const Login = () => {
             let route = '/student/dashboard';
             if (role === 'Admin') route = '/admin/dashboard';
             else if (role === 'Psychologist') route = '/psychologist/dashboard';
-            
+
             // 2. โชว์ Popup เข้าสู่ระบบสำเร็จ
             setTargetRoute(route);
             setShowSuccessModal(true);
@@ -106,11 +107,11 @@ const Login = () => {
         setIsLoading(true);
         setMessage(null);
         try {
-            const res = await axios.post('http://localhost:5000/api/auth/forgot-password', { email: resetEmail });
+            const res = await axios.post(`${API_BASE_URL}/api/auth/forgot-password`, { email: resetEmail });
             setMessage({ type: 'success', text: res.data.msg });
             setTimeLeft(300);
             setOtp('');
-            setShowNewPassword(false); 
+            setShowNewPassword(false);
             setView('forgot-reset');
         } catch (err) {
             setMessage({ type: 'danger', text: err.response?.data?.msg || 'ไม่สามารถส่ง OTP ได้' });
@@ -126,19 +127,19 @@ const Login = () => {
         e.preventDefault();
         if (timeLeft === 0) return setMessage({ type: 'danger', text: 'รหัส OTP หมดอายุแล้ว กรุณาขอรหัสใหม่' });
         if (newPassword !== confirmPassword) return setMessage({ type: 'danger', text: 'รหัสผ่านใหม่ไม่ตรงกัน' });
-        
+
         setIsLoading(true);
         setMessage(null);
         try {
-            const res = await axios.post('http://localhost:5000/api/auth/reset-password', { 
-                email: resetEmail, otp, newPassword 
+            const res = await axios.post(`${API_BASE_URL}/api/auth/reset-password`, {
+                email: resetEmail, otp, newPassword
             });
             setMessage({ type: 'success', text: res.data.msg });
-            
+
             setTimeout(() => {
                 setView('login');
                 setMessage(null);
-                setFormData({ email: resetEmail, password: '' }); 
+                setFormData({ email: resetEmail, password: '' });
                 setNewPassword('');
                 setConfirmPassword('');
                 setOtp('');
@@ -156,11 +157,11 @@ const Login = () => {
         <div style={{ minHeight: '100vh', background: '#f0f2f5', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
             <div className="shadow-lg overflow-hidden bg-white" style={{ borderRadius: '20px', maxWidth: '1200px', width: '100%', minHeight: '600px', display: 'flex' }}>
                 <Row className="g-0 w-100">
-                    
+
                     {/* ================= LEFT SIDE: FORM AREA ================= */}
                     <Col lg={6} className="p-5 d-flex flex-column justify-content-center bg-white">
                         <div style={{ maxWidth: '400px', margin: '0 auto', width: '100%' }}>
-                            
+
                             {message && view !== 'login' && <Alert variant={message.type}>{message.text}</Alert>}
 
                             {/* --- หน้าจอ 1: เข้าสู่ระบบปกติ --- */}
@@ -180,7 +181,7 @@ const Login = () => {
                                                 <Form.Control type={showPassword ? "text" : "password"} name="password" placeholder="รหัสผ่าน" value={formData.password} onChange={e => setFormData({ ...formData, password: e.target.value })} required style={inputStyle} className="py-3" />
                                             </InputGroup>
                                         </Form.Group>
-                                        
+
                                         <div className="d-flex justify-content-between align-items-center mb-4 text-muted">
                                             <Form.Check type="checkbox" label="แสดงรหัสผ่าน" checked={showPassword} onChange={() => setShowPassword(!showPassword)} />
                                             <Button variant="link" className="p-0 fw-bold" style={{ textDecoration: 'none', color: themeColors.primaryOrange }} onClick={() => { setView('forgot-request'); setMessage(null); }}>
@@ -224,7 +225,7 @@ const Login = () => {
                                 <div className="fade-in">
                                     <div className="text-center mb-3 text-primary"><FaKey size={40} color={themeColors.secondaryBlue} /></div>
                                     <h4 className="text-center fw-bold mb-2" style={{ color: themeColors.textDark }}>ตั้งรหัสผ่านใหม่</h4>
-                                    
+
                                     <div className="text-center mb-4">
                                         <p className="text-muted m-0 small">รหัสถูกส่งไปที่ {resetEmail}</p>
                                         <div className={`fw-bold d-inline-flex align-items-center mt-2 px-3 py-1 rounded-pill ${timeLeft === 0 ? 'bg-danger text-white' : 'bg-light text-danger'}`}>
@@ -232,22 +233,22 @@ const Login = () => {
                                             {timeLeft > 0 ? `เหลือเวลา: ${formatTime(timeLeft)}` : "รหัส OTP หมดอายุแล้ว"}
                                         </div>
                                     </div>
-                                    
+
                                     <Form onSubmit={handleResetPassword}>
                                         <Form.Group className="mb-3">
-                                            <Form.Control 
-                                                type="text" 
-                                                maxLength="6" 
-                                                placeholder="รหัส OTP 6 หลัก" 
-                                                value={otp} 
-                                                onChange={(e) => setOtp(e.target.value.replace(/[^0-9]/g, ''))} 
-                                                required 
-                                                disabled={timeLeft === 0} 
-                                                className="text-center py-3 fw-bold tracking-widest" 
-                                                style={{ fontSize: '1.2rem', letterSpacing: '5px', backgroundColor: '#f8f9fa', border: `2px dashed ${timeLeft === 0 ? '#dc3545' : themeColors.primaryOrange}`, borderRadius: '10px' }} 
+                                            <Form.Control
+                                                type="text"
+                                                maxLength="6"
+                                                placeholder="รหัส OTP 6 หลัก"
+                                                value={otp}
+                                                onChange={(e) => setOtp(e.target.value.replace(/[^0-9]/g, ''))}
+                                                required
+                                                disabled={timeLeft === 0}
+                                                className="text-center py-3 fw-bold tracking-widest"
+                                                style={{ fontSize: '1.2rem', letterSpacing: '5px', backgroundColor: '#f8f9fa', border: `2px dashed ${timeLeft === 0 ? '#dc3545' : themeColors.primaryOrange}`, borderRadius: '10px' }}
                                             />
                                         </Form.Group>
-                                        
+
                                         <Form.Group className="mb-3">
                                             <InputGroup>
                                                 <Form.Control type={showNewPassword ? "text" : "password"} placeholder="รหัสผ่านใหม่" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required disabled={timeLeft === 0} style={inputStyle} className="py-3" />
@@ -256,7 +257,7 @@ const Login = () => {
                                                 </Button>
                                             </InputGroup>
                                         </Form.Group>
-                                        
+
                                         <Form.Group className="mb-4">
                                             <InputGroup>
                                                 <Form.Control type={showNewPassword ? "text" : "password"} placeholder="ยืนยันรหัสผ่านใหม่อีกครั้ง" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required disabled={timeLeft === 0} style={inputStyle} className="py-3" />
@@ -265,7 +266,7 @@ const Login = () => {
                                                 </Button>
                                             </InputGroup>
                                         </Form.Group>
-                                        
+
                                         {timeLeft > 0 ? (
                                             <Button type="submit" disabled={isLoading || otp.length < 6} className="w-100 py-3 fw-bold text-white border-0" style={{ backgroundColor: themeColors.primaryBlue, borderRadius: '30px' }}>
                                                 {isLoading ? <Spinner animation="border" size="sm" /> : "บันทึกรหัสผ่านใหม่"}
@@ -275,7 +276,7 @@ const Login = () => {
                                                 {isLoading ? <Spinner animation="border" size="sm" /> : "ขอรหัส OTP ใหม่อีกครั้ง"}
                                             </Button>
                                         )}
-                                        
+
                                         <div className="text-center mt-3">
                                             <Button variant="link" className="text-muted text-decoration-none" onClick={() => setView('forgot-request')} disabled={isLoading}>
                                                 กลับไปแก้ไขอีเมล
@@ -298,7 +299,7 @@ const Login = () => {
                             {view === 'login' ? 'พื้นที่ปลอดภัยสำหรับใจคุณ' : 'ระบบกู้คืนรหัสผ่าน'}
                         </h4>
                         <p className="text-center px-5" style={{ opacity: 0.9, fontSize: '1.1rem' }}>
-                            {view === 'login' 
+                            {view === 'login'
                                 ? <>ระบบสนับสนุนทางจิตวิทยาสำหรับนักเรียน<br/>โรงเรียนวิทยาศาสตร์จุฬาภรณราชวิทยาลัย เลย</>
                                 : <>ไม่ต้องกังวลหากคุณลืมรหัสผ่าน<br/>เพียงยืนยันตัวตนผ่านอีเมลของคุณ</>
                             }
@@ -318,9 +319,9 @@ const Login = () => {
                     <p className="text-muted mb-4" style={{ fontSize: '1.1rem' }}>
                         อีเมลหรือรหัสผ่านไม่ถูกต้อง<br/>กรุณาตรวจสอบข้อมูลแล้วลองใหม่อีกครั้ง
                     </p>
-                    <Button 
-                        variant="danger" 
-                        className="w-100 py-3 rounded-pill fw-bold" 
+                    <Button
+                        variant="danger"
+                        className="w-100 py-3 rounded-pill fw-bold"
                         onClick={() => setShowErrorModal(false)}
                         style={{ fontSize: '1.1rem', backgroundColor: '#dc3545', border: 'none' }}
                     >

@@ -1,18 +1,19 @@
+import API_BASE_URL from '../../config/api.js';
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Container, Button, Card, Row, Col, Nav, Navbar, Offcanvas, Badge, Image, Spinner, Form, Dropdown } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
-import { 
-    FaHome, FaCalendarAlt, FaList, FaSignOutAlt, 
+import {
+    FaHome, FaCalendarAlt, FaList, FaSignOutAlt,
     FaUserEdit, FaClock, FaBars, FaUserCircle,
-    FaBullhorn, FaDatabase, FaCheckCircle, FaHourglassHalf, 
-    FaTimesCircle, FaClipboardCheck, FaBuilding, FaGraduationCap, 
+    FaBullhorn, FaDatabase, FaCheckCircle, FaHourglassHalf,
+    FaTimesCircle, FaClipboardCheck, FaBuilding, FaGraduationCap,
     FaFilter, FaFileExcel, FaPrint, FaKey
 } from 'react-icons/fa';
 
 // Import Recharts
-import { 
-    BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, 
+import {
+    BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer,
     PieChart, Pie, Cell, LineChart, Line
 } from 'recharts';
 
@@ -21,17 +22,17 @@ import html2canvas from 'html2canvas';
 import './Psychologist.css';
 
 // Components
-import AppointmentManager from './AppointmentManager'; 
-import ScheduleManager from './ScheduleManager'; 
-import AllAppointmentList from './AllAppointmentList'; 
+import AppointmentManager from './AppointmentManager';
+import ScheduleManager from './ScheduleManager';
+import AllAppointmentList from './AllAppointmentList';
 import ProfileEditor from './ProfileEditor';
-import NewsManagement from './NewsManagement'; 
-import pcshsLogo from '../../assets/pcshs_logo.png'; 
+import NewsManagement from './NewsManagement';
+import pcshsLogo from '../../assets/pcshs_logo.png';
 
 const GRADE_LABELS = ['ม.1', 'ม.2', 'ม.3', 'ม.4', 'ม.5', 'ม.6'];
 
 const ALL_DORMS = [
-    "หอสกลนคร (A)", "หอบึงกาฬ (B)", "หออุดรธานี (C)", 
+    "หอสกลนคร (A)", "หอบึงกาฬ (B)", "หออุดรธานี (C)",
     "หอขอนแก่น (D)", "หอหนองคาย (E)", "หอหนองบัวลำภู (F)"
 ];
 
@@ -101,14 +102,14 @@ const isInYear = (date, year) => date && date.getFullYear() === Number(year);
 
 const PsychologistDashboard = () => {
     const navigate = useNavigate();
-    const [activeTab, setActiveTab] = useState('dashboard'); 
+    const [activeTab, setActiveTab] = useState('dashboard');
     const [showMobileMenu, setShowMobileMenu] = useState(false);
     const [selectedDashboardYear, setSelectedDashboardYear] = useState(new Date().getFullYear());
     const [availableDashboardYears, setAvailableDashboardYears] = useState([new Date().getFullYear()]);
     const [exporting, setExporting] = useState(false);
-    
+
     const [psychologist, setPsychologist] = useState({ fullname: 'กำลังโหลด...', profile_image: '' });
-    
+
     const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
 
     const [stats, setStats] = useState({ total: 0, completed: 0, pending: 0, cancelled: 0 });
@@ -118,7 +119,7 @@ const PsychologistDashboard = () => {
         dormitoryUsage: [],
         gradeUsage: []
     });
-    
+
     const [assessmentData, setAssessmentData] = useState({ riskLevels: [], monthlyRisks: [] });
     const [loadingStats, setLoadingStats] = useState(true);
 
@@ -129,7 +130,7 @@ const PsychologistDashboard = () => {
             return;
         }
         fetchProfile(token);
-        fetchPendingCount(token); 
+        fetchPendingCount(token);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
@@ -141,18 +142,18 @@ const PsychologistDashboard = () => {
 
     const fetchProfile = async (token) => {
         try {
-            const res = await axios.get('http://localhost:5000/api/profile/me', {
+            const res = await axios.get(`${API_BASE_URL}/api/profile/me`, {
                 headers: { 'x-auth-token': token }
             });
             setPsychologist(res.data);
-        } catch (err) { 
+        } catch (err) {
             if (err.response && (err.response.status === 401 || err.response.status === 403)) handleLogout();
         }
     };
 
     const fetchPendingCount = async (token) => {
         try {
-            const res = await axios.get('http://localhost:5000/api/appointments/psychologist-appointments', {
+            const res = await axios.get(`${API_BASE_URL}/api/appointments/psychologist-appointments`, {
                 headers: { 'x-auth-token': token }
             });
             const count = res.data.filter(a => String(a.status).toLowerCase() === 'pending').length;
@@ -166,13 +167,13 @@ const PsychologistDashboard = () => {
         setLoadingStats(true);
         try {
             const config = { headers: { 'x-auth-token': token } };
-            
+
             const [apptRes, assessRes] = await Promise.all([
-                axios.get('http://localhost:5000/api/appointments/psychologist-history', config).catch(() => ({data: []})),
-                axios.get('http://localhost:5000/api/assessments/all', config).catch(() => ({data: []})) 
+                axios.get(`${API_BASE_URL}/api/appointments/psychologist-history`, config).catch(() => ({data: []})),
+                axios.get(`${API_BASE_URL}/api/assessments/all`, config).catch(() => ({data: []}))
             ]);
 
-            const apptData = apptRes.data; 
+            const apptData = apptRes.data;
             const assessData = assessRes.data;
             const yearOptions = Array.from(new Set([
                 new Date().getFullYear(),
@@ -204,7 +205,7 @@ const PsychologistDashboard = () => {
 
             const monthNames = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
             const dashboardYear = Number(selectedDashboardYear);
-            
+
             let trendsMap = {};
             for(let i=0; i<12; i++) {
                 let d = new Date(dashboardYear, i, 1);
@@ -226,7 +227,7 @@ const PsychologistDashboard = () => {
             const realMonthlyTrends = Object.values(trendsMap).sort((a,b) => a.sortKey - b.sortKey).map(item => ({ month: item.month, count: item.count }));
             const realIssueCategories = Object.keys(topicCounts).map(key => ({
                 name: key, value: topicCounts[key]
-            })).sort((a, b) => b.value - a.value).slice(0, 5); 
+            })).sort((a, b) => b.value - a.value).slice(0, 5);
 
             const latestAssessmentByStudent = {};
             filteredAssessData.forEach(assess => {
@@ -317,7 +318,7 @@ const PsychologistDashboard = () => {
             }
 
             filteredAssessData.forEach(assess => {
-                const aDate = getValidDate(assess.created_at); 
+                const aDate = getValidDate(assess.created_at);
                 if (!aDate) return;
                 const aKey = `${aDate.getFullYear()}-${aDate.getMonth()}`;
                 const levelType = getRiskType(assess);
@@ -331,9 +332,9 @@ const PsychologistDashboard = () => {
             });
 
             const realRiskLevels = [
-                { name: 'กลุ่มปกติ', value: normalCount, color: '#10B981' }, 
-                { name: 'กลุ่มเสี่ยง', value: riskCount, color: '#F59E0B' }, 
-                { name: 'กลุ่มมีปัญหา', value: severeCount, color: '#EF4444' } 
+                { name: 'กลุ่มปกติ', value: normalCount, color: '#10B981' },
+                { name: 'กลุ่มเสี่ยง', value: riskCount, color: '#F59E0B' },
+                { name: 'กลุ่มมีปัญหา', value: severeCount, color: '#EF4444' }
             ];
 
             const realMonthlyRisks = Object.values(assessTrendsMap).sort((a,b) => a.sortKey - b.sortKey);
@@ -368,7 +369,7 @@ const PsychologistDashboard = () => {
 
         try {
             setExporting(true);
-            const res = await axios.get(`http://localhost:5000/api/appointments/psychologist-export/excel?year=${selectedDashboardYear}`, {
+            const res = await axios.get(`${API_BASE_URL}/api/appointments/psychologist-export/excel?year=${selectedDashboardYear}`, {
                 headers: { 'x-auth-token': token },
                 responseType: 'blob'
             });
@@ -392,7 +393,7 @@ const PsychologistDashboard = () => {
     // ✅ ฟังก์ชันออกรายงานแบบทางการ (Executive Report) + แก้ปัญหาโดนบล็อก Pop-up
     const handleOpenPrintableReport = async () => {
         if (!stats) return alert('กำลังโหลดข้อมูล กรุณารอสักครู่');
-        
+
         // 🌟 1. เปิดหน้าต่างใหม่ "ทันที" ที่กดปุ่ม เพื่อไม่ให้เบราว์เซอร์บล็อก Pop-up
         const reportWindow = window.open('', '_blank');
         if (!reportWindow) {
@@ -407,9 +408,9 @@ const PsychologistDashboard = () => {
                 <p style="color:#64748b; font-size: 14pt;">กรุณารอสักครู่...</p>
             </div>
         `);
-        
-        setExporting(true); 
-        
+
+        setExporting(true);
+
         try {
             // 3. เริ่มถ่ายภาพกราฟ
             const statsEl = document.getElementById('export-stats');
@@ -469,28 +470,28 @@ const PsychologistDashboard = () => {
                 <title>รายงานสถิติ PCSHS HeartCare ปี ${displayYear}</title>
                 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
                 <style>
-                    @page { 
-                        size: A4; 
-                        margin: 15mm 20mm 15mm 25mm; 
-                    } 
+                    @page {
+                        size: A4;
+                        margin: 15mm 20mm 15mm 25mm;
+                    }
                     body {
                         font-family: 'Sarabun', sans-serif;
                         color: #1e293b;
                         margin: 0;
                         background: #f8fafc;
-                        font-size: 14pt; 
+                        font-size: 14pt;
                         line-height: 1.5;
                     }
-                    .container { 
-                        padding: 15mm 20mm; 
-                        max-width: 210mm; 
-                        margin: 20px auto; 
-                        background: white; 
+                    .container {
+                        padding: 15mm 20mm;
+                        max-width: 210mm;
+                        margin: 20px auto;
+                        background: white;
                         box-shadow: 0 10px 30px rgba(0,0,0,0.08);
                         border-radius: 8px;
                         box-sizing: border-box;
                     }
-                    
+
                     .report-header {
                         display: flex;
                         align-items: center;
@@ -504,19 +505,19 @@ const PsychologistDashboard = () => {
                         margin-right: 20px;
                     }
                     .header-text { flex-grow: 1; }
-                    .doc-title { 
-                        font-size: 20pt; 
-                        font-weight: 700; 
+                    .doc-title {
+                        font-size: 20pt;
+                        font-weight: 700;
                         color: #0f172a;
-                        margin: 0 0 4px 0; 
+                        margin: 0 0 4px 0;
                     }
                     .doc-subtitle {
-                        font-size: 14pt; 
+                        font-size: 14pt;
                         font-weight: 500;
                         color: #64748b;
                         margin: 0;
                     }
-                    
+
                     .meta-info {
                         display: flex;
                         justify-content: space-between;
@@ -526,7 +527,7 @@ const PsychologistDashboard = () => {
                         padding: 10px 15px;
                         border-radius: 6px;
                         margin-bottom: 25px;
-                        border-left: 4px solid #003566; 
+                        border-left: 4px solid #003566;
                     }
 
                     .section-block {
@@ -548,15 +549,15 @@ const PsychologistDashboard = () => {
                         display: inline-block;
                         width: 6px;
                         height: 20px;
-                        background-color: #F25C05; 
+                        background-color: #F25C05;
                         margin-right: 10px;
                         border-radius: 3px;
                     }
-                    
+
                     table {
                         width: 100%;
                         border-collapse: collapse;
-                        font-size: 13pt; 
+                        font-size: 13pt;
                         border-radius: 6px;
                         overflow: hidden;
                         border: 1px solid #e2e8f0;
@@ -566,23 +567,23 @@ const PsychologistDashboard = () => {
                         border-bottom: 1px solid #e2e8f0;
                         vertical-align: middle;
                     }
-                    th { 
-                        font-weight: 600; 
+                    th {
+                        font-weight: 600;
                         text-align: center;
-                        background-color: #003566 !important; 
+                        background-color: #003566 !important;
                         color: #ffffff !important;
                         -webkit-print-color-adjust: exact;
                         color-adjust: exact;
                         letter-spacing: 0.5px;
                     }
                     tr:nth-child(even) td {
-                        background-color: #f8fafc !important; 
+                        background-color: #f8fafc !important;
                         -webkit-print-color-adjust: exact;
                     }
                     tr:last-child td { border-bottom: none; }
                     .text-center { text-align: center; }
                     .text-left { text-align: left; }
-                    
+
                     .grid-2 { display: flex; gap: 20px; }
                     .col-6 { width: 50%; }
 
@@ -593,8 +594,8 @@ const PsychologistDashboard = () => {
                         padding-right: 30px;
                         page-break-inside: avoid;
                     }
-                    .signature-box { 
-                        text-align: center; 
+                    .signature-box {
+                        text-align: center;
                         font-size: 13pt;
                         color: #1e293b;
                     }
@@ -604,8 +605,8 @@ const PsychologistDashboard = () => {
                         margin: 40px auto 10px auto;
                     }
 
-                    .print-btn-container { 
-                        text-align: center; 
+                    .print-btn-container {
+                        text-align: center;
                         padding: 15px 0;
                         background: #fff;
                         position: sticky;
@@ -614,7 +615,7 @@ const PsychologistDashboard = () => {
                         z-index: 1000;
                     }
                     .print-btn {
-                        background-color: #F25C05; 
+                        background-color: #F25C05;
                         color: white;
                         border: none;
                         padding: 10px 25px;
@@ -775,7 +776,7 @@ const PsychologistDashboard = () => {
             console.error("Print Error", error);
             alert("เกิดข้อผิดพลาดในการสร้างเอกสาร กรุณาลองใหม่อีกครั้ง");
         } finally {
-            setExporting(false); 
+            setExporting(false);
         }
     };
 
@@ -803,12 +804,12 @@ const PsychologistDashboard = () => {
             <Nav className="flex-column w-100 mt-3 px-2">
                 {[
                     { id: 'dashboard', icon: FaHome, label: 'หน้าหลัก' },
-                    { id: 'appointments', icon: FaCalendarAlt, label: 'จัดการนัดหมาย', badge: pendingRequestsCount }, 
+                    { id: 'appointments', icon: FaCalendarAlt, label: 'จัดการนัดหมาย', badge: pendingRequestsCount },
                     { id: 'news', icon: FaBullhorn, label: 'ประกาศข่าวสาร' },
                     { id: 'all-list', icon: FaList, label: 'ประวัติทั้งหมด' },
                     { id: 'schedule', icon: FaClock, label: 'ตั้งค่าตารางเวลา' },
                     { id: 'profile', icon: FaUserEdit, label: 'ข้อมูลส่วนตัว' },
-                    { id: 'change-password', icon: FaKey, label: 'เปลี่ยนรหัสผ่าน' } 
+                    { id: 'change-password', icon: FaKey, label: 'เปลี่ยนรหัสผ่าน' }
                 ].map((item) => (
                     <div key={item.id} onClick={() => handleMenuClick(item.id)} className={`nav-item-custom ${activeTab === item.id ? 'active' : ''}`}>
                         <div className="d-flex justify-content-between align-items-center w-100">
@@ -923,7 +924,7 @@ const PsychologistDashboard = () => {
                         ) : (
                             <div className="px-2 pb-4">
                                 <h4 className="fw-bold mb-4" style={{color: 'var(--pcshs-blue-deep)'}}>การวิเคราะห์ข้อมูลนักเรียน ปี {Number(selectedDashboardYear) + 543}</h4>
-                                
+
                                 <Row id="export-charts-1" className="g-4 mb-4" style={{ backgroundColor: '#f0f4f8', padding: '10px', borderRadius: '10px' }}>
                                     <Col xs={12} lg={4}>
                                         <Card className="shadow-sm border-0 h-100" style={{borderRadius: '20px'}}>
@@ -1059,7 +1060,7 @@ const PsychologistDashboard = () => {
                         )}
                     </div>
                 );
-            case 'appointments': return <AppointmentManager onAppointmentUpdate={handleAppointmentUpdate} />; 
+            case 'appointments': return <AppointmentManager onAppointmentUpdate={handleAppointmentUpdate} />;
             case 'news': return <NewsManagement />;
             case 'schedule': return <ScheduleManager />;
             case 'all-list': return <AllAppointmentList />;
@@ -1075,7 +1076,7 @@ const PsychologistDashboard = () => {
                 <Offcanvas.Header closeButton closeVariant="white" />
                 <Offcanvas.Body className="p-0"><SidebarContent /></Offcanvas.Body>
             </Offcanvas>
-            
+
             <div className="main-content d-flex flex-column">
                 <Navbar className="navbar-modern justify-content-between shadow-sm px-4 py-3">
                     <div className="d-flex align-items-center">
@@ -1101,7 +1102,7 @@ const PsychologistDashboard = () => {
                         </div>
                     </div>
                 </Navbar>
-                
+
                 <Container fluid className="p-4 flex-grow-1" style={{background: '#f0f4f8'}}>
                     {renderContent()}
                 </Container>

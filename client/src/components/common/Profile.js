@@ -1,3 +1,4 @@
+import API_BASE_URL from '../../config/api.js';
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import {
@@ -45,7 +46,7 @@ const Profile = ({ show, handleClose }) => {
             const token = localStorage.getItem('token');
 
             const res = await axios.get(
-                'http://localhost:5000/api/profile/me',
+                `${API_BASE_URL}/api/profile/me`,
                 {
                     headers: {
                         'x-auth-token': token
@@ -150,7 +151,7 @@ const Profile = ({ show, handleClose }) => {
             const token = localStorage.getItem('token');
 
             await axios.put(
-                'http://localhost:5000/api/profile/me',
+                `${API_BASE_URL}/api/profile/me`,
                 {
                     fullname: formData.fullname,
                     phone: formData.phone,

@@ -1,10 +1,11 @@
+import API_BASE_URL from '../../config/api.js';
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Card, Form, Button, Row, Col, Alert, Spinner, Badge, Image, Modal } from 'react-bootstrap';
 import { FaBullhorn, FaPaperPlane, FaTrash, FaImage, FaEdit, FaEye, FaTimes, FaSave, FaClock, FaUserCircle, FaCloudUploadAlt, FaList, FaTag } from 'react-icons/fa';
 
-import './NewsManagement.css'; 
-import './AllAppointmentList.css'; 
+import './NewsManagement.css';
+import './AllAppointmentList.css';
 
 const NewsManagement = () => {
     // --- States ---
@@ -12,10 +13,10 @@ const NewsManagement = () => {
     const [content, setContent] = useState('');
     const [imageFile, setImageFile] = useState(null);
     const [previewUrl, setPreviewUrl] = useState(null);
-    const [category, setCategory] = useState(''); 
-    
+    const [category, setCategory] = useState('');
+
     const [categories, setCategories] = useState([]);
-    const [newsList, setNewsList] = useState([]); 
+    const [newsList, setNewsList] = useState([]);
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState(null);
 
@@ -36,14 +37,14 @@ const NewsManagement = () => {
     // --- API Calls ---
     const fetchCategories = async () => {
         try {
-            const res = await axios.get('http://localhost:5000/api/news/categories');
+            const res = await axios.get(`${API_BASE_URL}/api/news/categories`);
             setCategories(res.data);
         } catch (err) { console.error(err); }
     };
 
     const fetchNewsHistory = async () => {
         try {
-            const res = await axios.get('http://localhost:5000/api/news');
+            const res = await axios.get(`${API_BASE_URL}/api/news`);
             setNewsList(res.data);
         } catch (err) { console.error(err); }
     };
@@ -62,7 +63,7 @@ const NewsManagement = () => {
         setEditId(news.news_id);
         setTitle(news.title);
         setContent(news.content);
-        setCategory(news.category || news.category_name || ''); 
+        setCategory(news.category || news.category_name || '');
         setPreviewUrl(news.image_url);
         setImageFile(null);
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -84,28 +85,28 @@ const NewsManagement = () => {
         e.preventDefault();
         setLoading(true);
         setMessage(null);
-        
+
         try {
             const token = localStorage.getItem('token');
             const formData = new FormData();
             formData.append('title', title);
             formData.append('content', content);
-            formData.append('category', category); 
+            formData.append('category', category);
             if (imageFile) formData.append('image', imageFile);
 
             const config = { headers: { 'x-auth-token': token, 'Content-Type': 'multipart/form-data' } };
 
             if (isEditing) {
-                await axios.put(`http://localhost:5000/api/news/${editId}`, formData, config);
+                await axios.put(`${API_BASE_URL}/api/news/${editId}`, formData, config);
                 setMessage({ type: 'success', text: '✅ บันทึกการแก้ไขเรียบร้อยแล้ว' });
                 handleCancelEdit();
             } else {
-                await axios.post('http://localhost:5000/api/news', formData, config);
+                await axios.post(`${API_BASE_URL}/api/news`, formData, config);
                 setMessage({ type: 'success', text: '✅ สร้างประกาศข่าวใหม่สำเร็จ' });
                 setTitle(''); setContent(''); setCategory(''); setImageFile(null); setPreviewUrl(null);
             }
             fetchNewsHistory();
-        } catch (err) { 
+        } catch (err) {
             console.error(err);
             setMessage({ type: 'danger', text: '❌ เกิดข้อผิดพลาดในการบันทึกข้อมูล' });
         } finally {
@@ -124,12 +125,12 @@ const NewsManagement = () => {
         if (!newsIdToDelete) return;
         try {
             const token = localStorage.getItem('token');
-            await axios.delete(`http://localhost:5000/api/news/${newsIdToDelete}`, { headers: { 'x-auth-token': token } });
+            await axios.delete(`${API_BASE_URL}/api/news/${newsIdToDelete}`, { headers: { 'x-auth-token': token } });
             setMessage({ type: 'success', text: '🗑️ ลบข่าวสารเรียบร้อยแล้ว' });
             fetchNewsHistory();
-        } catch (err) { 
+        } catch (err) {
             console.error(err);
-            setMessage({ type: 'danger', text: '❌ ลบไม่สำเร็จ เกิดข้อผิดพลาดในระบบ' }); 
+            setMessage({ type: 'danger', text: '❌ ลบไม่สำเร็จ เกิดข้อผิดพลาดในระบบ' });
         } finally {
             setShowDeleteModal(false);
             setNewsIdToDelete(null);
@@ -138,7 +139,7 @@ const NewsManagement = () => {
 
     return (
         <div className="pcshs-archive-container fade-in-up px-3 px-lg-5 py-4">
-            
+
             {/* 1. Header สไตล์ใหม่ */}
             <div className="archive-header mb-5 d-flex align-items-center">
                 <div className="brand-icon-box me-3"><FaBullhorn /></div>
@@ -170,25 +171,25 @@ const NewsManagement = () => {
                             <Col lg={8}>
                                 <div className="mb-4">
                                     <label className="fw-bold text-navy mb-2">หัวข้อข่าวประชาสัมพันธ์ <span className="text-danger">*</span></label>
-                                    <input 
-                                        type="text" 
-                                        className="form-control form-control-lg bg-light border-0 shadow-none rounded-3 px-4" 
-                                        placeholder="ระบุหัวข้อข่าวที่น่าสนใจ..." 
-                                        value={title} 
-                                        onChange={(e) => setTitle(e.target.value)} 
-                                        required 
+                                    <input
+                                        type="text"
+                                        className="form-control form-control-lg bg-light border-0 shadow-none rounded-3 px-4"
+                                        placeholder="ระบุหัวข้อข่าวที่น่าสนใจ..."
+                                        value={title}
+                                        onChange={(e) => setTitle(e.target.value)}
+                                        required
                                         style={{ fontSize: '1rem' }}
                                     />
                                 </div>
                                 <div className="mb-4">
                                     <label className="fw-bold text-navy mb-2">รายละเอียดเนื้อหา <span className="text-danger">*</span></label>
-                                    <textarea 
-                                        className="form-control bg-light border-0 shadow-none rounded-3 px-4 py-3" 
-                                        rows="8" 
-                                        placeholder="พิมพ์รายละเอียดข่าวสารที่นี่..." 
-                                        value={content} 
-                                        onChange={(e) => setContent(e.target.value)} 
-                                        required 
+                                    <textarea
+                                        className="form-control bg-light border-0 shadow-none rounded-3 px-4 py-3"
+                                        rows="8"
+                                        placeholder="พิมพ์รายละเอียดข่าวสารที่นี่..."
+                                        value={content}
+                                        onChange={(e) => setContent(e.target.value)}
+                                        required
                                         style={{ resize: 'none' }}
                                     />
                                 </div>
@@ -199,10 +200,10 @@ const NewsManagement = () => {
                                 <div className="bg-light p-4 rounded-4 h-100 border-0 shadow-sm d-flex flex-column">
                                     <div className="mb-4">
                                         <label className="fw-bold text-navy mb-2">หมวดหมู่ <span className="text-danger">*</span></label>
-                                        <Form.Select 
-                                            className="form-select form-select-lg border-0 shadow-none rounded-3" 
-                                            value={category} 
-                                            onChange={(e) => setCategory(e.target.value)} 
+                                        <Form.Select
+                                            className="form-select form-select-lg border-0 shadow-none rounded-3"
+                                            value={category}
+                                            onChange={(e) => setCategory(e.target.value)}
                                             required
                                             style={{ fontSize: '1rem' }}
                                         >
@@ -229,8 +230,8 @@ const NewsManagement = () => {
                                         </div>
                                     </div>
 
-                                    <Button 
-                                        type="submit" 
+                                    <Button
+                                        type="submit"
                                         variant={isEditing ? "warning" : "primary"}
                                         className="w-100 py-3 rounded-pill fw-bold shadow-sm d-flex justify-content-center align-items-center"
                                         disabled={loading}
@@ -299,7 +300,7 @@ const NewsManagement = () => {
                                             <td>
                                                 <div className="fw-bold text-dark text-truncate mb-1 fs-6" style={{maxWidth:'300px'}}>{news.title}</div>
                                                 <div className="d-flex align-items-center text-muted" style={{fontSize:'0.85rem'}}>
-                                                    <div className="student-avatar-glow me-1" style={{width:'20px', height:'20px', fontSize:'0.7rem', background:'#eef2fc', color:'#3b82f6'}}><FaUserCircle/></div> 
+                                                    <div className="student-avatar-glow me-1" style={{width:'20px', height:'20px', fontSize:'0.7rem', background:'#eef2fc', color:'#3b82f6'}}><FaUserCircle/></div>
                                                     {news.author_name || 'Admin'}
                                                 </div>
                                             </td>
@@ -345,7 +346,7 @@ const NewsManagement = () => {
                                 <Badge bg="primary" className="mb-3 px-3 py-2 rounded-pill shadow-sm"><FaTag className="me-1"/> {selectedNews.category_name || selectedNews.category}</Badge>
                                 <h3 className="fw-bold mb-2">{selectedNews.title}</h3>
                                 <div className="small opacity-75 d-flex align-items-center">
-                                    <FaClock className="me-2"/> 
+                                    <FaClock className="me-2"/>
                                     {new Date(selectedNews.created_at).toLocaleDateString('th-TH', { dateStyle: 'long' })}
                                     <span className="mx-3">|</span>
                                     <FaUserCircle className="me-2"/>
@@ -367,23 +368,23 @@ const NewsManagement = () => {
                     <div className="delete-icon-box mx-auto mb-4">
                         <FaTrash size={28} />
                     </div>
-                    
+
                     <h4 className="fw-bold text-navy mb-2" style={{ fontFamily: 'Prompt' }}>ยืนยันการลบข่าวสาร?</h4>
                     <p className="text-muted px-3 mb-4" style={{ fontSize: '0.95rem' }}>
                         คุณแน่ใจหรือไม่ที่จะลบประกาศข่าวสารนี้? เมื่อลบแล้วข้อมูลนี้จะไม่สามารถกู้คืนกลับมาได้อีก
                     </p>
 
                     <div className="d-flex justify-content-center gap-3">
-                        <Button 
-                            variant="light" 
+                        <Button
+                            variant="light"
                             className="rounded-pill px-4 py-2 border fw-bold text-secondary"
                             onClick={() => setShowDeleteModal(false)}
                             style={{ minWidth: '120px' }}
                         >
                             ยกเลิก
                         </Button>
-                        <Button 
-                            variant="danger" 
+                        <Button
+                            variant="danger"
                             className="rounded-pill px-4 py-2 fw-bold shadow-sm btn-delete-confirm"
                             onClick={handleConfirmDelete}
                             style={{ minWidth: '120px', background: 'linear-gradient(135deg, #dc3545 0%, #bd2130 100%)', border: 'none' }}

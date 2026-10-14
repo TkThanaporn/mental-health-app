@@ -1,9 +1,10 @@
+import API_BASE_URL from '../../config/api.js';
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 // เพิ่มการนำเข้า Modal จาก react-bootstrap
 import { Card, Form, Button, Row, Col, Alert, Spinner, Table, Modal } from 'react-bootstrap';
-import { 
-    FaGoogle, FaTrash, FaClock, FaCheckCircle, 
+import {
+    FaGoogle, FaTrash, FaClock, FaCheckCircle,
     FaPlusCircle, FaHistory, FaCalendarCheck,
     FaLock, FaLockOpen, FaUserCheck, FaUnlink, FaFilter
 } from 'react-icons/fa';
@@ -13,16 +14,16 @@ import './ScheduleManager.css';
 
 const ScheduleManager = () => {
     const location = useLocation();
-    
+
     // --- State ---
     const [selectedDate, setSelectedDate] = useState('');
     const [selectedSlots, setSelectedSlots] = useState([]);
     const [mySlots, setMySlots] = useState([]);
-    const [deleteIds, setDeleteIds] = useState([]); 
+    const [deleteIds, setDeleteIds] = useState([]);
     const [message, setMessage] = useState(null);
     const [loading, setLoading] = useState(true);
     const [deleting, setDeleting] = useState(false);
-    const [isGoogleSynced, setIsGoogleSynced] = useState(false); 
+    const [isGoogleSynced, setIsGoogleSynced] = useState(false);
 
     // เพิ่ม State สำหรับควบคุมหน้าต่างยืนยันการลบ
     const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -66,19 +67,19 @@ const ScheduleManager = () => {
     const checkGoogleStatus = async () => {
         try {
             const token = localStorage.getItem('token');
-            const res = await axios.get('http://localhost:5000/api/calendar/status', { 
-                headers: { 'x-auth-token': token } 
+            const res = await axios.get(`${API_BASE_URL}/api/calendar/status`, {
+                headers: { 'x-auth-token': token }
             });
-            setIsGoogleSynced(res.data.is_google_synced); 
+            setIsGoogleSynced(res.data.is_google_synced);
         } catch (err) {
             console.error("เช็คสถานะ Google ไม่สำเร็จ", err);
         }
     };
 
-    useEffect(() => { 
-        fetchMySlots(); 
-        checkGoogleStatus(); 
-        
+    useEffect(() => {
+        fetchMySlots();
+        checkGoogleStatus();
+
         if (!calledOnce.current) {
             handleGoogleRedirect();
             calledOnce.current = true;
@@ -92,15 +93,15 @@ const ScheduleManager = () => {
 
         if (code) {
             window.history.replaceState({}, document.title, window.location.pathname);
-            
+
             setLoading(true);
             try {
                 const token = localStorage.getItem('token');
-                const res = await axios.post('http://localhost:5000/api/calendar/save-token', 
-                    { code }, 
+                const res = await axios.post(`${API_BASE_URL}/api/calendar/save-token`,
+                    { code },
                     { headers: { 'x-auth-token': token } }
                 );
-                
+
                 if (res.data.success) {
                     setMessage({ type: 'success', text: '✅ เชื่อมต่อ Google Calendar สำเร็จ! ระบบจะ Auto Sync ให้คุณ' });
                     setIsGoogleSynced(true);
@@ -118,20 +119,20 @@ const ScheduleManager = () => {
     const fetchMySlots = async () => {
         try {
             const token = localStorage.getItem('token');
-            const res = await axios.get('http://localhost:5000/api/schedule', { headers: { 'x-auth-token': token } });
+            const res = await axios.get(`${API_BASE_URL}/api/schedule`, { headers: { 'x-auth-token': token } });
             setMySlots(res.data);
             setLoading(false);
-        } catch (err) { 
-            setLoading(false); 
+        } catch (err) {
+            setLoading(false);
         }
     };
 
     // --- Logic การกรองข้อมูลตารางปฏิบัติงาน ---
     const filteredSlots = mySlots.filter(slot => {
         if (!slot.date) return true;
-        
-        const slotDateStr = slot.date.split('T')[0]; 
-        const [sYear, sMonth, sDay] = slotDateStr.split('-'); 
+
+        const slotDateStr = slot.date.split('T')[0];
+        const [sYear, sMonth, sDay] = slotDateStr.split('-');
 
         const matchYear = filterYear ? sYear === filterYear : true;
         const matchMonth = filterMonth ? sMonth === filterMonth : true;
@@ -146,7 +147,7 @@ const ScheduleManager = () => {
         try {
             const token = localStorage.getItem('token');
             const newStatus = slot.is_available === 1 ? 0 : 1;
-            await axios.put(`http://localhost:5000/api/schedule/${slot.schedule_id}/status`, 
+            await axios.put(`${API_BASE_URL}/api/schedule/${slot.schedule_id}/status`,
                 { is_available: newStatus },
                 { headers: { 'x-auth-token': token } }
             );
@@ -170,7 +171,7 @@ const ScheduleManager = () => {
     // ฟังก์ชันทำลายข้อมูลจริงหลังกดยืนยันในหน้าต่างลบ
     const handleBatchDelete = async () => {
         if (deleteIds.length === 0) return;
-        
+
         setShowDeleteModal(false); // ปิด Modal ทันทีที่กดตกลง
         setDeleting(true);
         let deletedCount = 0;
@@ -178,24 +179,24 @@ const ScheduleManager = () => {
         try {
             for (const id of deleteIds) {
                 try {
-                    await axios.delete(`http://localhost:5000/api/schedule/${id}`, { headers: { 'x-auth-token': token } });
+                    await axios.delete(`${API_BASE_URL}/api/schedule/${id}`, { headers: { 'x-auth-token': token } });
                     deletedCount++;
                 } catch (e) {}
             }
             setMessage({ type: 'success', text: `✅ ลบสำเร็จ ${deletedCount} รายการ` });
-            setDeleteIds([]); 
+            setDeleteIds([]);
             fetchMySlots();
-        } catch (err) { 
-            setMessage({ type: 'danger', text: '❌ เกิดข้อผิดพลาดในการลบ' }); 
-        } finally { 
-            setDeleting(false); 
+        } catch (err) {
+            setMessage({ type: 'danger', text: '❌ เกิดข้อผิดพลาดในการลบ' });
+        } finally {
+            setDeleting(false);
         }
     };
 
     const handleConnectGoogle = async () => {
         try {
             const token = localStorage.getItem('token');
-            const res = await axios.get('http://localhost:5000/api/calendar/auth-url', { headers: { 'x-auth-token': token } });
+            const res = await axios.get(`${API_BASE_URL}/api/calendar/auth-url`, { headers: { 'x-auth-token': token } });
             window.location.href = res.data.url;
         } catch (error) {
             setMessage({ type: 'danger', text: '❌ ไม่สามารถดึงลิงก์เชื่อมต่อ Google ได้' });
@@ -206,7 +207,7 @@ const ScheduleManager = () => {
         if (!window.confirm('คุณต้องการยกเลิกการซิงค์ตารางงานกับ Google Calendar ใช่หรือไม่?')) return;
         try {
             const token = localStorage.getItem('token');
-            await axios.post('http://localhost:5000/api/calendar/disconnect', {}, { headers: { 'x-auth-token': token } });
+            await axios.post(`${API_BASE_URL}/api/calendar/disconnect`, {}, { headers: { 'x-auth-token': token } });
             setIsGoogleSynced(false);
             setMessage({ type: 'success', text: '✅ ยกเลิกการเชื่อมต่อสำเร็จ ระบบหยุดซิงค์อัตโนมัติแล้ว' });
         } catch (error) {
@@ -221,13 +222,13 @@ const ScheduleManager = () => {
         if (!selectedDate || selectedSlots.length === 0) return setMessage({ type: 'warning', text: '⚠️ กรุณาเลือกข้อมูลให้ครบ' });
         try {
             const token = localStorage.getItem('token');
-            await axios.post('http://localhost:5000/api/schedule', { date: selectedDate, time_slots: selectedSlots }, { headers: { 'x-auth-token': token } });
+            await axios.post(`${API_BASE_URL}/api/schedule`, { date: selectedDate, time_slots: selectedSlots }, { headers: { 'x-auth-token': token } });
             setMessage({ type: 'success', text: '✅ บันทึกสำเร็จ ระบบกำลังซิงค์ขึ้น Google Calendar...' });
-            setSelectedSlots([]); 
-            fetchMySlots(); 
+            setSelectedSlots([]);
+            fetchMySlots();
             setTimeout(() => setMessage(null), 3000);
-        } catch (err) { 
-            setMessage({ type: 'danger', text: '❌ บันทึกไม่สำเร็จ' }); 
+        } catch (err) {
+            setMessage({ type: 'danger', text: '❌ บันทึกไม่สำเร็จ' });
         }
     };
 
@@ -267,11 +268,11 @@ const ScheduleManager = () => {
                             <Form onSubmit={handleSubmit}>
                                 <Form.Group className="mb-4">
                                     <label className="fw-bold small text-secondary text-uppercase mb-2">1. วันที่ (Date)</label>
-                                    <Form.Control 
-                                        type="date" 
-                                        value={selectedDate} 
-                                        onChange={(e) => setSelectedDate(e.target.value)} 
-                                        min={new Date().toISOString().split('T')[0]} 
+                                    <Form.Control
+                                        type="date"
+                                        value={selectedDate}
+                                        onChange={(e) => setSelectedDate(e.target.value)}
+                                        min={new Date().toISOString().split('T')[0]}
                                         className="modern-date-input"
                                     />
                                 </Form.Group>
@@ -279,10 +280,10 @@ const ScheduleManager = () => {
                                     <label className="fw-bold small text-secondary text-uppercase mb-2">2. เวลา (Time Slots)</label>
                                     <div className="slot-grid-container">
                                         {availableTimeSlots.map(slot => (
-                                            <button 
-                                                key={slot} 
-                                                type="button" 
-                                                className={`time-slot-chip ${selectedSlots.includes(slot) ? 'selected' : ''}`} 
+                                            <button
+                                                key={slot}
+                                                type="button"
+                                                className={`time-slot-chip ${selectedSlots.includes(slot) ? 'selected' : ''}`}
                                                 onClick={() => toggleSlot(slot)}
                                             >
                                                 {slot}
@@ -304,7 +305,7 @@ const ScheduleManager = () => {
                             <h6 className="mb-0 fw-bold header-title" style={{color: '#00234B'}}>
                                 <FaClock className="me-2" /> รายการที่บันทึก ({filteredSlots.length}/{mySlots.length})
                             </h6>
-                            
+
                             <div className="d-flex gap-2">
                                 {deleteIds.length > 0 && (
                                     // เปลี่ยนปุ่มลบให้ไปสั่งเปิดกล่อง Modal ยืนยัน
@@ -312,7 +313,7 @@ const ScheduleManager = () => {
                                         {deleting ? <Spinner size="sm"/> : <FaTrash className="me-1"/>} ลบ ({deleteIds.length})
                                     </Button>
                                 )}
-                                
+
                                 {isGoogleSynced ? (
                                     <Button variant="outline-danger" className="rounded-pill px-3 shadow-sm" onClick={handleDisconnectGoogle}>
                                         <FaUnlink className="me-2" /> ยกเลิกการเชื่อมต่อ
@@ -333,11 +334,11 @@ const ScheduleManager = () => {
                                         <Form.Label className="small fw-bold text-secondary mb-1">
                                             <FaFilter className="me-1 small"/> เลือกปี (ค.ศ.)
                                         </Form.Label>
-                                        <Form.Select 
-                                            value={filterYear} 
+                                        <Form.Select
+                                            value={filterYear}
                                             onChange={(e) => {
                                                 setFilterYear(e.target.value);
-                                                setFilterDate(''); 
+                                                setFilterDate('');
                                             }}
                                             className="form-select-sm"
                                         >
@@ -351,11 +352,11 @@ const ScheduleManager = () => {
                                 <Col xs={6} md={3}>
                                     <Form.Group>
                                         <Form.Label className="small fw-bold text-secondary mb-1">เลือกเดือน</Form.Label>
-                                        <Form.Select 
-                                            value={filterMonth} 
+                                        <Form.Select
+                                            value={filterMonth}
                                             onChange={(e) => {
                                                 setFilterMonth(e.target.value);
-                                                setFilterDate(''); 
+                                                setFilterDate('');
                                             }}
                                             className="form-select-sm"
                                         >
@@ -369,14 +370,14 @@ const ScheduleManager = () => {
                                 <Col xs={12} md={3}>
                                     <Form.Group>
                                         <Form.Label className="small fw-bold text-secondary mb-1">ระบุวันที่เจาะจง</Form.Label>
-                                        <Form.Control 
-                                            type="date" 
-                                            value={filterDate} 
+                                        <Form.Control
+                                            type="date"
+                                            value={filterDate}
                                             onChange={(e) => {
                                                 setFilterDate(e.target.value);
                                                 if (e.target.value) {
-                                                    setFilterYear('');  
-                                                    setFilterMonth(''); 
+                                                    setFilterYear('');
+                                                    setFilterMonth('');
                                                 }
                                             }}
                                             className="form-control-sm"
@@ -386,8 +387,8 @@ const ScheduleManager = () => {
                                 <Col xs={12} md={3}>
                                     <Form.Group>
                                         <Form.Label className="small fw-bold text-secondary mb-1">กรองช่วงเวลา</Form.Label>
-                                        <Form.Select 
-                                            value={filterTime} 
+                                        <Form.Select
+                                            value={filterTime}
                                             onChange={(e) => setFilterTime(e.target.value)}
                                             className="form-select-sm"
                                         >
@@ -419,8 +420,8 @@ const ScheduleManager = () => {
                                     <thead>
                                         <tr>
                                             <th className="ps-4 text-center" style={{width: '60px'}}>
-                                                <Form.Check 
-                                                    type="checkbox" 
+                                                <Form.Check
+                                                    type="checkbox"
                                                     checked={deleteIds.length > 0 && deleteIds.length === filteredSlots.filter(s => !s.appointment_id).length}
                                                     onChange={handleSelectAll}
                                                 />
@@ -439,7 +440,7 @@ const ScheduleManager = () => {
                                                 <tr key={slot.schedule_id} className={deleteIds.includes(slot.schedule_id) ? 'table-active-row' : ''}>
                                                     <td className="ps-4 text-center">
                                                         {!isBooked && (
-                                                            <Form.Check 
+                                                            <Form.Check
                                                                 type="checkbox"
                                                                 checked={deleteIds.includes(slot.schedule_id)}
                                                                 onChange={() => toggleDeleteId(slot.schedule_id)}
@@ -447,8 +448,8 @@ const ScheduleManager = () => {
                                                         )}
                                                     </td>
                                                     <td className="fw-bold" style={{color: '#00234B'}}>
-                                                        {new Date(slot.date).toLocaleDateString('th-TH', { 
-                                                            day: 'numeric', month: 'long', year: 'numeric' 
+                                                        {new Date(slot.date).toLocaleDateString('th-TH', {
+                                                            day: 'numeric', month: 'long', year: 'numeric'
                                                         })}
                                                     </td>
                                                     <td>
@@ -456,7 +457,7 @@ const ScheduleManager = () => {
                                                             <span className={`time-pill ${isBooked ? 'bg-danger text-white border-danger' : isClosed ? 'bg-secondary text-white border-secondary' : ''}`}>
                                                                 {slot.time_slot} น.
                                                             </span>
-                                                            
+
                                                             {isBooked ? (
                                                                 <small className="text-danger fw-bold d-flex align-items-center">
                                                                     <FaUserCheck className="me-1"/> จองโดย: {slot.student_name}
@@ -474,7 +475,7 @@ const ScheduleManager = () => {
                                                     </td>
                                                     <td className="text-end pe-4">
                                                         {!isBooked && (
-                                                            <Button 
+                                                            <Button
                                                                 variant={isClosed ? "outline-danger" : "outline-success"}
                                                                 size="sm"
                                                                 className="rounded-circle btn-icon-only"
@@ -503,7 +504,7 @@ const ScheduleManager = () => {
                     <div className="delete-icon-box mx-auto mb-4">
                         <FaTrash size={28} />
                     </div>
-                    
+
                     <h4 className="fw-bold text-navy mb-2" style={{ fontFamily: 'Prompt' }}>ยืนยันการลบตารางงาน?</h4>
                     <p className="text-muted px-3 mb-4" style={{ fontSize: '0.95rem' }}>
                         คุณแน่ใจหรือไม่ที่จะลบตารางปฏิบัติงานที่เลือกทั้งหมดจำนวน <strong className="text-danger">{deleteIds.length} รายการ</strong>?<br/>
@@ -511,16 +512,16 @@ const ScheduleManager = () => {
                     </p>
 
                     <div className="d-flex justify-content-center gap-3">
-                        <Button 
-                            variant="light" 
+                        <Button
+                            variant="light"
                             className="rounded-pill px-4 py-2 border fw-bold text-secondary"
                             onClick={() => setShowDeleteModal(false)}
                             style={{ minWidth: '120px' }}
                         >
                             ยกเลิก
                         </Button>
-                        <Button 
-                            variant="danger" 
+                        <Button
+                            variant="danger"
                             className="rounded-pill px-4 py-2 fw-bold shadow-sm btn-delete-confirm"
                             onClick={handleBatchDelete}
                             style={{ minWidth: '120px', background: 'linear-gradient(135deg, #dc3545 0%, #bd2130 100%)', border: 'none' }}

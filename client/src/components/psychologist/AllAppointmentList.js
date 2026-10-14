@@ -1,21 +1,22 @@
+import API_BASE_URL from '../../config/api.js';
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Card, Spinner, Form, InputGroup, Row, Col, Button, Modal } from 'react-bootstrap';
-import { 
-    FaSearch, FaClock, FaHistory, FaCheckCircle, FaTimesCircle, 
-    FaHourglassHalf, FaMicroscope, FaDatabase, FaFilter, FaUndo, 
+import {
+    FaSearch, FaClock, FaHistory, FaCheckCircle, FaTimesCircle,
+    FaHourglassHalf, FaMicroscope, FaDatabase, FaFilter, FaUndo,
     FaUserGraduate, FaFileMedical, FaVideo, FaBuilding, FaCheck,
     FaTimes, FaUserTimes, FaCircle, FaInfoCircle, FaCalendarAlt, FaClipboardList, FaPrint
 } from 'react-icons/fa';
 
-import './Psychologist.css';       
-import './AllAppointmentList.css'; 
+import './Psychologist.css';
+import './AllAppointmentList.css';
 import pcshsLogo from '../../assets/pcshs_logo.png'; // ✅ เพิ่มนำเข้าโลโก้โรงเรียน
 
 const AllAppointmentList = () => {
     const [appointments, setAppointments] = useState([]);
     const [loading, setLoading] = useState(true);
-    
+
     // --- 🔍 State สำหรับการกรองข้อมูล ---
     const [searchTerm, setSearchTerm] = useState('');
     const [filterDate, setFilterDate] = useState('');
@@ -29,8 +30,8 @@ const AllAppointmentList = () => {
     // --- State โปรไฟล์ เพื่อเอาชื่อมาเซ็นในใบรายงาน ---
     const [psychologistName, setPsychologistName] = useState('นักจิตวิทยา');
 
-    useEffect(() => { 
-        fetchHistory(); 
+    useEffect(() => {
+        fetchHistory();
         fetchProfile();
     }, []);
 
@@ -38,7 +39,7 @@ const AllAppointmentList = () => {
         try {
             const token = localStorage.getItem('token');
             if(token) {
-                const res = await axios.get('http://localhost:5000/api/profile/me', {
+                const res = await axios.get(`${API_BASE_URL}/api/profile/me`, {
                     headers: { 'x-auth-token': token }
                 });
                 setPsychologistName(res.data.fullname || 'นักจิตวิทยา');
@@ -49,7 +50,7 @@ const AllAppointmentList = () => {
     const fetchHistory = async () => {
         try {
             const token = localStorage.getItem('token');
-            const res = await axios.get('http://localhost:5000/api/appointments/psychologist-history', {
+            const res = await axios.get(`${API_BASE_URL}/api/appointments/psychologist-history`, {
                 headers: { 'x-auth-token': token }
             });
             setAppointments(res.data);
@@ -64,9 +65,9 @@ const AllAppointmentList = () => {
         setSearchTerm(''); setFilterDate(''); setFilterYear(''); setFilterTime('');
     };
 
-    const openDetails = (appt) => { 
-        setSelectedApptDetails(appt); 
-        setShowDetails(true); 
+    const openDetails = (appt) => {
+        setSelectedApptDetails(appt);
+        setShowDetails(true);
     };
 
     // --- 🎨 ฟังก์ชันจัดการ UI ---
@@ -108,19 +109,19 @@ const AllAppointmentList = () => {
         const appDate = new Date(app.date || app.appointment_date);
         const appYear = appDate.getFullYear().toString();
         const appDateString = (app.date || app.appointment_date).split('T')[0];
-        
+
         const matchesSearch = !searchTerm || (app.student_name?.toLowerCase().includes(searchTerm.toLowerCase())) || (app.topic?.toLowerCase().includes(searchTerm.toLowerCase()));
         const matchesDate = !filterDate || appDateString === filterDate;
         const matchesYear = !filterYear || appYear === filterYear;
         const matchesTime = !filterTime || (app.time_slot === filterTime || formatTimeSlot(app.start_time, app.end_time, app.appointment_time) === filterTime);
-        
+
         return matchesSearch && matchesDate && matchesYear && matchesTime;
     });
 
     const sortedAppointments = [...filteredAppointments].sort((a, b) => {
         const dateA = new Date(`${a.date || a.appointment_date}T${a.start_time || a.appointment_time || "00:00:00"}`);
         const dateB = new Date(`${b.date || b.appointment_date}T${b.start_time || b.appointment_time || "00:00:00"}`);
-        return dateB - dateA; 
+        return dateB - dateA;
     });
 
     const stats = {
@@ -156,7 +157,7 @@ const AllAppointmentList = () => {
             const dateStr = new Date(app.date || app.appointment_date).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' });
             const timeStr = formatTimeSlot(app.start_time, app.end_time, app.appointment_time, app.time_slot);
             const statusStr = getStatusText(app.status);
-            
+
             return `
                 <tr>
                     <td class="text-center">${index + 1}</td>
@@ -176,20 +177,20 @@ const AllAppointmentList = () => {
             <title>รายงานประวัติการให้คำปรึกษานักเรียน</title>
             <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
             <style>
-                @page { size: A4 portrait; margin: 15mm 15mm 15mm 20mm; } 
+                @page { size: A4 portrait; margin: 15mm 15mm 15mm 20mm; }
                 body {
                     font-family: 'Sarabun', sans-serif;
                     color: #1e293b;
                     margin: 0;
                     background: #f8fafc;
-                    font-size: 14pt; 
+                    font-size: 14pt;
                     line-height: 1.4;
                 }
-                .container { 
-                    padding: 15mm 15mm; 
-                    max-width: 210mm; 
-                    margin: 20px auto; 
-                    background: white; 
+                .container {
+                    padding: 15mm 15mm;
+                    max-width: 210mm;
+                    margin: 20px auto;
+                    background: white;
                     box-shadow: 0 4px 15px rgba(0,0,0,0.05);
                     border-radius: 8px;
                     box-sizing: border-box;
@@ -214,12 +215,12 @@ const AllAppointmentList = () => {
                     padding: 10px 15px;
                     border-radius: 6px;
                     margin-bottom: 20px;
-                    border-left: 4px solid #0ea5e9; 
+                    border-left: 4px solid #0ea5e9;
                 }
                 table {
                     width: 100%;
                     border-collapse: collapse;
-                    font-size: 12pt; 
+                    font-size: 12pt;
                     margin-bottom: 30px;
                 }
                 th, td {
@@ -227,15 +228,15 @@ const AllAppointmentList = () => {
                     border: 1px solid #cbd5e1;
                     vertical-align: top;
                 }
-                th { 
-                    font-weight: 600; 
+                th {
+                    font-weight: 600;
                     text-align: center;
-                    background-color: #003566 !important; 
+                    background-color: #003566 !important;
                     color: #ffffff !important;
                     -webkit-print-color-adjust: exact;
                 }
                 tr:nth-child(even) td {
-                    background-color: #f8fafc !important; 
+                    background-color: #f8fafc !important;
                     -webkit-print-color-adjust: exact;
                 }
                 .text-center { text-align: center; }
@@ -248,7 +249,7 @@ const AllAppointmentList = () => {
                 }
                 .signature-box { text-align: center; font-size: 13pt; color: #1e293b; }
                 .sig-line { border-bottom: 1px dashed #94a3b8; width: 220px; margin: 30px auto 10px auto; }
-                .print-btn-container { 
+                .print-btn-container {
                     text-align: center; padding: 15px 0; background: #fff;
                     position: sticky; top: 0; box-shadow: 0 2px 10px rgba(0,0,0,0.1); z-index: 1000;
                 }
@@ -404,9 +405,9 @@ const AllAppointmentList = () => {
                         <FaHistory className="me-3 text-primary"/> รายการประวัติที่ค้นพบ ({sortedAppointments.length})
                     </div>
                     {/* ✅ ปุ่มกด Export PDF อยู่ตรงนี้ */}
-                    <Button 
-                        variant="warning" 
-                        className="fw-bold text-dark rounded-pill px-4 shadow-sm" 
+                    <Button
+                        variant="warning"
+                        className="fw-bold text-dark rounded-pill px-4 shadow-sm"
                         onClick={handleExportPDF}
                         disabled={sortedAppointments.length === 0}
                     >
@@ -502,7 +503,7 @@ const AllAppointmentList = () => {
                                     {getStatusBadge(selectedApptDetails.status)}
                                 </div>
                             </div>
-                            
+
                             <div className="info-box bg-light p-3 rounded-3 mb-3 border">
                                 <Row className="g-3">
                                     <Col xs={6}>
@@ -515,12 +516,12 @@ const AllAppointmentList = () => {
                                     </Col>
                                 </Row>
                             </div>
-                            
+
                             <div className="info-group mb-3">
                                 <div className="text-muted small mb-1">หัวข้อการปรึกษา</div>
                                 <div className="fw-semibold text-dark p-2 border rounded-3 bg-white shadow-sm">{selectedApptDetails.topic || 'ไม่ระบุ'}</div>
                             </div>
-                            
+
                             <div className="info-group border-start border-danger border-4 ps-3 py-2 bg-white shadow-sm rounded-end mb-3">
                                 <div className="text-danger small fw-bold mb-1"><FaFileMedical className="me-1"/> ผลประเมินเบื้องต้น</div>
                                 <div className="fw-semibold text-dark">{selectedApptDetails.stress_level || selectedApptDetails.latest_assessment || 'ไม่มีข้อมูล'}</div>

@@ -1,3 +1,4 @@
+import API_BASE_URL from '../../config/api.js';
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Card, Form, Button, Row, Col, Alert, Spinner, Image } from 'react-bootstrap';
@@ -22,7 +23,7 @@ const AdminProfile = () => {
     const fetchProfile = async () => {
         try {
             const token = localStorage.getItem('token');
-            const res = await axios.get('http://localhost:5000/api/profile/me', {
+            const res = await axios.get(`${API_BASE_URL}/api/profile/me`, {
                 headers: { 'x-auth-token': token }
             });
             setProfile(res.data);
@@ -54,14 +55,14 @@ const AdminProfile = () => {
 
         try {
             const token = localStorage.getItem('token');
-            await axios.put('http://localhost:5000/api/profile/me', formData, {
-                headers: { 
+            await axios.put(`${API_BASE_URL}/api/profile/me`, formData, {
+                headers: {
                     'x-auth-token': token,
                     'Content-Type': 'multipart/form-data'
                 }
             });
             setMessage({ type: 'success', text: 'บันทึกการเปลี่ยนแปลงข้อมูลผู้ดูแลระบบเรียบร้อยแล้ว' });
-            fetchProfile(); 
+            fetchProfile();
         } catch (err) {
             setMessage({ type: 'danger', text: 'เกิดข้อผิดพลาดในการบันทึกข้อมูล' });
         }
@@ -79,7 +80,7 @@ const AdminProfile = () => {
             {/* Header Title */}
             <div className="header-brand-border">
                 <h2 className="fw-bold pcshs-navy m-0 display-6">
-                    <FaUserShield className="me-3 text-warning" /> 
+                    <FaUserShield className="me-3 text-warning" />
                     จัดการโปรไฟล์ผู้ดูแลระบบ
                 </h2>
                 <p className="text-muted small mb-0 mt-2">ปรับปรุงข้อมูลส่วนตัวและตัวตนสำหรับสิทธิ์ Admin</p>
@@ -88,7 +89,7 @@ const AdminProfile = () => {
             <Card className="stat-card-ultra">
                 {/* Decorative Top Bar */}
                 <div style={{ height: '6px', background: 'linear-gradient(90deg, var(--pcshs-blue-deep) 0%, var(--pcshs-orange) 100%)' }}></div>
-                
+
                 <Card.Body className="p-4 p-lg-5 position-relative">
                     {message && (
                         <Alert variant={message.type} className="border-0 shadow-sm rounded-4 mb-4">
@@ -102,13 +103,13 @@ const AdminProfile = () => {
                             <Col lg={4} className="text-center mb-5 mb-lg-0">
                                 <div className="avatar-wrapper">
                                     <div className="stat-orb" style={{ width: '220px', height: '220px', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', opacity: 0.15, background: 'var(--pcshs-orange)' }}></div>
-                                    
-                                    <Image 
-                                        src={previewUrl || 'https://via.placeholder.com/200'} 
-                                        roundedCircle 
+
+                                    <Image
+                                        src={previewUrl || 'https://via.placeholder.com/200'}
+                                        roundedCircle
                                         className="profile-img-preview"
                                     />
-                                    
+
                                     <Form.Label htmlFor="imageUpload" className="btn-camera-upload">
                                         <FaCamera size={20} />
                                     </Form.Label>
@@ -129,10 +130,10 @@ const AdminProfile = () => {
                                     <Col md={12}>
                                         <Form.Group>
                                             <Form.Label className="form-label-custom"><FaUser className="me-2"/>ชื่อ-นามสกุล</Form.Label>
-                                            <Form.Control 
+                                            <Form.Control
                                                 className="form-control-custom"
-                                                value={profile.fullname || ''} 
-                                                onChange={e => setProfile({...profile, fullname: e.target.value})} 
+                                                value={profile.fullname || ''}
+                                                onChange={e => setProfile({...profile, fullname: e.target.value})}
                                                 placeholder="ระบุชื่อจริง-นามสกุล"
                                             />
                                         </Form.Group>
@@ -140,10 +141,10 @@ const AdminProfile = () => {
                                     <Col md={6}>
                                         <Form.Group>
                                             <Form.Label className="form-label-custom"><FaPhone className="me-2"/>เบอร์โทรศัพท์</Form.Label>
-                                            <Form.Control 
+                                            <Form.Control
                                                 className="form-control-custom"
-                                                value={profile.phone || ''} 
-                                                onChange={e => setProfile({...profile, phone: e.target.value})} 
+                                                value={profile.phone || ''}
+                                                onChange={e => setProfile({...profile, phone: e.target.value})}
                                                 placeholder="0XX-XXX-XXXX"
                                             />
                                         </Form.Group>
@@ -151,9 +152,9 @@ const AdminProfile = () => {
                                     <Col md={6}>
                                         <Form.Group>
                                             <Form.Label className="form-label-custom"><FaVenusMars className="me-2"/>เพศ</Form.Label>
-                                            <Form.Select 
+                                            <Form.Select
                                                 className="form-select-custom"
-                                                value={profile.gender || ''} 
+                                                value={profile.gender || ''}
                                                 onChange={e => setProfile({...profile, gender: e.target.value})}
                                             >
                                                 <option value="">ระบุเพศ</option>

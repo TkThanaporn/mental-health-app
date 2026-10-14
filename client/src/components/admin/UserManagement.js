@@ -1,3 +1,4 @@
+import API_BASE_URL from '../../config/api.js';
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Button, Form, Modal, InputGroup, Row, Col, Spinner } from 'react-bootstrap';
@@ -13,23 +14,23 @@ const UserManagement = () => {
 
     // State สำหรับการเพิ่มผู้ใช้งาน
     const [showModal, setShowModal] = useState(false);
-    const [newUser, setNewUser] = useState({ 
-        fullname: '', 
-        email: '', 
-        password: '', 
-        role: 'Student', 
-        phone: '', 
-        gender: 'Male' 
+    const [newUser, setNewUser] = useState({
+        fullname: '',
+        email: '',
+        password: '',
+        role: 'Student',
+        phone: '',
+        gender: 'Male'
     });
 
     // 🌟 ส่วนที่เพิ่มใหม่: State สำหรับการแก้ไขผู้ใช้งาน
     const [showEditModal, setShowEditModal] = useState(false);
     const [editUser, setEditUser] = useState({
         user_id: '',
-        fullname: '', 
-        email: '', 
-        role: 'Student', 
-        phone: '', 
+        fullname: '',
+        email: '',
+        role: 'Student',
+        phone: '',
         gender: 'Male'
     });
 
@@ -40,13 +41,13 @@ const UserManagement = () => {
     const fetchUsers = async () => {
         try {
             const token = localStorage.getItem('token');
-            const res = await axios.get('http://localhost:5000/api/admin/users', { 
-                headers: { 'x-auth-token': token } 
+            const res = await axios.get(`${API_BASE_URL}/api/admin/users`, {
+                headers: { 'x-auth-token': token }
             });
             setUsers(res.data);
             setLoading(false);
-        } catch (err) { 
-            console.error("Error fetching users:", err); 
+        } catch (err) {
+            console.error("Error fetching users:", err);
             setLoading(false);
         }
     };
@@ -55,15 +56,15 @@ const UserManagement = () => {
         e.preventDefault();
         try {
             const token = localStorage.getItem('token');
-            await axios.post('http://localhost:5000/api/admin/users', newUser, { 
-                headers: { 'x-auth-token': token } 
+            await axios.post(`${API_BASE_URL}/api/admin/users`, newUser, {
+                headers: { 'x-auth-token': token }
             });
             alert('✅ เพิ่มผู้ใช้งานสำเร็จ');
             setShowModal(false);
             setNewUser({ fullname: '', email: '', password: '', role: 'Student', phone: '', gender: 'Male' });
             fetchUsers();
-        } catch (err) { 
-            alert('❌ ' + (err.response?.data?.msg || 'Error')); 
+        } catch (err) {
+            alert('❌ ' + (err.response?.data?.msg || 'Error'));
         }
     };
 
@@ -86,14 +87,14 @@ const UserManagement = () => {
         try {
             const token = localStorage.getItem('token');
             // ส่ง Request ไปที่ API เพื่ออัปเดตข้อมูล (สมมติว่า Backend ใช้ PUT /api/admin/users/:id)
-            await axios.put(`http://localhost:5000/api/admin/users/${editUser.user_id}`, editUser, { 
-                headers: { 'x-auth-token': token } 
+            await axios.put(`${API_BASE_URL}/api/admin/users/${editUser.user_id}`, editUser, {
+                headers: { 'x-auth-token': token }
             });
             alert('✅ อัปเดตข้อมูลผู้ใช้งานสำเร็จ');
             setShowEditModal(false);
             fetchUsers();
-        } catch (err) { 
-            alert('❌ แก้ไขไม่สำเร็จ: ' + (err.response?.data?.msg || 'Error')); 
+        } catch (err) {
+            alert('❌ แก้ไขไม่สำเร็จ: ' + (err.response?.data?.msg || 'Error'));
         }
     };
 
@@ -101,24 +102,24 @@ const UserManagement = () => {
         if (!window.confirm('ยืนยันการลบผู้ใช้งานนี้? ข้อมูลที่เกี่ยวข้องจะถูกลบด้วย')) return;
         try {
             const token = localStorage.getItem('token');
-            await axios.delete(`http://localhost:5000/api/admin/users/${id}`, { 
-                headers: { 'x-auth-token': token } 
+            await axios.delete(`${API_BASE_URL}/api/admin/users/${id}`, {
+                headers: { 'x-auth-token': token }
             });
             fetchUsers();
-        } catch (err) { 
-            alert('❌ ลบไม่สำเร็จ'); 
+        } catch (err) {
+            alert('❌ ลบไม่สำเร็จ');
         }
     };
 
-    const filteredUsers = users.filter(u => 
-        (u.fullname || "").toLowerCase().includes(searchTerm.toLowerCase()) || 
+    const filteredUsers = users.filter(u =>
+        (u.fullname || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
         (u.email || "").toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     const getRoleChipClass = (role) => {
-        if (role === 'Admin') return 'chip-can'; 
-        if (role === 'Psychologist') return 'chip-conf'; 
-        return 'chip-comp'; 
+        if (role === 'Admin') return 'chip-can';
+        if (role === 'Psychologist') return 'chip-conf';
+        return 'chip-comp';
     };
 
     if (loading) return (
@@ -130,7 +131,7 @@ const UserManagement = () => {
 
     return (
         <div className="pcshs-archive-container fade-in py-4 px-3 px-md-4">
-            
+
             {/* --- Archive Header --- */}
             <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3 archive-header">
                 <div className="d-flex align-items-center">
@@ -149,7 +150,7 @@ const UserManagement = () => {
 
             {/* --- Glassmorphism Panel --- */}
             <div className="glass-panel mb-4 shadow-sm">
-                
+
                 {/* Header ของ Panel */}
                 <div className="filter-header-modern justify-content-between">
                     <span><FaSearch className="me-2"/> ฐานข้อมูลผู้ใช้</span>
@@ -164,9 +165,9 @@ const UserManagement = () => {
                         <Col md={12} lg={6}>
                             <InputGroup className="modern-input-group shadow-sm border rounded-pill">
                                 <InputGroup.Text><FaSearch /></InputGroup.Text>
-                                <Form.Control 
-                                    placeholder="ค้นหาจากชื่อ-นามสกุล หรือ อีเมล..." 
-                                    value={searchTerm} 
+                                <Form.Control
+                                    placeholder="ค้นหาจากชื่อ-นามสกุล หรือ อีเมล..."
+                                    value={searchTerm}
                                     onChange={e => setSearchTerm(e.target.value)}
                                 />
                             </InputGroup>
@@ -190,8 +191,8 @@ const UserManagement = () => {
                             {filteredUsers.length > 0 ? (
                                 filteredUsers.map(u => {
                                     const dateObj = new Date(u.created_at);
-                                    const formattedDate = dateObj.toLocaleDateString('th-TH', { 
-                                        day: '2-digit', month: 'short', year: 'numeric' 
+                                    const formattedDate = dateObj.toLocaleDateString('th-TH', {
+                                        day: '2-digit', month: 'short', year: 'numeric'
                                     });
 
                                     return (
@@ -223,7 +224,7 @@ const UserManagement = () => {
                                             <td className="text-center pe-4">
                                                 <div className="d-flex justify-content-center">
                                                     {/* 🌟 ปุ่มแก้ไข (เพิ่มใหม่) */}
-                                                    <button 
+                                                    <button
                                                         className="btn-action-minimal me-2"
                                                         onClick={() => handleOpenEditModal(u)}
                                                         title="แก้ไขผู้ใช้งาน"
@@ -231,7 +232,7 @@ const UserManagement = () => {
                                                         <FaEdit className="text-primary" />
                                                     </button>
                                                     {/* ปุ่มลบ (เดิม) */}
-                                                    <button 
+                                                    <button
                                                         className="btn-action-minimal"
                                                         onClick={() => handleDeleteUser(u.user_id)}
                                                         title="ลบผู้ใช้งาน"

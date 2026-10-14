@@ -1,8 +1,9 @@
+import API_BASE_URL from '../../config/api.js';
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Container, Button, Card, Row, Col, Nav, Navbar, Offcanvas, Badge, Image, Spinner, Form, Dropdown } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
-import { 
+import {
     FaHome, FaSignOutAlt, FaBars, FaUserCircle,
     FaUserGraduate, FaChalkboardTeacher, FaNewspaper, FaChartPie,
     FaUserMd, FaCalendarCheck, FaUserShield, FaFileExcel, FaPrint, FaBell, FaUserPlus,
@@ -14,12 +15,12 @@ import {
 } from 'recharts';
 import html2canvas from 'html2canvas';
 
-import './AdminDashboard.css'; 
+import './AdminDashboard.css';
 
-import UserManagement from './UserManagement'; 
-import NewsManagement from '../psychologist/NewsManagement'; 
-import AdminProfile from './AdminProfile'; 
-import pcshsLogo from '../../assets/pcshs_logo.png'; 
+import UserManagement from './UserManagement';
+import NewsManagement from '../psychologist/NewsManagement';
+import AdminProfile from './AdminProfile';
+import pcshsLogo from '../../assets/pcshs_logo.png';
 
 const ROLE_COLORS = {
     Student: '#003566',
@@ -39,17 +40,17 @@ const toBuddhistYear = (year) => Number(year) + 543;
 
 // รายชื่อหอพักมาตรฐาน เพื่อบังคับให้แสดงครบทุกหอแม้จะเป็น 0
 const ALL_DORMS = [
-    "หอสกลนคร (A)", "หอบึงกาฬ (B)", "หออุดรธานี (C)", 
+    "หอสกลนคร (A)", "หอบึงกาฬ (B)", "หออุดรธานี (C)",
     "หอขอนแก่น (D)", "หอหนองคาย (E)", "หอหนองบัวลำภู (F)"
 ];
 
 const AdminDashboard = () => {
     const navigate = useNavigate();
-    const [activeTab, setActiveTab] = useState('dashboard'); 
+    const [activeTab, setActiveTab] = useState('dashboard');
     const [showMobileMenu, setShowMobileMenu] = useState(false);
-    
+
     const [adminProfile, setAdminProfile] = useState({
-        fullname: 'Administrator', 
+        fullname: 'Administrator',
         profile_image: ''
     });
 
@@ -81,20 +82,20 @@ const AdminDashboard = () => {
             handleLogout();
             return;
         }
-        
+
         fetchProfile(token);
         fetchStats(token);
-        fetchNotifications(token); 
+        fetchNotifications(token);
     }, [activeTab, selectedYear]);
 
     const fetchProfile = async (token) => {
         try {
-            const res = await axios.get('http://localhost:5000/api/profile/me', {
+            const res = await axios.get(`${API_BASE_URL}/api/profile/me`, {
                 headers: { 'x-auth-token': token }
             });
             setAdminProfile(res.data);
-        } catch (err) { 
-            console.error("Profile Error", err); 
+        } catch (err) {
+            console.error("Profile Error", err);
             if (err.response && err.response.status === 401) handleLogout();
         }
     };
@@ -102,7 +103,7 @@ const AdminDashboard = () => {
     const fetchStats = async (token) => {
         try {
             setLoadingStats(true);
-            const res = await axios.get(`http://localhost:5000/api/admin/summary?year=${selectedYear}`, {
+            const res = await axios.get(`${API_BASE_URL}/api/admin/summary?year=${selectedYear}`, {
                 headers: { 'x-auth-token': token }
             });
             setStats(res.data);
@@ -116,7 +117,7 @@ const AdminDashboard = () => {
 
     const fetchNotifications = async (token) => {
         try {
-            const res = await axios.get('http://localhost:5000/api/admin/notifications/new-users', {
+            const res = await axios.get(`${API_BASE_URL}/api/admin/notifications/new-users`, {
                 headers: { 'x-auth-token': token }
             });
 
@@ -129,8 +130,8 @@ const AdminDashboard = () => {
 
             setNotifications(notificationsData);
             setUnreadCount(notificationsData.filter(n => !n.is_read).length);
-        } catch (err) { 
-            console.error("Notifications Error", err); 
+        } catch (err) {
+            console.error("Notifications Error", err);
             if (err.response && err.response.status === 401) handleLogout();
         }
     };
@@ -138,7 +139,7 @@ const AdminDashboard = () => {
     const handleNotificationClick = (notif) => {
         if (notif.is_read) {
             setActiveTab('users');
-            return; 
+            return;
         }
 
         setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, is_read: true } : n));
@@ -173,7 +174,7 @@ const AdminDashboard = () => {
 
         try {
             setExporting(true);
-            const res = await axios.get(`http://localhost:5000/api/admin/export/excel?year=${selectedYear}`, {
+            const res = await axios.get(`${API_BASE_URL}/api/admin/export/excel?year=${selectedYear}`, {
                 headers: { 'x-auth-token': token },
                 responseType: 'blob'
             });
@@ -195,9 +196,9 @@ const AdminDashboard = () => {
 
     const handleOpenPrintableReport = async () => {
         if (!stats) return alert('กำลังโหลดข้อมูล กรุณารอสักครู่');
-        
-        setExporting(true); 
-        
+
+        setExporting(true);
+
         try {
             const statsEl = document.getElementById('export-stats');
             const charts1El = document.getElementById('export-charts-1');
@@ -268,28 +269,28 @@ const AdminDashboard = () => {
                 <title>รายงานสถิติ PCSHS HeartCare ปี ${displayYear}</title>
                 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
                 <style>
-                    @page { 
-                        size: A4; 
-                        margin: 15mm 15mm 15mm 20mm; 
-                    } 
+                    @page {
+                        size: A4;
+                        margin: 15mm 15mm 15mm 20mm;
+                    }
                     body {
                         font-family: 'Sarabun', sans-serif;
                         color: #1e293b;
                         margin: 0;
                         background: #f8fafc;
-                        font-size: 14pt; 
+                        font-size: 14pt;
                         line-height: 1.5;
                     }
-                    .container { 
-                        padding: 15mm 20mm; 
-                        max-width: 210mm; 
-                        margin: 20px auto; 
-                        background: white; 
+                    .container {
+                        padding: 15mm 20mm;
+                        max-width: 210mm;
+                        margin: 20px auto;
+                        background: white;
                         box-shadow: 0 10px 30px rgba(0,0,0,0.08);
                         border-radius: 8px;
                         box-sizing: border-box;
                     }
-                    
+
                     /* ส่วนหัวรายงาน */
                     .report-header {
                         display: flex;
@@ -304,19 +305,19 @@ const AdminDashboard = () => {
                         margin-right: 20px;
                     }
                     .header-text { flex-grow: 1; }
-                    .doc-title { 
-                        font-size: 20pt; 
-                        font-weight: 700; 
+                    .doc-title {
+                        font-size: 20pt;
+                        font-weight: 700;
                         color: #0f172a;
-                        margin: 0 0 4px 0; 
+                        margin: 0 0 4px 0;
                     }
                     .doc-subtitle {
-                        font-size: 14pt; 
+                        font-size: 14pt;
                         font-weight: 500;
                         color: #64748b;
                         margin: 0;
                     }
-                    
+
                     .meta-info {
                         display: flex;
                         justify-content: space-between;
@@ -352,11 +353,11 @@ const AdminDashboard = () => {
                         margin-right: 10px;
                         border-radius: 3px;
                     }
-                    
+
                     table {
                         width: 100%;
                         border-collapse: collapse;
-                        font-size: 13pt; 
+                        font-size: 13pt;
                         border-radius: 6px;
                         overflow: hidden;
                         border: 1px solid #e2e8f0;
@@ -366,23 +367,23 @@ const AdminDashboard = () => {
                         border-bottom: 1px solid #e2e8f0;
                         vertical-align: middle;
                     }
-                    th { 
-                        font-weight: 600; 
+                    th {
+                        font-weight: 600;
                         text-align: center;
-                        background-color: #003566 !important; 
+                        background-color: #003566 !important;
                         color: #ffffff !important;
                         -webkit-print-color-adjust: exact;
                         color-adjust: exact;
                         letter-spacing: 0.5px;
                     }
                     tr:nth-child(even) td {
-                        background-color: #f8fafc !important; 
+                        background-color: #f8fafc !important;
                         -webkit-print-color-adjust: exact;
                     }
                     tr:last-child td { border-bottom: none; }
                     .text-center { text-align: center; }
                     .text-left { text-align: left; }
-                    
+
                     .grid-2 { display: flex; gap: 20px; }
                     .col-6 { width: 50%; }
 
@@ -393,8 +394,8 @@ const AdminDashboard = () => {
                         padding-right: 30px;
                         page-break-inside: avoid;
                     }
-                    .signature-box { 
-                        text-align: center; 
+                    .signature-box {
+                        text-align: center;
                         font-size: 13pt;
                         color: #1e293b;
                     }
@@ -404,8 +405,8 @@ const AdminDashboard = () => {
                         margin: 40px auto 10px auto;
                     }
 
-                    .print-btn-container { 
-                        text-align: center; 
+                    .print-btn-container {
+                        text-align: center;
                         padding: 15px 0;
                         background: #fff;
                         position: sticky;
@@ -553,7 +554,7 @@ const AdminDashboard = () => {
             console.error("Print Error", error);
             alert("เกิดข้อผิดพลาดในการสร้างเอกสาร กรุณาลองใหม่อีกครั้ง");
         } finally {
-            setExporting(false); 
+            setExporting(false);
         }
     };
 
@@ -595,7 +596,7 @@ const AdminDashboard = () => {
                     { id: 'users', icon: FaUserGraduate, label: 'จัดการผู้ใช้งาน' },
                     { id: 'news', icon: FaNewspaper, label: 'จัดการข่าวสาร' },
                     { id: 'profile', icon: FaUserShield, label: 'โปรไฟล์ของฉัน' },
-                    { id: 'change-password', icon: FaKey, label: 'เปลี่ยนรหัสผ่าน' } 
+                    { id: 'change-password', icon: FaKey, label: 'เปลี่ยนรหัสผ่าน' }
                 ].map((item) => (
                     <div key={item.id} onClick={() => handleMenuClick(item.id)} className={`nav-item-custom ${activeTab === item.id ? 'active' : ''}`}>
                         <item.icon className="me-3" /> {item.label}
@@ -615,7 +616,7 @@ const AdminDashboard = () => {
             case 'dashboard':
                 return (
                     <div className="fade-in">
-                        <div className="hero-welcome p-4 p-lg-5 mb-5 d-flex align-items-center justify-content-between shadow-lg" 
+                        <div className="hero-welcome p-4 p-lg-5 mb-5 d-flex align-items-center justify-content-between shadow-lg"
                              style={{borderRadius: '24px', background: 'linear-gradient(135deg, #003566 0%, #001d36 100%)'}}>
                             <div className="hero-bg-pattern"></div>
                             <div className="position-relative z-1">
@@ -624,7 +625,7 @@ const AdminDashboard = () => {
                                 <p className="text-white-50 mb-4 fw-light lead" style={{maxWidth: '600px'}}>
                                     ควบคุมและจัดการระบบดูแลช่วยเหลือนักเรียน <br/> โรงเรียนวิทยาศาสตร์จุฬาภรณราชวิทยาลัย
                                 </p>
-                                <Button className="btn-pcshs shadow-lg px-4 py-2" onClick={() => handleMenuClick('users')} 
+                                <Button className="btn-pcshs shadow-lg px-4 py-2" onClick={() => handleMenuClick('users')}
                                         style={{background: '#F25C05', border:'none'}}>
                                     <FaChalkboardTeacher className="me-2"/> จัดการผู้ใช้งาน
                                 </Button>
@@ -674,7 +675,7 @@ const AdminDashboard = () => {
                                     </Dropdown>
                                 </div>
                             </div>
-                            
+
                             <Row id="export-stats" className="g-4 mb-4" style={{ backgroundColor: '#f0f4f8', padding: '10px' }}>
                                 {[
                                     { title: "ผู้ใช้ทั้งหมด", count: stats.total_users, unit: "คน", icon: <FaUsers/>, type: "stat-navy" },
@@ -805,9 +806,9 @@ const AdminDashboard = () => {
                         </div>
                     </div>
                 );
-            case 'users': return <UserManagement />; 
-            case 'news': return <NewsManagement />; 
-            case 'profile': return <AdminProfile />; 
+            case 'users': return <UserManagement />;
+            case 'news': return <NewsManagement />;
+            case 'profile': return <AdminProfile />;
             default: return null;
         }
     };
@@ -815,7 +816,7 @@ const AdminDashboard = () => {
     return (
         <div className="dashboard-wrapper">
             <div className="pcshs-sidebar d-none d-lg-block shadow"><SidebarContent /></div>
-            
+
             <Offcanvas show={showMobileMenu} onHide={() => setShowMobileMenu(false)} className="offcanvas-custom text-white" style={{ width: '280px', background: '#003566' }}>
                 <Offcanvas.Header closeButton closeVariant="white" />
                 <Offcanvas.Body className="p-0"><SidebarContent /></Offcanvas.Body>
@@ -829,7 +830,7 @@ const AdminDashboard = () => {
                             <span style={{color: '#003566'}}>Admin</span> Console
                         </h5>
                     </div>
-                    
+
                     <div className="d-flex align-items-center gap-3">
                         <Dropdown align="end" className="notification-dropdown">
                             <Dropdown.Toggle variant="link" className="text-dark p-0 position-relative border-0" style={{boxShadow: 'none'}}>
@@ -840,7 +841,7 @@ const AdminDashboard = () => {
                                     </Badge>
                                 )}
                             </Dropdown.Toggle>
-                            
+
                             <Dropdown.Menu className="border-0 notification-popup-menu shadow-lg">
                                 <div className="notification-popup-header">
                                     <div className="d-flex justify-content-between align-items-center">
@@ -852,7 +853,7 @@ const AdminDashboard = () => {
                                         </Badge>
                                     </div>
                                 </div>
-                                
+
                                 <div className="notification-popup-body">
                                     {notifications.length === 0 ? (
                                         <div className="text-center py-5 text-muted">
@@ -861,8 +862,8 @@ const AdminDashboard = () => {
                                         </div>
                                     ) : (
                                         notifications.map(notif => (
-                                            <div 
-                                                key={notif.id} 
+                                            <div
+                                                key={notif.id}
                                                 onClick={() => handleNotificationClick(notif)}
                                                 className={`notification-popup-item ${notif.is_read ? 'read' : 'unread'}`}
                                             >
@@ -891,7 +892,7 @@ const AdminDashboard = () => {
                             <div className="fw-bold text-dark" style={{fontSize: '0.9rem'}}>{adminProfile.fullname}</div>
                             <small className="text-danger fw-bold" style={{fontSize: '0.75rem'}}>● System Admin</small>
                         </div>
-                        
+
                         <div className="position-relative cursor-pointer" onClick={() => handleMenuClick('profile')} style={{cursor: 'pointer'}}>
                             {adminProfile.profile_image ? (
                                 <Image src={adminProfile.profile_image} roundedCircle style={{width: '40px', height: '40px', objectFit: 'cover', border: '2px solid #003566'}} />
@@ -902,13 +903,13 @@ const AdminDashboard = () => {
                         </div>
                     </div>
                 </Navbar>
-                
+
                 <Container fluid className="p-4 flex-grow-1" style={{background: '#f0f4f8'}}>
                     {renderContent()}
                 </Container>
             </div>
         </div>
     );
-}; 
+};
 
 export default AdminDashboard;
