@@ -1,82 +1,96 @@
 
 /**
  * File: server/services/emailService.js
- * HeartCare - Email Service using Resend API
+ * HeartCare - Gmail API with OAuth2
  */
 
 const path = require('path');
+
 require('dotenv').config({
   path: path.join(__dirname, '..', '.env')
 });
 
-const RESEND_API_URL = 'https://api.resend.com/emails';
-
-const getFromEmail = () => {
-  return (
-    process.env.RESEND_FROM_EMAIL ||
-    'PCSHS Care System <onboarding@resend.dev>'
-  );
-};
+const { google } = require('googleapis');
 
 const sendEmail = async ({ to, subject, html, text }) => {
   try {
-    const apiKey = process.env.RESEND_API_KEY;
+    const emailUser = process.env.EMAIL_USER;
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+    const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+    const refreshToken = process.env.GOOGLE_REFRESH_TOKEN;
 
-    // ตรวจสอบการตั้งค่าก่อนส่ง
-    if (!apiKey) {
+    if (!emailUser || !clientId || !clientSecret || !refreshToken) {
       console.error(
-        '[Email Service] ไม่พบ RESEND_API_KEY ใน Environment Variables'
+        '[Email Service] กรุณาตรวจสอบ EMAIL_USER และ GOOGLE OAuth Variables'
       );
       return false;
     }
 
     if (!to || !subject || (!html && !text)) {
-      console.error(
-        '[Email Service] ข้อมูลไม่ครบ ต้องมี to, subject และ html หรือ text'
-      );
+      console.error('[Email Service] ข้อมูลอีเมลไม่ครบ');
       return false;
     }
 
-    const payload = {
-      from: getFromEmail(),
-      to: Array.isArray(to) ? to : [to],
-      subject,
-      ...(html ? { html } : {}),
-      ...(text ? { text } : {})
-    };
+    const recipients = (Array.isArray(to) ? to : [to])
+      .map(email => String(email).trim())
+      .filter(Boolean);
 
-    const response = await fetch(RESEND_API_URL, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(payload),
-      signal: AbortSignal.timeout(20000)
+    if (recipients.length === 0) {
+      console.error('[Email Service] ไม่พบอีเมลผู้รับ');
+      return false;
+    }
+
+    const oauth2Client = new google.auth.OAuth2(
+      clientId,
+      clientSecret
+    );
+
+    oauth2Client.setCredentials({
+      refresh_token: refreshToken
     });
 
-    const result = await response.json().catch(() => ({}));
+    const gmail = google.gmail({
+      version: 'v1',
+      auth: oauth2Client
+    });
 
-    if (!response.ok) {
-      console.error('[Email Service] Resend API ส่งไม่สำเร็จ:', {
-        status: response.status,
-        message: result.message || result.error || 'Unknown API error',
-        name: result.name || undefined
-      });
+    const encodeMime = (value) =>
+      `=?UTF-8?B?${Buffer.from(String(value)).toString('base64')}?=`;
 
-      return false;
-    }
+    const body = html || text;
+    const contentType = html ? 'text/html' : 'text/plain';
 
-    console.log('[Email Service] ส่งคำขออีเมลสำเร็จ:', {
-      to: payload.to,
-      emailId: result.id
+    const message = [
+      `From: ${emailUser}`,
+      `To: ${recipients.join(', ')}`,
+      `Subject: ${encodeMime(subject)}`,
+      'MIME-Version: 1.0',
+      `Content-Type: ${contentType}; charset=UTF-8`,
+      'Content-Transfer-Encoding: base64',
+      '',
+      Buffer.from(body, 'utf8').toString('base64')
+    ].join('\r\n');
+
+    const raw = Buffer.from(message, 'utf8')
+      .toString('base64url');
+
+    const result = await gmail.users.messages.send({
+      userId: 'me',
+      requestBody: { raw }
+    });
+
+    console.log('[Email Service] Gmail API ส่งสำเร็จ:', {
+      to: recipients,
+      messageId: result.data.id
     });
 
     return true;
   } catch (error) {
-    console.error('[Email Service] เกิดข้อผิดพลาด:', {
+    console.error('[Email Service] Gmail API ส่งไม่สำเร็จ:', {
       message: error.message,
-      name: error.name
+      code: error.code,
+      status: error.response?.status,
+      details: error.response?.data?.error?.message
     });
 
     return false;
